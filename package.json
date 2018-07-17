@@ -1,0 +1,75 @@
+{
+  "name": "jsonld-parser",
+  "version": "1.0.0",
+  "description": "A fast and lightweight streaming JSON-LD parser",
+  "keywords": [
+    "json",
+    "linked data",
+    "semantic web",
+    "json-ld",
+    "jsonld",
+    "rdf",
+    "rdfjs"
+  ],
+  "main": "index.js",
+  "typings": "index",
+  "repository": "git@github.com:rubensworks/jsonld-parser.js.git",
+  "author": "Ruben Taelman <rubensworks@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/rubensworks/jsonld-parser.js/issues"
+  },
+  "homepage": "https://github.com/rubensworks/jsonld-parser.js#readme",
+  "license": "MIT",
+  "files": [
+    "lib/**/*.d.ts",
+    "lib/**/*.js",
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "jsonparse": "^1.3.1",
+    "rdf-data-model": "^1.0.0"
+  },
+  "pre-commit": [
+    "build",
+    "lint",
+    "test"
+  ],
+  "devDependencies": {
+    "@types/jest": "^23.3.0",
+    "@types/rdf-data-model": "^1.0.1",
+    "@types/rdf-js": "^1.0.1",
+    "arrayify-stream": "^1.0.0",
+    "coveralls": "^3.0.0",
+    "jest": "^23.4.1",
+    "pre-commit": "^1.2.2",
+    "streamify-string": "^1.0.1",
+    "ts-jest": "^23.0.1",
+    "tslint": "^5.8.0",
+    "tslint-eslint-rules": "^5.3.1",
+    "typescript": "^2.6.2"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "transformIgnorePatterns": [
+      "[/\\\\]node_modules[/\\\\].+\\.(js|jsx)$"
+    ],
+    "testRegex": "(/test/.*|(\\.|/)(test|spec))\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "collectCoverage": true
+  },
+  "scripts": {
+    "test": "jest ${1}",
+    "test-watch": "jest ${1} --watch",
+    "coveralls": "jest --coverage && cat ./coverage/lcov.info | coveralls",
+    "lint": "tslint index.ts lib/**/*.ts test/**/*.ts --exclude '**/*.d.ts'",
+    "build": "tsc",
+    "validate": "npm ls",
+    "prepare": "npm run build"
+  }
+}
