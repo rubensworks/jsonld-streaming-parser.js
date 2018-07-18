@@ -46,9 +46,27 @@ export class JsonLdParser extends Transform {
   /**
    * @return {boolean} If the parser at its current depth is in the context of a @graph key.
    */
-  public isParserAtGraph() {
+  protected isParserAtGraph() {
     const entry = this.jsonParser.stack[this.jsonParser.stack.length - 1];
     return entry && entry.key === '@graph';
+  }
+
+  protected getUnidentifiedValueBufferSafe(depth: number) {
+    let buffer = this.unidentifiedValuesBuffer[depth];
+    if (!buffer) {
+      buffer = [];
+      this.unidentifiedValuesBuffer[depth] = buffer;
+    }
+    return buffer;
+  }
+
+  protected getUnidentifiedGraphBufferSafe(depth: number) {
+    let buffer = this.unidentifiedGraphsBuffer[depth];
+    if (!buffer) {
+      buffer = [];
+      this.unidentifiedGraphsBuffer[depth] = buffer;
+    }
+    return buffer;
   }
 
   protected attachJsonParserListeners() {
@@ -91,12 +109,7 @@ export class JsonLdParser extends Transform {
               this.push(this.dataFactory.quad(subject, predicate, object, graph));
             } else {
               // Buffer our triple if graph @id is not known yet.
-              let subGraphBuffer = this.unidentifiedGraphsBuffer[depth - 1];
-              if (!subGraphBuffer) {
-                subGraphBuffer = [];
-                this.unidentifiedGraphsBuffer[depth - 1] = subGraphBuffer;
-              }
-              subGraphBuffer.push({ subject, predicate, object });
+              this.getUnidentifiedGraphBufferSafe(depth - 1).push({ subject, predicate, object });
             }
           } else {
             // Emit if no @graph was applicable
@@ -104,13 +117,9 @@ export class JsonLdParser extends Transform {
           }
         } else {
           // Buffer until our @id becomes known, or we go up the stack
-          let buffer = this.unidentifiedValuesBuffer[depth];
-          if (!buffer) {
-            buffer = [];
-            this.unidentifiedValuesBuffer[depth] = buffer;
-          }
           // TODO: identify term types
-          buffer.push({ predicate: this.dataFactory.namedNode(key), object: this.dataFactory.namedNode(value) });
+          this.getUnidentifiedValueBufferSafe(depth)
+            .push({ predicate: this.dataFactory.namedNode(key), object: this.dataFactory.namedNode(value) });
         }
       }
 
@@ -143,11 +152,7 @@ export class JsonLdParser extends Transform {
         }
       } else {
         // Place the values in the graphs buffer if the graph @id is not yet known
-        let subGraphBuffer = this.unidentifiedGraphsBuffer[depth - 1];
-        if (!subGraphBuffer) {
-          subGraphBuffer = [];
-          this.unidentifiedGraphsBuffer[depth - 1] = subGraphBuffer;
-        }
+        const subGraphBuffer = this.getUnidentifiedGraphBufferSafe(depth - 1);
         for (const bufferedValue of valueBuffer) {
           subGraphBuffer.push({ subject, predicate: bufferedValue.predicate, object: bufferedValue.object });
         }
