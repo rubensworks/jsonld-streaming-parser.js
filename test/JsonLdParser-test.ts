@@ -68,6 +68,18 @@ describe('JsonLdParser', () => {
             .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
         });
       });
+
+      describe('for a number', () => {
+        it('for 2 should return an integer literal node', async () => {
+          return expect(parser.valueToTerm(2, 0))
+            .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
+        });
+
+        it('for 2.2 should return a double literal node', async () => {
+          return expect(parser.valueToTerm(2.2, 0))
+            .toEqualRdfTerm(literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
+      });
     });
 
     describe('should parse', () => {
@@ -107,6 +119,18 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('true', namedNode(JsonLdParser.XSD_BOOLEAN))),
+          ]);
+        });
+
+        it('with @id an a number literal', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": 2.2
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE))),
           ]);
         });
 
