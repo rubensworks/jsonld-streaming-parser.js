@@ -3,7 +3,7 @@ const arrayifyStream = require('arrayify-stream');
 const streamifyString = require('streamify-string');
 import "jest-rdf";
 import * as dataFactory from "rdf-data-model";
-import {blankNode, namedNode, triple} from "rdf-data-model";
+import {blankNode, defaultGraph, namedNode, quad, triple} from "rdf-data-model";
 
 describe('JsonLdParser', () => {
   describe('when instantiated without a data factory', () => {
@@ -110,6 +110,296 @@ describe('JsonLdParser', () => {
           ]);
         });
       });
+
+      describe('a single quad', () => {
+        it('without @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+     "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), defaultGraph()),
+          ]);
+        });
+
+        it('with @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with out-of-order @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('without @id with out-of-order inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "@id": "http://ex.org/myinnerid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), defaultGraph()),
+          ]);
+        });
+
+        it('with @id with out-of-order inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "@id": "http://ex.org/myinnerid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with out-of-order @id with out-of-order inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "@id": "http://ex.org/myinnerid"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('without @id and without inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'), defaultGraph()),
+          ]);
+        });
+
+        it('with @id and without inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with out-of-order @id and without inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+      });
+
+      describe('nested quads', () => {
+        it('without @id, without middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@graph": {
+       "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), blankNode()),
+          ]);
+        });
+
+        it('with @id, without middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), blankNode()),
+          ]);
+        });
+
+        it('with out-of-order @id, without middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1",
+    }
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), blankNode()),
+          ]);
+        });
+
+        it('without @id, with middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/mymiddleid",
+    "@graph": {
+       "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+        it('with @id, with middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@id": "http://ex.org/mymiddleid",
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+        it('with out-of-order @id, with middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/mymiddleid",
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1",
+    }
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+        it('without @id, with out-of-order middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@graph": {
+       "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    },
+    "@id": "http://ex.org/mymiddleid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+        it('with @id, with out-of-order middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    },
+    "@id": "http://ex.org/mymiddleid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+        it('with out-of-order @id, with out-of-order middle @id with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@graph": {
+      "@id": "http://ex.org/myinnerid",
+      "http://ex.org/pred1": "http://ex.org/obj1",
+    },
+    "@id": "http://ex.org/mymiddleid"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+          ]);
+        });
+
+      });
+
     });
   });
 });
