@@ -11,7 +11,7 @@ export class JsonLdParser extends Transform {
   private readonly dataFactory: RDF.DataFactory;
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
-  private readonly idStack: RDF.NamedNode[];
+  private readonly idStack: RDF.Term[];
   // Stack of graph flags
   private readonly graphStack: boolean[];
   // Triples that don't know their subject @id yet.
@@ -41,6 +41,22 @@ export class JsonLdParser extends Transform {
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     callback();
+  }
+
+  public valueToTerm(value: any, depth: number) {
+    const type: string = typeof value;
+    switch (type) {
+    case 'object':
+      if (value["@id"]) {
+        return this.dataFactory.namedNode(value["@id"]);
+      } else {
+        return this.idStack[depth + 1] = this.dataFactory.blankNode();
+      }
+    case 'string':
+      return this.dataFactory.literal(value);
+    default:
+      this.emit('error', new Error(`Could not determine the RDF type of ${value}`));
+    }
   }
 
   /**
@@ -93,13 +109,12 @@ export class JsonLdParser extends Transform {
       } else if (key === '@graph') {
         // The current identifier identifies a graph for the deeper level.
         this.graphStack[depth + 1] = true;
-      } else {
+      } else if (key) {
+        const predicate = this.dataFactory.namedNode(key);
+        const object = this.valueToTerm(value, depth);
         if (this.idStack[depth]) {
           // Emit directly if the @id was already defined
           const subject = this.idStack[depth];
-          // TODO: identify term types
-          const predicate = this.dataFactory.namedNode(key);
-          const object = this.dataFactory.namedNode(value);
 
           // Check if we're in a @graph context
           if (this.isParserAtGraph()) {
@@ -117,9 +132,7 @@ export class JsonLdParser extends Transform {
           }
         } else {
           // Buffer until our @id becomes known, or we go up the stack
-          // TODO: identify term types
-          this.getUnidentifiedValueBufferSafe(depth)
-            .push({ predicate: this.dataFactory.namedNode(key), object: this.dataFactory.namedNode(value) });
+          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object });
         }
       }
 

@@ -3,7 +3,7 @@ const arrayifyStream = require('arrayify-stream');
 const streamifyString = require('streamify-string');
 import "jest-rdf";
 import * as dataFactory from "rdf-data-model";
-import {blankNode, defaultGraph, namedNode, quad, triple} from "rdf-data-model";
+import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "rdf-data-model";
 
 describe('JsonLdParser', () => {
   describe('when instantiated without a data factory', () => {
@@ -38,7 +38,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
           ]);
         });
 
@@ -49,7 +49,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
           ]);
         });
 
@@ -60,7 +60,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
           ]);
         });
       });
@@ -74,9 +74,9 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
-            triple(blankNode(), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2')),
-            triple(blankNode(), namedNode('http://ex.org/pred3'), namedNode('http://ex.org/obj3')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(blankNode(), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
           ]);
         });
 
@@ -89,9 +89,9 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2')),
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred3'), namedNode('http://ex.org/obj3')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
           ]);
         });
 
@@ -104,9 +104,156 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2')),
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred3'), namedNode('http://ex.org/obj3')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
+          ]);
+        });
+      });
+
+      describe('two nested triple', () => {
+        it('without @id and without inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output[0].subject).toEqual(output[1].object);
+          return expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('with @id and without inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output[1].subject).toEqual(output[0].object);
+          return expect(output).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+            triple(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with out-of-order @id and without inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output[0].subject).toEqual(output[1].object);
+          return expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('without @id and with inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myinnerid')),
+          ]);
+        });
+
+        it('with @id and with inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myinnerid')),
+          ]);
+        });
+
+        it('with out-of-order @id and with inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myinnerid')),
+          ]);
+        });
+
+        it('without @id and with out-of-order inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2",
+    "@id": "http://ex.org/myinnerid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myinnerid')),
+          ]);
+        });
+
+        it('with @id and with out-of-order inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2",
+    "@id": "http://ex.org/myinnerid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myinnerid')),
+          ]);
+        });
+
+        it('with out-of-order @id and with out-of-order inner @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2",
+    "@id": "http://ex.org/myinnerid"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
+              literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myinnerid')),
           ]);
         });
       });
@@ -122,7 +269,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), defaultGraph()),
+              literal('http://ex.org/obj1'), defaultGraph()),
           ]);
         });
 
@@ -137,7 +284,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -152,7 +299,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -166,7 +313,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), defaultGraph()),
+              literal('http://ex.org/obj1'), defaultGraph()),
           ]);
         });
 
@@ -181,7 +328,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -196,7 +343,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -208,7 +355,7 @@ describe('JsonLdParser', () => {
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'), defaultGraph()),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'), defaultGraph()),
           ]);
         });
 
@@ -221,7 +368,7 @@ describe('JsonLdParser', () => {
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -235,7 +382,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -253,9 +400,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), defaultGraph()),
+              literal('http://ex.org/obj1'), defaultGraph()),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), defaultGraph()),
+              literal('http://ex.org/obj2'), defaultGraph()),
           ]);
         });
 
@@ -271,9 +418,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -289,9 +436,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -306,9 +453,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), defaultGraph()),
+              literal('http://ex.org/obj1'), defaultGraph()),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), defaultGraph()),
+              literal('http://ex.org/obj2'), defaultGraph()),
           ]);
         });
 
@@ -324,9 +471,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -342,9 +489,9 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred2'),
-              namedNode('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
+              literal('http://ex.org/obj2'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -357,8 +504,8 @@ describe('JsonLdParser', () => {
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'), defaultGraph()),
-            quad(blankNode(), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2'), defaultGraph()),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'), defaultGraph()),
+            quad(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'), defaultGraph()),
           ]);
         });
 
@@ -372,9 +519,9 @@ describe('JsonLdParser', () => {
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
               namedNode('http://ex.org/myid')),
-            quad(blankNode(), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2'),
+            quad(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -389,9 +536,9 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
-            quad(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1'),
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
               namedNode('http://ex.org/myid')),
-            quad(blankNode(), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2'),
+            quad(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -410,7 +557,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), blankNode()),
+              literal('http://ex.org/obj1'), blankNode()),
           ]);
         });
 
@@ -427,7 +574,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), blankNode()),
+              literal('http://ex.org/obj1'), blankNode()),
           ]);
         });
 
@@ -444,7 +591,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), blankNode()),
+              literal('http://ex.org/obj1'), blankNode()),
           ]);
         });
 
@@ -461,7 +608,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
@@ -479,7 +626,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
@@ -497,7 +644,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
@@ -514,7 +661,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
@@ -532,7 +679,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
@@ -550,7 +697,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
-              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
+              literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
 
