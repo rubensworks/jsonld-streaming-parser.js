@@ -25,6 +25,39 @@ describe('JsonLdParser', () => {
       parser = new JsonLdParser({ dataFactory });
     });
 
+    describe('#valueToTerm', () => {
+      describe('for an unknown type', () => {
+        it('should emit an error', async () => {
+          return new Promise((resolve, reject) => {
+            parser.on('error', () => resolve());
+            parser.valueToTerm(Symbol(), 0);
+          });
+        });
+      });
+
+      describe('for an object', () => {
+        it('without an @id should return a blank node', async () => {
+          return expect(parser.valueToTerm({}, 0)).toEqualRdfTerm(blankNode());
+        });
+
+        it('without an @id should put a blank node on the id stack', async () => {
+          parser.valueToTerm({}, 0);
+          return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
+        });
+
+        it('with an @id should return a named node', async () => {
+          return expect(parser.valueToTerm({ '@id': 'http://ex.org' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org'));
+        });
+      });
+
+      describe('for a string', () => {
+        it('should return a literal node', async () => {
+          return expect(parser.valueToTerm('abc', 0)).toEqualRdfTerm(literal('abc'));
+        });
+      });
+    });
+
     describe('should parse', () => {
       it('an empty document', async () => {
         const stream = streamifyString(`{}`);

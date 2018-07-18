@@ -43,7 +43,13 @@ export class JsonLdParser extends Transform {
     callback();
   }
 
-  public valueToTerm(value: any, depth: number) {
+  /**
+   * Convert a given JSON value to an RDF term.
+   * @param value A JSON value.
+   * @param {number} depth The depth the value is at.
+   * @return {RDF.Term} An RDF term.
+   */
+  public valueToTerm(value: any, depth: number): RDF.Term {
     const type: string = typeof value;
     switch (type) {
     case 'object':
@@ -55,7 +61,7 @@ export class JsonLdParser extends Transform {
     case 'string':
       return this.dataFactory.literal(value);
     default:
-      this.emit('error', new Error(`Could not determine the RDF type of ${value}`));
+      this.emit('error', new Error(`Could not determine the RDF type of a ${type}`));
     }
   }
 
