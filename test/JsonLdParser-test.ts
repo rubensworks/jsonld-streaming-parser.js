@@ -49,6 +49,21 @@ describe('JsonLdParser', () => {
           return expect(parser.valueToTerm({ '@id': 'http://ex.org' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org'));
         });
+
+        it('with an @value should return a literal', async () => {
+          return expect(parser.valueToTerm({ '@value': 'abc' }, 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with an @value and @language should return a language-tagged string literal', async () => {
+          return expect(parser.valueToTerm({ '@value': 'abc', '@language': 'en-us' }, 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with an @value and @type should return a typed literal', async () => {
+          return expect(parser.valueToTerm({ '@value': 'abc', '@type': 'http://type.com' }, 0))
+            .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));
+        });
       });
 
       describe('for a string', () => {
@@ -116,7 +131,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id an a boolean literal', async () => {
+        it('with @id and a boolean literal', async () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -128,7 +143,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id an a number literal', async () => {
+        it('with @id and a number literal', async () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -137,6 +152,21 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE))),
+          ]);
+        });
+
+        it('with @id and a typed literal', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@type": "http://ex.org/mytype"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
           ]);
         });
 

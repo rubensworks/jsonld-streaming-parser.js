@@ -60,6 +60,13 @@ export class JsonLdParser extends Transform {
     case 'object':
       if (value["@id"]) {
         return this.dataFactory.namedNode(value["@id"]);
+      } else if (value["@value"]) {
+        if (value["@language"]) {
+          return this.dataFactory.literal(value["@value"], value["@language"]);
+        } else if (value["@type"]) {
+          return this.dataFactory.literal(value["@value"], this.dataFactory.namedNode(value["@type"]));
+        }
+        return this.dataFactory.literal(value["@value"]);
       } else if (Array.isArray(value)) {
         // We handle arrays at value level, so this is handled already when we get here.
         return null;
@@ -137,7 +144,7 @@ export class JsonLdParser extends Transform {
         const predicate = this.dataFactory.namedNode(this.jsonParser.stack[depth - 1].key);
         const object = this.valueToTerm(value, depth);
         this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
-      } else if (key) {
+      } else if (key && !key.startsWith('@')) {
         const predicate = this.dataFactory.namedNode(key);
         const object = this.valueToTerm(value, depth);
         if (object) {
