@@ -8,6 +8,9 @@ import {Transform, TransformCallback} from "stream";
  */
 export class JsonLdParser extends Transform {
 
+  public static readonly XSD: string = 'http://www.w3.org/2001/XMLSchema#';
+  public static readonly XSD_BOOLEAN: string = JsonLdParser.XSD + 'boolean';
+
   private readonly dataFactory: RDF.DataFactory;
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
@@ -60,6 +63,8 @@ export class JsonLdParser extends Transform {
       }
     case 'string':
       return this.dataFactory.literal(value);
+    case 'boolean':
+      return this.dataFactory.literal(Boolean(value).toString(), this.dataFactory.namedNode(JsonLdParser.XSD_BOOLEAN));
     default:
       this.emit('error', new Error(`Could not determine the RDF type of a ${type}`));
     }

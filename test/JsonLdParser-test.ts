@@ -56,6 +56,18 @@ describe('JsonLdParser', () => {
           return expect(parser.valueToTerm('abc', 0)).toEqualRdfTerm(literal('abc'));
         });
       });
+
+      describe('for a boolean', () => {
+        it('for true should return a boolean literal node', async () => {
+          return expect(parser.valueToTerm(true, 0))
+            .toEqualRdfTerm(literal('true', namedNode(JsonLdParser.XSD_BOOLEAN)));
+        });
+
+        it('for false should return a boolean literal node', async () => {
+          return expect(parser.valueToTerm(false, 0))
+            .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
+        });
+      });
     });
 
     describe('should parse', () => {
@@ -83,6 +95,18 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+          ]);
+        });
+
+        it('with @id an a boolean literal', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": true
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('true', namedNode(JsonLdParser.XSD_BOOLEAN))),
           ]);
         });
 
