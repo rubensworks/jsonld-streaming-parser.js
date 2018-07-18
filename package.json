@@ -9,7 +9,9 @@
     "json-ld",
     "jsonld",
     "rdf",
-    "rdfjs"
+    "rdfjs",
+    "streaming",
+    "asynchronous"
   ],
   "main": "index.js",
   "typings": "index",
