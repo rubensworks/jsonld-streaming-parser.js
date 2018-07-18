@@ -80,6 +80,12 @@ describe('JsonLdParser', () => {
             .toEqualRdfTerm(literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE)));
         });
       });
+
+      describe('for an array', () => {
+        it('should return null', async () => {
+          return expect(parser.valueToTerm([1, 2], 0)).toBeFalsy();
+        });
+      });
     });
 
     describe('should parse', () => {
@@ -188,6 +194,46 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
+          ]);
+        });
+      });
+
+      describe('a triple with an array', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": [ "a", "b", "c" ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('c')),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": [ "a", "b", "c" ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
+          ]);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": [ "a", "b", "c" ],
+  "@id": "http://ex.org/myid",
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
           ]);
         });
       });

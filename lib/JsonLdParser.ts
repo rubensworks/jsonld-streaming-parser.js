@@ -60,6 +60,9 @@ export class JsonLdParser extends Transform {
     case 'object':
       if (value["@id"]) {
         return this.dataFactory.namedNode(value["@id"]);
+      } else if (Array.isArray(value)) {
+        // We handle arrays at value level, so this is handled already when we get here.
+        return null;
       } else {
         return this.idStack[depth + 1] = this.dataFactory.blankNode();
       }
@@ -125,30 +128,41 @@ export class JsonLdParser extends Transform {
       } else if (key === '@graph') {
         // The current identifier identifies a graph for the deeper level.
         this.graphStack[depth + 1] = true;
+      } else if (typeof key === 'number') {
+        // Our value is part of an array
+
+        // TODO: Check if @list is applicable in our context
+
+        // Buffer our value using the parent key as predicate
+        const predicate = this.dataFactory.namedNode(this.jsonParser.stack[depth - 1].key);
+        const object = this.valueToTerm(value, depth);
+        this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
       } else if (key) {
         const predicate = this.dataFactory.namedNode(key);
         const object = this.valueToTerm(value, depth);
-        if (this.idStack[depth]) {
-          // Emit directly if the @id was already defined
-          const subject = this.idStack[depth];
+        if (object) {
+          if (this.idStack[depth]) {
+            // Emit directly if the @id was already defined
+            const subject = this.idStack[depth];
 
-          // Check if we're in a @graph context
-          if (this.isParserAtGraph()) {
-            const graph: RDF.Term = this.idStack[depth - 1];
-            if (graph) {
-              // Emit our quad if graph @id is known
-              this.push(this.dataFactory.quad(subject, predicate, object, graph));
+            // Check if we're in a @graph context
+            if (this.isParserAtGraph()) {
+              const graph: RDF.Term = this.idStack[depth - 1];
+              if (graph) {
+                // Emit our quad if graph @id is known
+                this.push(this.dataFactory.quad(subject, predicate, object, graph));
+              } else {
+                // Buffer our triple if graph @id is not known yet.
+                this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
+              }
             } else {
-              // Buffer our triple if graph @id is not known yet.
-              this.getUnidentifiedGraphBufferSafe(depth - 1).push({ subject, predicate, object });
+              // Emit if no @graph was applicable
+              this.push(this.dataFactory.triple(subject, predicate, object));
             }
           } else {
-            // Emit if no @graph was applicable
-            this.push(this.dataFactory.triple(subject, predicate, object));
+            // Buffer until our @id becomes known, or we go up the stack
+            this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
           }
-        } else {
-          // Buffer until our @id becomes known, or we go up the stack
-          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object });
         }
       }
 
