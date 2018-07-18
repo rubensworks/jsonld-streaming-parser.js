@@ -6,7 +6,19 @@ import * as dataFactory from "rdf-data-model";
 import {blankNode, namedNode, triple} from "rdf-data-model";
 
 describe('JsonLdParser', () => {
-  describe('when instantiated', () => {
+  describe('when instantiated without a data factory', () => {
+    let parser;
+
+    beforeEach(() => {
+      parser = new JsonLdParser();
+    });
+
+    it('should have a default data factory', async () => {
+      expect(parser.dataFactory).toBeTruthy();
+    });
+  });
+
+  describe('when instantiated with a data factory', () => {
     let parser;
 
     beforeEach(() => {
