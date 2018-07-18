@@ -101,6 +101,12 @@ describe('JsonLdParser', () => {
           return expect(parser.valueToTerm([1, 2], 0)).toBeFalsy();
         });
       });
+
+      describe('for a list', () => {
+        it('should return null', async () => {
+          return expect(parser.valueToTerm({ '@list': [1, 2] }, 0)).toBeFalsy();
+        });
+      });
     });
 
     describe('should parse', () => {
@@ -265,6 +271,85 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
           ]);
+        });
+      });
+
+      describe('a triple with a list array', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] },
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
         });
       });
 

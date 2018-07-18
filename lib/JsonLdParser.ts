@@ -12,6 +12,7 @@ export class JsonLdParser extends Transform {
   public static readonly XSD_BOOLEAN: string = JsonLdParser.XSD + 'boolean';
   public static readonly XSD_INTEGER: string = JsonLdParser.XSD + 'integer';
   public static readonly XSD_DOUBLE: string = JsonLdParser.XSD + 'double';
+  public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 
   private readonly dataFactory: RDF.DataFactory;
   private readonly jsonParser: any;
@@ -19,12 +20,17 @@ export class JsonLdParser extends Transform {
   private readonly idStack: RDF.Term[];
   // Stack of graph flags
   private readonly graphStack: boolean[];
+  // Stack of RDF list pointers (for @list)
+  private readonly listPointerStack: RDF.Term[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term }[][];
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
+  private readonly rdfFirst: RDF.NamedNode;
+  private readonly rdfRest: RDF.NamedNode;
+  private readonly rdfNil: RDF.NamedNode;
 
   private lastDepth: number;
 
@@ -35,10 +41,14 @@ export class JsonLdParser extends Transform {
     this.jsonParser = new Parser();
     this.idStack = [];
     this.graphStack = [];
+    this.listPointerStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
 
     this.lastDepth = 0;
+    this.rdfFirst = this.dataFactory.namedNode(JsonLdParser.RDF + 'first');
+    this.rdfRest = this.dataFactory.namedNode(JsonLdParser.RDF + 'rest');
+    this.rdfNil = this.dataFactory.namedNode(JsonLdParser.RDF + 'nil');
 
     this.attachJsonParserListeners();
   }
@@ -68,7 +78,10 @@ export class JsonLdParser extends Transform {
         }
         return this.dataFactory.literal(value["@value"]);
       } else if (Array.isArray(value)) {
-        // We handle arrays at value level, so this is handled already when we get here.
+        // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
+        return null;
+      } else if (value["@list"]) {
+        // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
         return null;
       } else {
         return this.idStack[depth + 1] = this.dataFactory.blankNode();
@@ -137,13 +150,37 @@ export class JsonLdParser extends Transform {
         this.graphStack[depth + 1] = true;
       } else if (typeof key === 'number') {
         // Our value is part of an array
-
-        // TODO: Check if @list is applicable in our context
-
-        // Buffer our value using the parent key as predicate
-        const predicate = this.dataFactory.namedNode(this.jsonParser.stack[depth - 1].key);
         const object = this.valueToTerm(value, depth);
-        this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
+
+        const list: boolean = this.jsonParser.stack[depth - 1].key === '@list';
+        if (list) {
+          // Buffer our value as an RDF list using the parent-parent key as predicate
+
+          const targetDepth = depth - 2;
+          let listPointer: RDF.Term = this.listPointerStack[depth];
+
+          // Link our list to the subject
+          if (!listPointer) {
+            const predicate = this.dataFactory.namedNode(this.jsonParser.stack[targetDepth].key);
+            listPointer = this.dataFactory.blankNode();
+            this.getUnidentifiedValueBufferSafe(targetDepth).push({ predicate, object: listPointer });
+          } else {
+            // rdf:rest links are always emitted before the next element,
+            // as the blank node identifier is only created at that point.
+            // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
+            const newListPointer: RDF.Term = this.dataFactory.blankNode();
+            this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
+            listPointer = newListPointer;
+          }
+
+          this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
+
+          this.listPointerStack[depth] = listPointer;
+        } else {
+          // Buffer our value using the parent key as predicate
+          const predicate = this.dataFactory.namedNode(this.jsonParser.stack[depth - 1].key);
+          this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
+        }
       } else if (key && !key.startsWith('@')) {
         const predicate = this.dataFactory.namedNode(key);
         const object = this.valueToTerm(value, depth);
@@ -176,6 +213,12 @@ export class JsonLdParser extends Transform {
       // When we go up the, emit all unidentified values using the known id or a blank node subject
       if (depth < this.lastDepth) {
         this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth);
+
+        // Check if we had any RDF lists that need to be terminated with an rdf:nil
+        if (this.listPointerStack[this.lastDepth]) {
+          this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
+          delete this.listPointerStack[this.lastDepth];
+        }
 
         // Reset our stack
         delete this.idStack[this.lastDepth];
