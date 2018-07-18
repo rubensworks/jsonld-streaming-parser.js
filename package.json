@@ -45,6 +45,7 @@
     "coveralls": "^3.0.0",
     "jest": "^23.4.1",
     "jest-rdf": "^1.0.0",
+    "jsonld": "^1.0.2",
     "pre-commit": "^1.2.2",
     "streamify-string": "^1.0.1",
     "ts-jest": "^23.0.1",
