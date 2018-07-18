@@ -1,8 +1,8 @@
-# JSON-LD Parser
+# Streaming JSON-LD Parser
 
-[![Build Status](https://travis-ci.org/rubensworks/jsonld-parser.js.svg?branch=master)](https://travis-ci.org/rubensworks/jsonld-parser.js)
-[![Coverage Status](https://coveralls.io/repos/github/rubensworks/jsonld-parser.js/badge.svg?branch=master)](https://coveralls.io/github/rubensworks/jsonld-parser.js?branch=master)
-[![npm version](https://badge.fury.io/js/jsonld-parser.svg)](https://www.npmjs.com/package/jsonld-parser)
+[![Build Status](https://travis-ci.org/rubensworks/streaming-jsonld-parser.js.svg?branch=master)](https://travis-ci.org/rubensworks/streaming-jsonld-parser.js)
+[![Coverage Status](https://coveralls.io/repos/github/rubensworks/streaming-jsonld-parser.js/badge.svg?branch=master)](https://coveralls.io/github/rubensworks/streaming-jsonld-parser.js?branch=master)
+[![npm version](https://badge.fury.io/js/streaming-jsonld-parser.svg)](https://www.npmjs.com/package/streaming-jsonld-parser)
 
 A fast and lightweight streaming [JSON-LD](https://json-ld.org/) parser,
 with [RDFJS](https://github.com/rdfjs/representation-task-force/) representations of RDF terms, quads and triples.

@@ -1,5 +1,5 @@
 {
-  "name": "jsonld-parser",
+  "name": "streaming-jsonld-parser",
   "version": "1.0.0",
   "description": "A fast and lightweight streaming JSON-LD parser",
   "keywords": [
@@ -15,12 +15,12 @@
   ],
   "main": "index.js",
   "typings": "index",
-  "repository": "git@github.com:rubensworks/jsonld-parser.js.git",
+  "repository": "git@github.com:rubensworks/streaming-jsonld-parser.js.git",
   "author": "Ruben Taelman <rubensworks@gmail.com>",
   "bugs": {
-    "url": "https://github.com/rubensworks/jsonld-parser.js/issues"
+    "url": "https://github.com/rubensworks/streaming-jsonld-parser.js/issues"
   },
-  "homepage": "https://github.com/rubensworks/jsonld-parser.js#readme",
+  "homepage": "https://github.com/rubensworks/streaming-jsonld-parser.js#readme",
   "license": "MIT",
   "files": [
     "lib/**/*.d.ts",
