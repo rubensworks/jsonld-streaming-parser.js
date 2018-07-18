@@ -60,7 +60,7 @@ export class JsonLdParser extends Transform {
       if (key === '@id') {
         // Error if an @id for this node already existed.
         if (this.idStack[depth]) {
-          throw new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`);
+          this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
         }
 
         // Check if value is really a string/URL

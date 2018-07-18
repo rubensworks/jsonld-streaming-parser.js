@@ -401,5 +401,24 @@ describe('JsonLdParser', () => {
       });
 
     });
+
+    describe('should not parse', () => {
+      it('an invalid document', async () => {
+        const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid1"
+  "b": "http://ex.org/myid2"
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
+      it('a document with duplicate @id definitions', async () => {
+        const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid1",
+  "@id": "http://ex.org/myid2"
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
+    });
   });
 });
