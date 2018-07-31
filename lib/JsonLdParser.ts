@@ -1,6 +1,7 @@
 import * as RDF from "rdf-js";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
+import {JsonLdContext} from "jsonld-context-parser";
 import {Transform, TransformCallback} from "stream";
 
 /**
@@ -32,6 +33,7 @@ export class JsonLdParser extends Transform {
   private readonly rdfRest: RDF.NamedNode;
   private readonly rdfNil: RDF.NamedNode;
 
+  private rootContext: JsonLdContext;
   private lastDepth: number;
 
   constructor(options?: IJsonLdParserOptions) {
@@ -46,6 +48,8 @@ export class JsonLdParser extends Transform {
     this.unidentifiedGraphsBuffer = [];
 
     this.lastDepth = 0;
+    this.rootContext = options.context;
+
     this.rdfFirst = this.dataFactory.namedNode(JsonLdParser.RDF + 'first');
     this.rdfRest = this.dataFactory.namedNode(JsonLdParser.RDF + 'rest');
     this.rdfNil = this.dataFactory.namedNode(JsonLdParser.RDF + 'nil');
@@ -275,4 +279,5 @@ export class JsonLdParser extends Transform {
  */
 export interface IJsonLdParserOptions {
   dataFactory?: RDF.DataFactory;
+  context?: JsonLdContext;
 }

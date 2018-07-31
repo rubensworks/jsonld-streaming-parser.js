@@ -6,7 +6,7 @@ import * as dataFactory from "rdf-data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "rdf-data-model";
 
 describe('JsonLdParser', () => {
-  describe('when instantiated without a data factory', () => {
+  describe('when instantiated without a data factory and context', () => {
     let parser;
 
     beforeEach(() => {
@@ -15,6 +15,26 @@ describe('JsonLdParser', () => {
 
     it('should have a default data factory', async () => {
       expect(parser.dataFactory).toBeTruthy();
+    });
+
+    it('should have no root context', async () => {
+      expect(parser.rootContext).toBeFalsy();
+    });
+  });
+
+  describe('when instantiated without a data factory and with a context', () => {
+    let parser;
+
+    beforeEach(() => {
+      parser = new JsonLdParser({ context: 'abc' });
+    });
+
+    it('should have a default data factory', async () => {
+      expect(parser.dataFactory).toBeTruthy();
+    });
+
+    it('should have no root context', async () => {
+      expect(parser.rootContext).toEqual('abc');
     });
   });
 
