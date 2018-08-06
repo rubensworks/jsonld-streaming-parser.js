@@ -1,9 +1,9 @@
 import {JsonLdParser} from "../index";
 const arrayifyStream = require('arrayify-stream');
 const streamifyString = require('streamify-string');
+import * as dataFactory from "@rdfjs/data-model";
+import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
 import "jest-rdf";
-import * as dataFactory from "rdf-data-model";
-import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "rdf-data-model";
 
 describe('JsonLdParser', () => {
   describe('when instantiated without a data factory and context', () => {

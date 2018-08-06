@@ -39,7 +39,7 @@ export class JsonLdParser extends Transform {
   constructor(options?: IJsonLdParserOptions) {
     super({ objectMode: true });
     options = options || {};
-    this.dataFactory = options.dataFactory || require('rdf-data-model');
+    this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
     this.jsonParser = new Parser();
     this.idStack = [];
     this.graphStack = [];

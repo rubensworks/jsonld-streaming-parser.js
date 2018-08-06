@@ -16,6 +16,10 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
+"@rdfjs/data-model@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@rdfjs/data-model/-/data-model-1.1.0.tgz#15d9c5b7b8166893696565aefb65bad95da3fd99"
+
 "@types/jest@^23.3.0":
   version "23.3.0"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.0.tgz#5dd70033b616a6228042244ebd992f6426808810"
@@ -24,13 +28,7 @@
   version "10.5.2"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.5.2.tgz#f19f05314d5421fe37e74153254201a7bf00a707"
 
-"@types/rdf-data-model@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@types/rdf-data-model/-/rdf-data-model-1.0.1.tgz#fbf643cac7a08cacc502dbad063ea3eacddcd36f"
-  dependencies:
-    "@types/rdf-js" "*"
-
-"@types/rdf-js@*", "@types/rdf-js@^1.0.1":
+"@types/rdf-js@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@types/rdf-js/-/rdf-js-1.0.1.tgz#312e8478b608c3e2f66d3a2cae0c96c052c495a6"
   dependencies:
