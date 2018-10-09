@@ -78,7 +78,12 @@ export class JsonLdParser extends Transform {
   }
 
   public getContext(depth: number): IJsonLdContextNormalized {
-    return this.contextStack[depth] || {};
+    for (let i = depth; i > 0; i--) {
+      if (this.contextStack[i]) {
+        return this.contextStack[i];
+      }
+    }
+    return {};
   }
 
   /**
