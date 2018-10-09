@@ -60,7 +60,7 @@ export class JsonLdParser extends Transform {
 
     this.lastDepth = 0;
     if (options.context) {
-      this.rootContext = this.contextParser.parse(options.context, options.baseIri);
+      this.rootContext = this.contextParser.parse(options.context, options.baseIRI);
     }
     this.lastOnValueJob = Promise.resolve();
 
@@ -336,7 +336,7 @@ export class JsonLdParser extends Transform {
 export interface IJsonLdParserOptions {
   dataFactory?: RDF.DataFactory;
   context?: JsonLdContext;
-  baseIri?: string;
+  baseIRI?: string;
   /**
    * If @context definitions should be allowed as non-first object entries.
    * When enabled, streaming results may not come as soon as possible,
