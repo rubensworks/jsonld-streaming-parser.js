@@ -1,7 +1,7 @@
 import * as RDF from "rdf-js";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
-import {JsonLdContext} from "jsonld-context-parser";
+import {ContextParser, IJsonLdContextNormalized, JsonLdContext} from "jsonld-context-parser";
 import {Transform, TransformCallback} from "stream";
 
 /**
@@ -16,6 +16,9 @@ export class JsonLdParser extends Transform {
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 
   private readonly dataFactory: RDF.DataFactory;
+  private readonly contextParser: ContextParser;
+  private readonly allowOutOfOrderContext: boolean;
+
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
   private readonly idStack: RDF.Term[];
@@ -23,32 +26,43 @@ export class JsonLdParser extends Transform {
   private readonly graphStack: boolean[];
   // Stack of RDF list pointers (for @list)
   private readonly listPointerStack: RDF.Term[];
+  // Stack of active contexts
+  private readonly contextStack: Promise<IJsonLdContextNormalized>[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term }[][];
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
+
   private readonly rdfFirst: RDF.NamedNode;
   private readonly rdfRest: RDF.NamedNode;
   private readonly rdfNil: RDF.NamedNode;
 
-  private rootContext: JsonLdContext;
+  private rootContext: Promise<IJsonLdContextNormalized>;
   private lastDepth: number;
+  private lastOnValueJob: Promise<void>;
 
   constructor(options?: IJsonLdParserOptions) {
     super({ objectMode: true });
     options = options || {};
     this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
+    this.contextParser = new ContextParser();
+    this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
+
     this.jsonParser = new Parser();
     this.idStack = [];
     this.graphStack = [];
     this.listPointerStack = [];
+    this.contextStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
 
     this.lastDepth = 0;
-    this.rootContext = options.context;
+    if (options.context) {
+      this.rootContext = this.contextParser.parse(options.context, options.baseIri);
+    }
+    this.lastOnValueJob = Promise.resolve();
 
     this.rdfFirst = this.dataFactory.namedNode(JsonLdParser.RDF + 'first');
     this.rdfRest = this.dataFactory.namedNode(JsonLdParser.RDF + 'rest');
@@ -59,7 +73,23 @@ export class JsonLdParser extends Transform {
 
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
-    callback();
+    this.lastOnValueJob
+      .then(() => callback(), (error) => callback(error));
+  }
+
+  public getContext(depth: number): IJsonLdContextNormalized {
+    return this.contextStack[depth] || {};
+  }
+
+  /**
+   * Convert a given JSON key to an RDF predicate term.
+   * @param key A JSON key.
+   * @param {number} depth The depth the value is at.
+   * @return {RDF.Term} An RDF term.
+   */
+  public async predicateToTerm(key: string, depth: number): Promise<RDF.Term> {
+    const context = await this.getContext(depth);
+    return this.dataFactory.namedNode(ContextParser.expandTerm(key, context));
   }
 
   /**
@@ -102,14 +132,6 @@ export class JsonLdParser extends Transform {
     }
   }
 
-  /**
-   * @return {boolean} If the parser at its current depth is in the context of a @graph key.
-   */
-  protected isParserAtGraph() {
-    const entry = this.jsonParser.stack[this.jsonParser.stack.length - 1];
-    return entry && entry.key === '@graph';
-  }
-
   protected getUnidentifiedValueBufferSafe(depth: number) {
     let buffer = this.unidentifiedValuesBuffer[depth];
     if (!buffer) {
@@ -132,115 +154,150 @@ export class JsonLdParser extends Transform {
     // Listen to json parser events
     this.jsonParser.onValue = (value: any) => {
       const depth = this.jsonParser.stack.length;
-
       const key = this.jsonParser.key;
-      if (key === '@id') {
-        // Error if an @id for this node already existed.
-        if (this.idStack[depth]) {
-          this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
-        }
+      const parentKey = depth > 0 && this.jsonParser.stack[depth - 1].key;
+      const parentParentKey = depth > 1 && this.jsonParser.stack[depth - 2].key;
+      const atGraph = parentKey === '@graph';
+      const atContext = this.isParsingContext(depth);
 
-        // Check if value is really a string/URL
-        // TODO?
-
-        // Save our @id on the stack
-        const id: RDF.NamedNode = this.dataFactory.namedNode(value);
-        this.idStack[depth] = id;
-
-        // Emit all buffered values that did not have an @id up until now
-        this.flushBuffer(id, depth);
-      } else if (key === '@graph') {
-        // The current identifier identifies a graph for the deeper level.
-        this.graphStack[depth + 1] = true;
-      } else if (typeof key === 'number') {
-        // Our value is part of an array
-        const object = this.valueToTerm(value, depth);
-
-        const list: boolean = this.jsonParser.stack[depth - 1].key === '@list';
-        if (list) {
-          // Buffer our value as an RDF list using the parent-parent key as predicate
-
-          const targetDepth = depth - 2;
-          let listPointer: RDF.Term = this.listPointerStack[depth];
-
-          // Link our list to the subject
-          if (!listPointer) {
-            const predicate = this.dataFactory.namedNode(this.jsonParser.stack[targetDepth].key);
-            listPointer = this.dataFactory.blankNode();
-            this.getUnidentifiedValueBufferSafe(targetDepth).push({ predicate, object: listPointer });
-          } else {
-            // rdf:rest links are always emitted before the next element,
-            // as the blank node identifier is only created at that point.
-            // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
-            const newListPointer: RDF.Term = this.dataFactory.blankNode();
-            this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
-            listPointer = newListPointer;
-          }
-
-          this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
-
-          this.listPointerStack[depth] = listPointer;
-        } else {
-          // Buffer our value using the parent key as predicate
-          const predicate = this.dataFactory.namedNode(this.jsonParser.stack[depth - 1].key);
-          this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
-        }
-      } else if (key && !key.startsWith('@')) {
-        const predicate = this.dataFactory.namedNode(key);
-        const object = this.valueToTerm(value, depth);
-        if (object) {
-          if (this.idStack[depth]) {
-            // Emit directly if the @id was already defined
-            const subject = this.idStack[depth];
-
-            // Check if we're in a @graph context
-            if (this.isParserAtGraph()) {
-              const graph: RDF.Term = this.idStack[depth - 1];
-              if (graph) {
-                // Emit our quad if graph @id is known
-                this.push(this.dataFactory.quad(subject, predicate, object, graph));
-              } else {
-                // Buffer our triple if graph @id is not known yet.
-                this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
-              }
-            } else {
-              // Emit if no @graph was applicable
-              this.push(this.dataFactory.triple(subject, predicate, object));
-            }
-          } else {
-            // Buffer until our @id becomes known, or we go up the stack
-            this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
-          }
-        }
-      }
-
-      // When we go up the, emit all unidentified values using the known id or a blank node subject
-      if (depth < this.lastDepth) {
-        this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth);
-
-        // Check if we had any RDF lists that need to be terminated with an rdf:nil
-        if (this.listPointerStack[this.lastDepth]) {
-          this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
-          delete this.listPointerStack[this.lastDepth];
-        }
-
-        // Reset our stack
-        delete this.idStack[this.lastDepth];
-        delete this.graphStack[this.lastDepth + 1];
-      }
-
-      this.lastDepth = depth;
+      // Make sure that our value jobs are chained synchronously
+      this.lastOnValueJob = this.lastOnValueJob.then(
+        () => this.newOnValueJob(value, depth, key, parentKey, parentParentKey, atGraph, atContext));
     };
     this.jsonParser.onError = (error: Error) => {
       this.emit('error', error);
     };
   }
 
-  protected flushBuffer(subject: RDF.Term, depth: number) {
+  protected isParsingContext(depth: number) {
+    for (let i = depth; i > 0; i--) {
+      if (this.jsonParser.stack[depth - 1].key === '@context') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected async newOnValueJob(value: any, depth: number, key: any, parentKey: any, parentParentKey: any,
+                                atGraph: boolean, atContext: boolean): Promise<void> {
+    // Don't parse context contents
+    if (atContext) {
+      return;
+    }
+
+    if (key === '@context') {
+      // Find the parent context to inherit from
+      let parentContext: Promise<IJsonLdContextNormalized> = this.rootContext;
+      for (const context of this.contextStack) {
+        if (context) {
+          parentContext = context;
+        }
+      }
+
+      // Set the context for this scope
+      this.contextStack[depth] = this.contextParser.parse(value, null, await parentContext);
+    } else if (key === '@id') {
+      // Error if an @id for this node already existed.
+      if (this.idStack[depth]) {
+        this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
+      }
+
+      // Check if value is really a string/URL
+      // TODO?
+
+      // Save our @id on the stack
+      const id: RDF.NamedNode = this.dataFactory.namedNode(value);
+      this.idStack[depth] = id;
+
+      // Emit all buffered values that did not have an @id up until now
+      this.flushBuffer(id, depth, atGraph);
+    } else if (key === '@graph') {
+      // The current identifier identifies a graph for the deeper level.
+      this.graphStack[depth + 1] = true;
+    } else if (typeof key === 'number') {
+      // Our value is part of an array
+      const object = this.valueToTerm(value, depth);
+
+      const list: boolean = parentKey === '@list';
+      if (list) {
+        // Buffer our value as an RDF list using the parent-parent key as predicate
+        let listPointer: RDF.Term = this.listPointerStack[depth];
+
+        // Link our list to the subject
+        if (!listPointer) {
+          const predicate = this.dataFactory.namedNode(parentParentKey);
+          listPointer = this.dataFactory.blankNode();
+          this.getUnidentifiedValueBufferSafe(depth - 2).push({ predicate, object: listPointer });
+        } else {
+          // rdf:rest links are always emitted before the next element,
+          // as the blank node identifier is only created at that point.
+          // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
+          const newListPointer: RDF.Term = this.dataFactory.blankNode();
+          this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
+          listPointer = newListPointer;
+        }
+
+        this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
+
+        this.listPointerStack[depth] = listPointer;
+      } else {
+        // Buffer our value using the parent key as predicate
+        const predicate = this.dataFactory.namedNode(parentKey);
+        this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
+      }
+    } else if (key && !key.startsWith('@')) {
+      const predicate = await this.predicateToTerm(key, depth);
+      const object = this.valueToTerm(value, depth);
+      if (object) {
+        if (this.idStack[depth]) {
+          // Emit directly if the @id was already defined
+          const subject = this.idStack[depth];
+
+          // Check if we're in a @graph context
+          if (atGraph) {
+            const graph: RDF.Term = this.idStack[depth - 1];
+            if (graph) {
+              // Emit our quad if graph @id is known
+              this.push(this.dataFactory.quad(subject, predicate, object, graph));
+            } else {
+              // Buffer our triple if graph @id is not known yet.
+              this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
+            }
+          } else {
+            // Emit if no @graph was applicable
+            this.push(this.dataFactory.triple(subject, predicate, object));
+          }
+        } else {
+          // Buffer until our @id becomes known, or we go up the stack
+          this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
+        }
+      }
+    }
+
+    // When we go up the, emit all unidentified values using the known id or a blank node subject
+    if (depth < this.lastDepth) {
+      this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth, atGraph);
+
+      // Check if we had any RDF lists that need to be terminated with an rdf:nil
+      if (this.listPointerStack[this.lastDepth]) {
+        this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
+        delete this.listPointerStack[this.lastDepth];
+      }
+
+      // Reset our stack
+      delete this.idStack[this.lastDepth];
+      delete this.graphStack[this.lastDepth + 1];
+      delete this.contextStack[this.lastDepth];
+    }
+
+    this.lastDepth = depth;
+  }
+
+  protected flushBuffer(subject: RDF.Term, depth: number, atGraph: boolean) {
     // Flush values at this level
     const valueBuffer: { predicate: RDF.Term, object: RDF.Term }[] = this.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
-      const graph: RDF.Term = this.graphStack[depth] || this.isParserAtGraph()
+      const graph: RDF.Term = this.graphStack[depth] || atGraph
         ? this.idStack[depth - 1] : this.dataFactory.defaultGraph();
       if (graph) {
         // Flush values to stream if the graph @id is known
@@ -271,7 +328,6 @@ export class JsonLdParser extends Transform {
       delete this.unidentifiedGraphsBuffer[depth];
     }
   }
-
 }
 
 /**
@@ -280,4 +336,12 @@ export class JsonLdParser extends Transform {
 export interface IJsonLdParserOptions {
   dataFactory?: RDF.DataFactory;
   context?: JsonLdContext;
+  baseIri?: string;
+  /**
+   * If @context definitions should be allowed as non-first object entries.
+   * When enabled, streaming results may not come as soon as possible,
+   * and will be buffered until the end when no context is defined at all.
+   * Defaults to false.
+   */
+  allowOutOfOrderContext?: boolean;
 }

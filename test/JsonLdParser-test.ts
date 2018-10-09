@@ -18,7 +18,7 @@ describe('JsonLdParser', () => {
     });
 
     it('should have no root context', async () => {
-      expect(parser.rootContext).toBeFalsy();
+      expect(await parser.rootContext).toBeFalsy();
     });
   });
 
@@ -26,7 +26,7 @@ describe('JsonLdParser', () => {
     let parser;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ context: 'abc' });
+      parser = new JsonLdParser({ context: { SomeTerm: 'http://example.org/' } });
     });
 
     it('should have a default data factory', async () => {
@@ -34,7 +34,7 @@ describe('JsonLdParser', () => {
     });
 
     it('should have no root context', async () => {
-      expect(parser.rootContext).toEqual('abc');
+      expect(await parser.rootContext).toEqual({ SomeTerm: 'http://example.org/' });
     });
   });
 
@@ -1057,6 +1057,151 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+      });
+
+      describe('a top-level context', () => {
+        it('without other triples', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([]);
+        });
+
+        it('with a single unrelated triple', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "http://ex.org/pred1": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+          ]);
+        });
+
+        it('with a single contextified triple', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "SomeTerm": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://example.org/SomeTerm'), literal('http://ex.org/obj1')),
+          ]);
+        });
+
+        describe('with an inner context', () => {
+          it('without other inner triples', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([]);
+          });
+
+          it('with a single unrelated triple', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "http://ex.org/pred1": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    },
+    "@id": "http://ex.org/obj1"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+              triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a single contextified triple', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "SomeTerm": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    },
+    "@id": "http://ex.org/obj1"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a two contextified triples', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "SomeTerm": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    },
+    "@id": "http://ex.org/obj1",
+    "SomeInnerTerm": "abc"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+              triple(namedNode('http://ex.org/obj1'), namedNode('http://example.org/SomeInnerTerm'),
+                literal('abc')),
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a two contextified triples with overlapping contexts', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "SomeTerm": {
+    "@context": {
+      "SomeTerm": "http://example.org/SomeInnerTerm"
+    },
+    "@id": "http://ex.org/obj1",
+    "SomeTerm": "abc"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+              triple(namedNode('http://ex.org/obj1'), namedNode('http://example.org/SomeInnerTerm'),
+                literal('abc')),
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('should emit an error when a context parsing error occurs', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  },
+  "SomeTerm": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    },
+    "@id": "http://ex.org/obj1"
+  }
+}`);
+            parser.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+        });
       });
 
     });
