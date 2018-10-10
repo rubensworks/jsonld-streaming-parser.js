@@ -57,74 +57,85 @@ describe('JsonLdParser', () => {
 
       describe('for an object', () => {
         it('without an @id should return a blank node', async () => {
-          return expect(parser.valueToTerm({}, 0)).toEqualRdfTerm(blankNode());
+          return expect(await parser.valueToTerm({}, 0)).toEqualRdfTerm(blankNode());
         });
 
         it('without an @id should put a blank node on the id stack', async () => {
-          parser.valueToTerm({}, 0);
+          await parser.valueToTerm({}, 0);
           return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
         });
 
         it('with an @id should return a named node', async () => {
-          return expect(parser.valueToTerm({ '@id': 'http://ex.org' }, 0))
+          return expect(await parser.valueToTerm({ '@id': 'http://ex.org' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org'));
         });
 
+        it('with a relative @id without @base in context should return a named node', async () => {
+          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+            .toEqualRdfTerm(namedNode('abc'));
+        });
+
+        it('with a relative @id with @base in context should return a named node', async () => {
+          parser.contextStack = [{ '@base': 'http://ex.org/' }];
+          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
+        });
+
         it('with an @value should return a literal', async () => {
-          return expect(parser.valueToTerm({ '@value': 'abc' }, 0))
+          return expect(await parser.valueToTerm({ '@value': 'abc' }, 0))
             .toEqualRdfTerm(literal('abc'));
         });
 
         it('with an @value and @language should return a language-tagged string literal', async () => {
-          return expect(parser.valueToTerm({ '@value': 'abc', '@language': 'en-us' }, 0))
+          return expect(await parser.valueToTerm({ '@value': 'abc', '@language': 'en-us' }, 0))
             .toEqualRdfTerm(literal('abc', 'en-us'));
         });
 
         it('with an @value and @type should return a typed literal', async () => {
-          return expect(parser.valueToTerm({ '@value': 'abc', '@type': 'http://type.com' }, 0))
+          return expect(await parser.valueToTerm({ '@value': 'abc', '@type': 'http://type.com' }, 0))
             .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));
         });
       });
 
       describe('for a string', () => {
         it('should return a literal node', async () => {
-          return expect(parser.valueToTerm('abc', 0)).toEqualRdfTerm(literal('abc'));
+          return expect(await parser.valueToTerm('abc', 0)).toEqualRdfTerm(literal('abc'));
         });
       });
 
       describe('for a boolean', () => {
         it('for true should return a boolean literal node', async () => {
-          return expect(parser.valueToTerm(true, 0))
+          return expect(await parser.valueToTerm(true, 0))
             .toEqualRdfTerm(literal('true', namedNode(JsonLdParser.XSD_BOOLEAN)));
         });
 
         it('for false should return a boolean literal node', async () => {
-          return expect(parser.valueToTerm(false, 0))
+          return expect(await parser.valueToTerm(false, 0))
             .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
         });
       });
 
       describe('for a number', () => {
         it('for 2 should return an integer literal node', async () => {
-          return expect(parser.valueToTerm(2, 0))
+          return expect(await parser.valueToTerm(2, 0))
             .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
         });
 
         it('for 2.2 should return a double literal node', async () => {
-          return expect(parser.valueToTerm(2.2, 0))
+          return expect(await parser.valueToTerm(2.2, 0))
             .toEqualRdfTerm(literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE)));
         });
       });
 
       describe('for an array', () => {
         it('should return null', async () => {
-          return expect(parser.valueToTerm([1, 2], 0)).toBeFalsy();
+          return expect(await parser.valueToTerm([1, 2], 0)).toBeFalsy();
         });
       });
 
       describe('for a list', () => {
         it('should return null', async () => {
-          return expect(parser.valueToTerm({ '@list': [1, 2] }, 0)).toBeFalsy();
+          return expect(await parser.valueToTerm({ '@list': [1, 2] }, 0)).toBeFalsy();
         });
       });
     });
@@ -1201,6 +1212,32 @@ describe('JsonLdParser', () => {
             parser.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
+        });
+
+        it('with @base without triples', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([]);
+        });
+
+        it('with @base and @vocab with triples', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab":  "http://ex.org/"
+  },
+  "@id": "",
+  "pred": { "@id": "bla" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://example.org/'), namedNode('http://ex.org/pred'),
+              namedNode('http://example.org/bla')),
+          ]);
         });
       });
 
