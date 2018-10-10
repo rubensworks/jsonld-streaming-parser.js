@@ -230,7 +230,7 @@ export class JsonLdParser extends Transform {
 
         // Link our list to the subject
         if (!listPointer) {
-          const predicate = this.dataFactory.namedNode(parentParentKey);
+          const predicate = await this.predicateToTerm(parentParentKey, depth - 2);
           listPointer = this.dataFactory.blankNode();
           this.getUnidentifiedValueBufferSafe(depth - 2).push({ predicate, object: listPointer });
         } else {
@@ -245,9 +245,9 @@ export class JsonLdParser extends Transform {
         this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
 
         this.listPointerStack[depth] = listPointer;
-      } else {
+      } else if (parentKey) {
         // Buffer our value using the parent key as predicate
-        const predicate = this.dataFactory.namedNode(parentKey);
+        const predicate = await this.predicateToTerm(parentKey, depth - 1);
         this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
       }
     } else if (key && !key.startsWith('@')) {
