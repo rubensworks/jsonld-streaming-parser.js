@@ -46,114 +46,122 @@ describe('JsonLdParser', () => {
     });
 
     describe('#valueToTerm', () => {
+
+      let context;
+
+      beforeEach(() => {
+        context = {};
+      });
+
       describe('for an unknown type', () => {
         it('should emit an error', async () => {
-          return new Promise((resolve, reject) => {
+          return new Promise(async (resolve, reject) => {
             parser.on('error', () => resolve());
-            parser.valueToTerm(Symbol(), 0);
+            parser.valueToTerm(context, Symbol(), 0);
           });
         });
       });
 
       describe('for an object', () => {
         it('without an @id should return a blank node', async () => {
-          return expect(await parser.valueToTerm({}, 0)).toEqualRdfTerm(blankNode());
+          return expect(await parser.valueToTerm(context, {}, 0))
+            .toEqualRdfTerm(blankNode());
         });
 
         it('without an @id should put a blank node on the id stack', async () => {
-          await parser.valueToTerm({}, 0);
+          await parser.valueToTerm(context, {}, 0);
           return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
         });
 
         it('with an @id should return a named node', async () => {
-          return expect(await parser.valueToTerm({ '@id': 'http://ex.org' }, 0))
+          return expect(await parser.valueToTerm(context, { '@id': 'http://ex.org' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org'));
         });
 
         it('with a relative @id without @base in context should return a named node', async () => {
-          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+          return expect(await parser.valueToTerm(context, { '@id': 'abc' }, 0))
             .toEqualRdfTerm(namedNode('abc'));
         });
 
         it('with a relative @id with @base in context should return a named node', async () => {
-          parser.contextStack = [{ '@base': 'http://ex.org/' }];
-          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+          context = { '@base': 'http://ex.org/' };
+          return expect(await parser.valueToTerm(context, { '@id': 'abc' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/abc'));
         });
 
         it('with an empty @id with @base in context should return a named node', async () => {
-          parser.contextStack = [{ '@base': 'http://ex.org/' }];
-          return expect(await parser.valueToTerm({ '@id': '' }, 0))
+          context = { '@base': 'http://ex.org/' };
+          return expect(await parser.valueToTerm(context, { '@id': '' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });
 
         it('with a relative @id with baseIRI should return a named node', async () => {
           parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
-          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+          return expect(await parser.valueToTerm(await parser.getContext(0), { '@id': 'abc' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/abc'));
         });
 
         it('with an empty @id with baseIRI should return a named node', async () => {
           parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
-          return expect(await parser.valueToTerm({ '@id': '' }, 0))
+          return expect(await parser.valueToTerm(await parser.getContext(0), { '@id': '' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });
 
         it('with an @value should return a literal', async () => {
-          return expect(await parser.valueToTerm({ '@value': 'abc' }, 0))
+          return expect(await parser.valueToTerm(context, { '@value': 'abc' }, 0))
             .toEqualRdfTerm(literal('abc'));
         });
 
         it('with an @value and @language should return a language-tagged string literal', async () => {
-          return expect(await parser.valueToTerm({ '@value': 'abc', '@language': 'en-us' }, 0))
+          return expect(await parser.valueToTerm(context, { '@value': 'abc', '@language': 'en-us' }, 0))
             .toEqualRdfTerm(literal('abc', 'en-us'));
         });
 
         it('with an @value and @type should return a typed literal', async () => {
-          return expect(await parser.valueToTerm({ '@value': 'abc', '@type': 'http://type.com' }, 0))
+          return expect(await parser.valueToTerm(context, { '@value': 'abc', '@type': 'http://type.com' }, 0))
             .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));
         });
       });
 
       describe('for a string', () => {
         it('should return a literal node', async () => {
-          return expect(await parser.valueToTerm('abc', 0)).toEqualRdfTerm(literal('abc'));
+          return expect(await parser.valueToTerm(context, 'abc', 0)).toEqualRdfTerm(literal('abc'));
         });
       });
 
       describe('for a boolean', () => {
         it('for true should return a boolean literal node', async () => {
-          return expect(await parser.valueToTerm(true, 0))
+          return expect(await parser.valueToTerm(context, true, 0))
             .toEqualRdfTerm(literal('true', namedNode(JsonLdParser.XSD_BOOLEAN)));
         });
 
         it('for false should return a boolean literal node', async () => {
-          return expect(await parser.valueToTerm(false, 0))
+          return expect(await parser.valueToTerm(context, false, 0))
             .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
         });
       });
 
       describe('for a number', () => {
         it('for 2 should return an integer literal node', async () => {
-          return expect(await parser.valueToTerm(2, 0))
+          return expect(await parser.valueToTerm(context, 2, 0))
             .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
         });
 
         it('for 2.2 should return a double literal node', async () => {
-          return expect(await parser.valueToTerm(2.2, 0))
+          return expect(await parser.valueToTerm(context, 2.2, 0))
             .toEqualRdfTerm(literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE)));
         });
       });
 
       describe('for an array', () => {
         it('should return null', async () => {
-          return expect(await parser.valueToTerm([1, 2], 0)).toBeFalsy();
+          return expect(await parser.valueToTerm(context, [1, 2], 0)).toBeFalsy();
         });
       });
 
       describe('for a list', () => {
         it('should return null', async () => {
-          return expect(await parser.valueToTerm({ '@list': [1, 2] }, 0)).toBeFalsy();
+          return expect(await parser.valueToTerm(context, { '@list': [1, 2] }, 0)).toBeFalsy();
         });
       });
     });

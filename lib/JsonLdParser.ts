@@ -84,39 +84,38 @@ export class JsonLdParser extends Transform {
   /**
    * Convert a given JSON key to an RDF predicate term,
    * based on @vocab.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
-   * @param {number} depth The depth the value is at.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public async predicateToTerm(key: string, depth: number): Promise<RDF.Term> {
-    const context = await this.getContext(depth);
+  public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
     return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, true));
   }
 
   /**
    * Convert a given JSON key to an RDF resource term,
    * based on @base.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
-   * @param {number} depth The depth the value is at.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public async resourceToTerm(key: string, depth: number): Promise<RDF.NamedNode> {
-    const context = await this.getContext(depth);
+  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode {
     return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, false));
   }
 
   /**
    * Convert a given JSON value to an RDF term.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param value A JSON value.
    * @param {number} depth The depth the value is at.
    * @return {RDF.Term} An RDF term.
    */
-  public async valueToTerm(value: any, depth: number): Promise<RDF.Term> {
+  public valueToTerm(context: IJsonLdContextNormalized, value: any, depth: number): RDF.Term {
     const type: string = typeof value;
     switch (type) {
     case 'object':
       if ("@id" in value) {
-        return await this.resourceToTerm(value["@id"], depth);
+        return this.resourceToTerm(context, value["@id"]);
       } else if (value["@value"]) {
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
@@ -145,7 +144,7 @@ export class JsonLdParser extends Transform {
     }
   }
 
-  protected getContext(depth: number): Promise<IJsonLdContextNormalized> {
+  public getContext(depth: number): Promise<IJsonLdContextNormalized> {
     for (let i = depth; i >= 0; i--) {
       if (this.contextStack[i]) {
         return this.contextStack[i];
@@ -222,7 +221,7 @@ export class JsonLdParser extends Transform {
       // TODO?
 
       // Save our @id on the stack
-      const id: RDF.NamedNode = await this.resourceToTerm(value, depth);
+      const id: RDF.NamedNode = await this.resourceToTerm(await this.getContext(depth), value);
       this.idStack[depth] = id;
 
       // Emit all buffered values that did not have an @id up until now
@@ -232,7 +231,7 @@ export class JsonLdParser extends Transform {
       this.graphStack[depth + 1] = true;
     } else if (typeof key === 'number') {
       // Our value is part of an array
-      const object = await this.valueToTerm(value, depth);
+      const object = this.valueToTerm(await this.getContext(depth), value, depth);
 
       const list: boolean = parentKey === '@list';
       if (list) {
@@ -241,7 +240,7 @@ export class JsonLdParser extends Transform {
 
         // Link our list to the subject
         if (!listPointer) {
-          const predicate = await this.predicateToTerm(parentParentKey, depth - 2);
+          const predicate = await this.predicateToTerm(await this.getContext(depth - 2), parentParentKey);
           listPointer = this.dataFactory.blankNode();
           this.getUnidentifiedValueBufferSafe(depth - 2).push({ predicate, object: listPointer });
         } else {
@@ -258,12 +257,13 @@ export class JsonLdParser extends Transform {
         this.listPointerStack[depth] = listPointer;
       } else if (parentKey) {
         // Buffer our value using the parent key as predicate
-        const predicate = await this.predicateToTerm(parentKey, depth - 1);
+        const predicate = await this.predicateToTerm(await this.getContext(depth - 1), parentKey);
         this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
       }
     } else if (key && !key.startsWith('@')) {
-      const predicate = await this.predicateToTerm(key, depth);
-      const object = await this.valueToTerm(value, depth);
+      const context = await this.getContext(depth);
+      const predicate = await this.predicateToTerm(context, key);
+      const object = this.valueToTerm(context, value, depth);
       if (object) {
         if (this.idStack[depth]) {
           // Emit directly if the @id was already defined
