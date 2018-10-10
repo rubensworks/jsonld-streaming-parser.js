@@ -6,6 +6,32 @@ import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/
 import "jest-rdf";
 
 describe('JsonLdParser', () => {
+
+  describe('#getContextValue', () => {
+    it('should return the fallback when the context does not contain the given key', async () => {
+      expect(JsonLdParser.getContextValue({}, 'a', 'x', 'FB')).toEqual('FB');
+    });
+
+    it('should return the fallback when the context contains the given key, without contextKey', async () => {
+      expect(JsonLdParser.getContextValue({ x: {} }, 'a', 'x', 'FB')).toEqual('FB');
+    });
+
+    it('should return the value when the context contains the given key, with contextKey', async () => {
+      expect(JsonLdParser.getContextValue({ x: { a: 'b' } }, 'a', 'x', 'FB')).toEqual('b');
+    });
+  });
+
+  describe('#getContextValueContainer', () => {
+    it('should return @set as default', async () => {
+      expect(JsonLdParser.getContextValueContainer({}, 'abc')).toEqual('@set');
+    });
+
+    it('should return @list when defined as such', async () => {
+      expect(JsonLdParser.getContextValueContainer({ abc: { '@container': '@list' } }, 'abc'))
+        .toEqual('@list');
+    });
+  });
+
   describe('when instantiated without a data factory and context', () => {
     let parser;
 

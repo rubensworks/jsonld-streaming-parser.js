@@ -75,6 +75,37 @@ export class JsonLdParser extends Transform {
     this.attachJsonParserListeners();
   }
 
+  /**
+   * Helper function to get the value of a context entry,
+   * or fallback to a certain value.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} contextKey A pre-defined JSON-LD key in context entries.
+   * @param {string} key A context entry key.
+   * @param {string} fallback A fallback value for when the given contextKey
+   *                          could not be found in the value with the given key.
+   * @return {string} The value of the given contextKey in the entry behind key in the given context,
+   *                  or the given fallback value.
+   */
+  public static getContextValue(context: IJsonLdContextNormalized, contextKey: string,
+                                key: string, fallback: string): string {
+    const entry = context[key];
+    if (!entry) {
+      return fallback;
+    }
+    const type = entry[contextKey];
+    return type || fallback;
+  }
+
+  /**
+   * Get the container type of the given key in the context.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The container type.
+   */
+  public static getContextValueContainer(context: IJsonLdContextNormalized, key: string): string {
+    return JsonLdParser.getContextValue(context, '@container', key, '@set');
+  }
+
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
