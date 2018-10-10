@@ -111,7 +111,7 @@ export class JsonLdParser extends Transform {
     const type: string = typeof value;
     switch (type) {
     case 'object':
-      if (value["@id"]) {
+      if ("@id" in value) {
         return await this.resourceToTerm(value["@id"], depth);
       } else if (value["@value"]) {
         if (value["@language"]) {

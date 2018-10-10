@@ -81,6 +81,12 @@ describe('JsonLdParser', () => {
             .toEqualRdfTerm(namedNode('http://ex.org/abc'));
         });
 
+        it('with an empty @id with @base in context should return a named node', async () => {
+          parser.contextStack = [{ '@base': 'http://ex.org/' }];
+          return expect(await parser.valueToTerm({ '@id': '' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/'));
+        });
+
         it('with an @value should return a literal', async () => {
           return expect(await parser.valueToTerm({ '@value': 'abc' }, 0))
             .toEqualRdfTerm(literal('abc'));
