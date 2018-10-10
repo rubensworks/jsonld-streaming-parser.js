@@ -17,8 +17,8 @@ describe('JsonLdParser', () => {
       expect(parser.dataFactory).toBeTruthy();
     });
 
-    it('should have no root context', async () => {
-      expect(await parser.rootContext).toBeFalsy();
+    it('should have a default root context', async () => {
+      expect(await parser.rootContext).toEqual({ '@base': undefined });
     });
   });
 
@@ -83,6 +83,18 @@ describe('JsonLdParser', () => {
 
         it('with an empty @id with @base in context should return a named node', async () => {
           parser.contextStack = [{ '@base': 'http://ex.org/' }];
+          return expect(await parser.valueToTerm({ '@id': '' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/'));
+        });
+
+        it('with a relative @id with baseIRI should return a named node', async () => {
+          parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
+          return expect(await parser.valueToTerm({ '@id': 'abc' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
+        });
+
+        it('with an empty @id with baseIRI should return a named node', async () => {
+          parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
           return expect(await parser.valueToTerm({ '@id': '' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });

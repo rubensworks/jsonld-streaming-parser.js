@@ -18,6 +18,7 @@ export class JsonLdParser extends Transform {
   private readonly dataFactory: RDF.DataFactory;
   private readonly contextParser: ContextParser;
   private readonly allowOutOfOrderContext: boolean;
+  private readonly baseIRI: string;
 
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
@@ -49,6 +50,7 @@ export class JsonLdParser extends Transform {
     this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
     this.contextParser = new ContextParser();
     this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
+    this.baseIRI = options.baseIRI;
 
     this.jsonParser = new Parser();
     this.idStack = [];
@@ -61,6 +63,8 @@ export class JsonLdParser extends Transform {
     this.lastDepth = 0;
     if (options.context) {
       this.rootContext = this.contextParser.parse(options.context, options.baseIRI);
+    } else {
+      this.rootContext = Promise.resolve({ '@base': this.baseIRI });
     }
     this.lastOnValueJob = Promise.resolve();
 
@@ -141,13 +145,13 @@ export class JsonLdParser extends Transform {
     }
   }
 
-  protected getContext(depth: number): IJsonLdContextNormalized {
+  protected getContext(depth: number): Promise<IJsonLdContextNormalized> {
     for (let i = depth; i >= 0; i--) {
       if (this.contextStack[i]) {
         return this.contextStack[i];
       }
     }
-    return {};
+    return this.rootContext;
   }
 
   protected getUnidentifiedValueBufferSafe(depth: number) {
@@ -205,15 +209,9 @@ export class JsonLdParser extends Transform {
 
     if (key === '@context') {
       // Find the parent context to inherit from
-      let parentContext: Promise<IJsonLdContextNormalized> = this.rootContext;
-      for (const context of this.contextStack) {
-        if (context) {
-          parentContext = context;
-        }
-      }
-
+      const parentContext: Promise<IJsonLdContextNormalized> = this.getContext(depth - 1);
       // Set the context for this scope
-      this.contextStack[depth] = this.contextParser.parse(value, null, await parentContext);
+      this.contextStack[depth] = this.contextParser.parse(value, this.baseIRI, await parentContext);
     } else if (key === '@id') {
       // Error if an @id for this node already existed.
       if (this.idStack[depth]) {
