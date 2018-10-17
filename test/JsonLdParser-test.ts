@@ -451,7 +451,7 @@ describe('JsonLdParser', () => {
         });
       });
 
-      describe('a triple with a list array', () => {
+      describe('a triple with an anonymous list array', () => {
         it('without @id', async () => {
           const stream = streamifyString(`
 {
@@ -507,6 +507,94 @@ describe('JsonLdParser', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] },
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
+        });
+      });
+
+      describe('a triple with a context-based list array', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "p": [ "a", "b", "c" ]
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": [ "a", "b", "c" ]
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), blankNode()),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode(), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+
+          expect(output[0].subject).toEqual(output[1].subject);
+          expect(output[2].subject).toEqual(output[3].subject);
+          expect(output[4].subject).toEqual(output[5].subject);
+
+          expect(output[6].object).toEqual(output[0].subject);
+          expect(output[1].object).toEqual(output[2].subject);
+          expect(output[3].object).toEqual(output[4].subject);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "p": [ "a", "b", "c" ],
   "@id": "http://ex.org/myid",
 }`);
           const output = await arrayifyStream(stream.pipe(parser));

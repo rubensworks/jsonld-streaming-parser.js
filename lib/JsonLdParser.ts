@@ -230,6 +230,29 @@ export class JsonLdParser extends Transform {
     return false;
   }
 
+  protected async handleListElement(value: RDF.Term, depth: number, listRootDepth: number, listRootKey: string) {
+    // Buffer our value as an RDF list using the parent-parent key as predicate
+    let listPointer: RDF.Term = this.listPointerStack[depth];
+
+    // Link our list to the subject
+    if (!listPointer) {
+      const predicate = await this.predicateToTerm(await this.getContext(listRootDepth), listRootKey);
+      listPointer = this.dataFactory.blankNode();
+      this.getUnidentifiedValueBufferSafe(listRootDepth).push({ predicate, object: listPointer });
+    } else {
+      // rdf:rest links are always emitted before the next element,
+      // as the blank node identifier is only created at that point.
+      // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
+      const newListPointer: RDF.Term = this.dataFactory.blankNode();
+      this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
+      listPointer = newListPointer;
+    }
+
+    this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, value));
+
+    this.listPointerStack[depth] = listPointer;
+  }
+
   protected async newOnValueJob(value: any, depth: number, key: any, parentKey: any, parentParentKey: any,
                                 atGraph: boolean, atContext: boolean): Promise<void> {
     // Don't parse context contents
@@ -264,32 +287,20 @@ export class JsonLdParser extends Transform {
       // Our value is part of an array
       const object = this.valueToTerm(await this.getContext(depth), value, depth);
 
-      const list: boolean = parentKey === '@list';
-      if (list) {
-        // Buffer our value as an RDF list using the parent-parent key as predicate
-        let listPointer: RDF.Term = this.listPointerStack[depth];
-
-        // Link our list to the subject
-        if (!listPointer) {
-          const predicate = await this.predicateToTerm(await this.getContext(depth - 2), parentParentKey);
-          listPointer = this.dataFactory.blankNode();
-          this.getUnidentifiedValueBufferSafe(depth - 2).push({ predicate, object: listPointer });
-        } else {
-          // rdf:rest links are always emitted before the next element,
-          // as the blank node identifier is only created at that point.
-          // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
-          const newListPointer: RDF.Term = this.dataFactory.blankNode();
-          this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
-          listPointer = newListPointer;
-        }
-
-        this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
-
-        this.listPointerStack[depth] = listPointer;
+      // Check if we have an anonymous list
+      if (parentKey === '@list') {
+        await this.handleListElement(object, depth, depth - 2, parentParentKey);
       } else if (parentKey) {
         // Buffer our value using the parent key as predicate
-        const predicate = await this.predicateToTerm(await this.getContext(depth - 1), parentKey);
-        this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object });
+        const parentContext = await this.getContext(depth - 1);
+        const predicate = await this.predicateToTerm(parentContext, parentKey);
+
+        // Check if the predicate is marked as an @list in the context
+        if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
+          await this.handleListElement(object, depth, depth - 1, parentKey);
+        } else {
+          this.getUnidentifiedValueBufferSafe(depth - 1).push({predicate, object});
+        }
       }
     } else if (key && !key.startsWith('@')) {
       const context = await this.getContext(depth);
