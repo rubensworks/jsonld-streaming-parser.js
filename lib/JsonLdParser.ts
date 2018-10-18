@@ -157,7 +157,7 @@ export class JsonLdParser extends Transform {
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
-          return this.dataFactory.literal(value["@value"], this.dataFactory.namedNode(value["@type"]));
+          return this.dataFactory.literal(value["@value"], this.resourceToTerm(context, value["@type"]));
         }
         return this.dataFactory.literal(value["@value"]);
       } else if (Array.isArray(value)) {
@@ -293,13 +293,14 @@ export class JsonLdParser extends Transform {
       // The current identifier identifies an rdf:type predicate.
       // But we only emit it once the node closes,
       // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
+      const context = await this.getContext(depth);
       const predicate = this.rdfType;
       if (Array.isArray(value)) {
         for (const element of value) {
-          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.dataFactory.namedNode(element) });
+          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.resourceToTerm(context, element) });
         }
       } else {
-        this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.dataFactory.namedNode(value) });
+        this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.resourceToTerm(context, value) });
       }
     } else if (typeof key === 'number') {
       // Our value is part of an array

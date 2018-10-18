@@ -264,6 +264,24 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and a prefixed, typed literal', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/"
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@type": "ex:mytype"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
         it('with @id and a typed literal with out-of-order @value', async () => {
           const stream = streamifyString(`
 {
@@ -1467,6 +1485,22 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://example.org/node",
   "@type": "http://example.org/abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('on a named node with a prefixed @type', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://example.org/"
+  },
+  "@id": "http://example.org/node",
+  "@type": "ex:abc"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             triple(namedNode('http://example.org/node'),
