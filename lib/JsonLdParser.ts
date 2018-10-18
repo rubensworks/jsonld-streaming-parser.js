@@ -29,6 +29,8 @@ export class JsonLdParser extends Transform {
   private readonly listPointerStack: RDF.Term[];
   // Stack of active contexts
   private readonly contextStack: Promise<IJsonLdContextNormalized>[];
+  // Stack of flags indicating if the node is a literal
+  private readonly literalStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term }[][];
@@ -39,6 +41,7 @@ export class JsonLdParser extends Transform {
   private readonly rdfFirst: RDF.NamedNode;
   private readonly rdfRest: RDF.NamedNode;
   private readonly rdfNil: RDF.NamedNode;
+  private readonly rdfType: RDF.NamedNode;
 
   private rootContext: Promise<IJsonLdContextNormalized>;
   private lastDepth: number;
@@ -57,6 +60,7 @@ export class JsonLdParser extends Transform {
     this.graphStack = [];
     this.listPointerStack = [];
     this.contextStack = [];
+    this.literalStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
 
@@ -71,6 +75,7 @@ export class JsonLdParser extends Transform {
     this.rdfFirst = this.dataFactory.namedNode(JsonLdParser.RDF + 'first');
     this.rdfRest = this.dataFactory.namedNode(JsonLdParser.RDF + 'rest');
     this.rdfNil = this.dataFactory.namedNode(JsonLdParser.RDF + 'nil');
+    this.rdfType = this.dataFactory.namedNode(JsonLdParser.RDF + 'type');
 
     this.attachJsonParserListeners();
   }
@@ -148,6 +153,7 @@ export class JsonLdParser extends Transform {
       if ("@id" in value) {
         return this.resourceToTerm(context, value["@id"]);
       } else if (value["@value"]) {
+        this.literalStack[depth + 1] = true;
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
@@ -283,6 +289,18 @@ export class JsonLdParser extends Transform {
     } else if (key === '@graph') {
       // The current identifier identifies a graph for the deeper level.
       this.graphStack[depth + 1] = true;
+    } else if (key === '@type') {
+      // The current identifier identifies an rdf:type predicate.
+      // But we only emit it once the node closes,
+      // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
+      const predicate = this.rdfType;
+      if (Array.isArray(value)) {
+        for (const element of value) {
+          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.dataFactory.namedNode(element) });
+        }
+      } else {
+        this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.dataFactory.namedNode(value) });
+      }
     } else if (typeof key === 'number') {
       // Our value is part of an array
       const object = this.valueToTerm(await this.getContext(depth), value, depth);
@@ -290,7 +308,7 @@ export class JsonLdParser extends Transform {
       // Check if we have an anonymous list
       if (parentKey === '@list') {
         await this.handleListElement(object, depth, depth - 2, parentParentKey);
-      } else if (parentKey) {
+      } else if (parentKey && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
         const parentContext = await this.getContext(depth - 1);
         const predicate = await this.predicateToTerm(parentContext, parentKey);
@@ -357,19 +375,25 @@ export class JsonLdParser extends Transform {
     if (valueBuffer) {
       const graph: RDF.Term = this.graphStack[depth] || atGraph
         ? this.idStack[depth - 1] : this.dataFactory.defaultGraph();
+      const isLiteral: boolean = this.literalStack[depth];
       if (graph) {
         // Flush values to stream if the graph @id is known
         for (const bufferedValue of valueBuffer) {
-          this.push(this.dataFactory.quad(subject, bufferedValue.predicate, bufferedValue.object, graph));
+          if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
+            this.push(this.dataFactory.quad(subject, bufferedValue.predicate, bufferedValue.object, graph));
+          }
         }
       } else {
         // Place the values in the graphs buffer if the graph @id is not yet known
         const subGraphBuffer = this.getUnidentifiedGraphBufferSafe(depth - 1);
         for (const bufferedValue of valueBuffer) {
-          subGraphBuffer.push({ subject, predicate: bufferedValue.predicate, object: bufferedValue.object });
+          if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
+            subGraphBuffer.push({subject, predicate: bufferedValue.predicate, object: bufferedValue.object});
+          }
         }
       }
       delete this.unidentifiedValuesBuffer[depth];
+      delete this.literalStack[depth];
     }
 
     // Flush graphs at this level

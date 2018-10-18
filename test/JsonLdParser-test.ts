@@ -264,6 +264,75 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and a typed literal with out-of-order @value', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@type": "http://ex.org/mytype",
+    "@value": "my value"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in a @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@type": "http://ex.org/mytype",
+      "@value": "my value"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  },
+  "@id": "http://ex.org/mygraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in an anonymous @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(blankNode(), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
         it('with out-of-order @id', async () => {
           const stream = streamifyString(`
 {
@@ -1381,6 +1450,101 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('@type', () => {
+        it('on an anonymous node', async () => {
+          const stream = streamifyString(`
+{
+  "@type": "http://example.org/abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('on a named node', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "@type": "http://example.org/abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('on a named node in a @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://example.org/myGraph",
+  "@graph": {
+    "@id": "http://example.org/node",
+    "@type": "http://example.org/abc"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc'),
+              namedNode('http://example.org/myGraph')),
+          ]);
+        });
+
+        it('on a named node in an out-of-order @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://example.org/node",
+    "@type": "http://example.org/abc"
+  },
+  "@id": "http://example.org/myGraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            quad(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc'),
+              namedNode('http://example.org/myGraph')),
+          ]);
+        });
+
+        it('on an out-of-order named node', async () => {
+          const stream = streamifyString(`
+{
+  "@type": "http://example.org/abc",
+  "@id": "http://example.org/node"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('on a named node with multiple @types', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "@type": [
+    "http://example.org/abc1",
+    "http://example.org/abc2",
+    "http://example.org/abc3"
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc1')),
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc2')),
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc3')),
+          ]);
+        });
+      });
     });
 
     describe('should not parse', () => {
