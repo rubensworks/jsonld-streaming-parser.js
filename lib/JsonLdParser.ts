@@ -111,6 +111,16 @@ export class JsonLdParser extends Transform {
     return JsonLdParser.getContextValue(context, '@container', key, '@set');
   }
 
+  /**
+   * Get the node type of the given key in the context.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The node type.
+   */
+  public static getContextValueType(context: IJsonLdContextNormalized, key: string): string {
+    return JsonLdParser.getContextValue(context, '@type', key, null);
+  }
+
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
@@ -142,11 +152,12 @@ export class JsonLdParser extends Transform {
   /**
    * Convert a given JSON value to an RDF term.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key The current JSON key.
    * @param value A JSON value.
    * @param {number} depth The depth the value is at.
    * @return {RDF.Term} An RDF term.
    */
-  public valueToTerm(context: IJsonLdContextNormalized, value: any, depth: number): RDF.Term {
+  public valueToTerm(context: IJsonLdContextNormalized, key: string, value: any, depth: number): RDF.Term {
     const type: string = typeof value;
     switch (type) {
     case 'object':
@@ -170,15 +181,37 @@ export class JsonLdParser extends Transform {
         return this.idStack[depth + 1] = this.dataFactory.blankNode();
       }
     case 'string':
-      return this.dataFactory.literal(value);
+      return this.stringValueToTerm(context, key, value, null);
     case 'boolean':
-      return this.dataFactory.literal(Boolean(value).toString(), this.dataFactory.namedNode(JsonLdParser.XSD_BOOLEAN));
+      return this.stringValueToTerm(context, key, Boolean(value).toString(),
+        this.dataFactory.namedNode(JsonLdParser.XSD_BOOLEAN));
     case 'number':
-      return this.dataFactory.literal(Number(value).toString(), this.dataFactory.namedNode(
+      return this.stringValueToTerm(context, key, Number(value).toString(), this.dataFactory.namedNode(
         value % 1 === 0 ? JsonLdParser.XSD_INTEGER : JsonLdParser.XSD_DOUBLE));
     default:
       this.emit('error', new Error(`Could not determine the RDF type of a ${type}`));
     }
+  }
+
+  /**
+   * Convert a given JSON string value to an RDF term.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key The current JSON key.
+   * @param {string} value A JSON value.
+   * @param {NamedNode} defaultDatatype The default datatype for the given value.
+   * @return {RDF.Term} An RDF term.
+   */
+  public stringValueToTerm(context: IJsonLdContextNormalized, key: string, value: string,
+                           defaultDatatype: RDF.NamedNode): RDF.Term {
+    const contextType = JsonLdParser.getContextValueType(context, key);
+    if (contextType) {
+      if (contextType === '@id') {
+        return this.resourceToTerm(context, value);
+      } else {
+        return this.dataFactory.literal(value, this.dataFactory.namedNode(contextType));
+      }
+    }
+    return this.dataFactory.literal(value, defaultDatatype);
   }
 
   public getContext(depth: number): Promise<IJsonLdContextNormalized> {
@@ -229,7 +262,7 @@ export class JsonLdParser extends Transform {
 
   protected isParsingContext(depth: number) {
     for (let i = depth; i > 0; i--) {
-      if (this.jsonParser.stack[depth - 1].key === '@context') {
+      if (this.jsonParser.stack[i - 1].key === '@context') {
         return true;
       }
     }
@@ -304,7 +337,7 @@ export class JsonLdParser extends Transform {
       }
     } else if (typeof key === 'number') {
       // Our value is part of an array
-      const object = this.valueToTerm(await this.getContext(depth), value, depth);
+      const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
 
       // Check if we have an anonymous list
       if (parentKey === '@list') {
@@ -324,7 +357,7 @@ export class JsonLdParser extends Transform {
     } else if (key && !key.startsWith('@')) {
       const context = await this.getContext(depth);
       const predicate = await this.predicateToTerm(context, key);
-      const object = this.valueToTerm(context, value, depth);
+      const object = this.valueToTerm(context, key, value, depth);
       if (object) {
         if (this.idStack[depth]) {
           // Emit directly if the @id was already defined
