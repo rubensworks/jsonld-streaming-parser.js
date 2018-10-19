@@ -1,7 +1,7 @@
 import * as RDF from "rdf-js";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
-import {ContextParser, IJsonLdContextNormalized, JsonLdContext} from "jsonld-context-parser";
+import {ContextParser, IDocumentLoader, IJsonLdContextNormalized, JsonLdContext} from "jsonld-context-parser";
 import {Transform, TransformCallback} from "stream";
 
 /**
@@ -51,7 +51,7 @@ export class JsonLdParser extends Transform {
     super({ objectMode: true });
     options = options || {};
     this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
-    this.contextParser = new ContextParser();
+    this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
     this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
 
@@ -427,4 +427,8 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   allowOutOfOrderContext?: boolean;
+  /**
+   * Loader for remote contexts.
+   */
+  documentLoader?: IDocumentLoader;
 }
