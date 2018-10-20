@@ -19,6 +19,7 @@ export class JsonLdParser extends Transform {
   private readonly contextParser: ContextParser;
   private readonly allowOutOfOrderContext: boolean;
   private readonly baseIRI: string;
+  private readonly produceGeneralizedRdf: boolean;
 
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
@@ -54,6 +55,7 @@ export class JsonLdParser extends Transform {
     this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
     this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
+    this.produceGeneralizedRdf = options.produceGeneralizedRdf;
 
     this.jsonParser = new Parser();
     this.idStack = [];
@@ -135,7 +137,15 @@ export class JsonLdParser extends Transform {
    * @return {RDF.NamedNode} An RDF named node.
    */
   public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
-    return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, true));
+    const expanded: string = ContextParser.expandTerm(key, context, true);
+    if (expanded.startsWith('_:')) {
+      if (this.produceGeneralizedRdf) {
+        return this.dataFactory.blankNode(expanded.substr(2));
+      } else {
+        return null;
+      }
+    }
+    return this.dataFactory.namedNode(expanded);
   }
 
   /**
@@ -270,14 +280,19 @@ export class JsonLdParser extends Transform {
   }
 
   protected async handleListElement(value: RDF.Term, depth: number, listRootDepth: number, listRootKey: string) {
-    // Buffer our value as an RDF list using the parent-parent key as predicate
+    const predicate = await this.predicateToTerm(await this.getContext(listRootDepth), listRootKey);
+    if (!predicate) {
+      // Don't emit anything if the predicate can not be determined (usually when the predicate is a bnode)
+      return;
+    }
+
+    // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer: RDF.Term = this.listPointerStack[depth];
 
     // Link our list to the subject
     if (!listPointer) {
-      const predicate = await this.predicateToTerm(await this.getContext(listRootDepth), listRootKey);
       listPointer = this.dataFactory.blankNode();
-      this.getUnidentifiedValueBufferSafe(listRootDepth).push({ predicate, object: listPointer });
+      this.getUnidentifiedValueBufferSafe(listRootDepth).push({predicate, object: listPointer});
     } else {
       // rdf:rest links are always emitted before the next element,
       // as the blank node identifier is only created at that point.
@@ -345,41 +360,45 @@ export class JsonLdParser extends Transform {
       } else if (parentKey && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
         const parentContext = await this.getContext(depth - 1);
-        const predicate = await this.predicateToTerm(parentContext, parentKey);
 
         // Check if the predicate is marked as an @list in the context
         if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
           await this.handleListElement(object, depth, depth - 1, parentKey);
         } else {
-          this.getUnidentifiedValueBufferSafe(depth - 1).push({predicate, object});
+          const predicate = await this.predicateToTerm(parentContext, parentKey);
+          if (predicate) {
+            this.getUnidentifiedValueBufferSafe(depth - 1).push({predicate, object});
+          }
         }
       }
     } else if (key && !key.startsWith('@')) {
       const context = await this.getContext(depth);
       const predicate = await this.predicateToTerm(context, key);
-      const object = this.valueToTerm(context, key, value, depth);
-      if (object) {
-        if (this.idStack[depth]) {
-          // Emit directly if the @id was already defined
-          const subject = this.idStack[depth];
+      if (predicate) {
+        const object = this.valueToTerm(context, key, value, depth);
+        if (object) {
+          if (this.idStack[depth]) {
+            // Emit directly if the @id was already defined
+            const subject = this.idStack[depth];
 
-          // Check if we're in a @graph context
-          if (atGraph) {
-            const graph: RDF.Term = this.idStack[depth - 1];
-            if (graph) {
-              // Emit our quad if graph @id is known
-              this.push(this.dataFactory.quad(subject, predicate, object, graph));
+            // Check if we're in a @graph context
+            if (atGraph) {
+              const graph: RDF.Term = this.idStack[depth - 1];
+              if (graph) {
+                // Emit our quad if graph @id is known
+                this.push(this.dataFactory.quad(subject, predicate, object, graph));
+              } else {
+                // Buffer our triple if graph @id is not known yet.
+                this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
+              }
             } else {
-              // Buffer our triple if graph @id is not known yet.
-              this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
+              // Emit if no @graph was applicable
+              this.push(this.dataFactory.triple(subject, predicate, object));
             }
           } else {
-            // Emit if no @graph was applicable
-            this.push(this.dataFactory.triple(subject, predicate, object));
+            // Buffer until our @id becomes known, or we go up the stack
+            this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
           }
-        } else {
-          // Buffer until our @id becomes known, or we go up the stack
-          this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
         }
       }
     }
@@ -464,4 +483,10 @@ export interface IJsonLdParserOptions {
    * Loader for remote contexts.
    */
   documentLoader?: IDocumentLoader;
+  /**
+   * If blank node predicates should be allowed,
+   * they will be ignored otherwise.
+   * Defaults to false.
+   */
+  produceGeneralizedRdf?: boolean;
 }

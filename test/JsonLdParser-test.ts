@@ -1642,6 +1642,136 @@ describe('JsonLdParser', () => {
           ]);
         });
       });
+
+      describe('with blank node predicates', () => {
+        describe('when produceGeneralizedRdf is false', () => {
+          it('should ignore blank node predicates', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@type": "@id" }
+  },
+  "p": "http://example.org/abc"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([]);
+          });
+
+          it('should ignore blank node predicates with multiple values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@type": "@id" }
+  },
+  "p": [
+    "http://example.org/abc1",
+    "http://example.org/abc2"
+  ]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([]);
+          });
+
+          it('should ignore blank node predicates in a list', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": [ "a", "b", "c" ],
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          });
+
+          it('should ignore blank node predicates in an anonymous list', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ "a", "b", "c" ] },
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          });
+        });
+
+        describe('when produceGeneralizedRdf is true', () => {
+
+          beforeEach(() => {
+            parser = new JsonLdParser({ produceGeneralizedRdf: true });
+          });
+
+          it('should not ignore blank node predicates', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@type": "@id" }
+  },
+  "p": "http://example.org/abc"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+              triple(blankNode(), blankNode('p'), namedNode('http://example.org/abc')),
+            ]);
+          });
+
+          it('should not ignore blank node predicates with multiple values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@type": "@id" }
+  },
+  "p": [
+    "http://example.org/abc1",
+    "http://example.org/abc2"
+  ]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('a'), blankNode('p'), namedNode('http://example.org/abc1')),
+              triple(blankNode('a'), blankNode('p'), namedNode('http://example.org/abc2')),
+            ]);
+          });
+
+          it('should not ignore blank node predicates in a list', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p", "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": [ "a", "b", "c" ],
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
+            ]);
+          });
+
+          it('should not ignore blank node predicates in an anonymous list', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "_:p" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ "a", "b", "c" ] },
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
+            ]);
+          });
+        });
+      });
     });
 
     describe('should not parse', () => {
