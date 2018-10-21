@@ -183,9 +183,17 @@ export class JsonLdParser extends Transform {
         return this.dataFactory.literal(value["@value"]);
       } else if (Array.isArray(value)) {
         // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
+        // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
+        if (JsonLdParser.getContextValueContainer(context, key) === '@list' && value.length === 0) {
+          return this.rdfNil;
+        }
         return null;
       } else if (value["@list"]) {
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
+        // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
+        if (value["@list"].length === 0) {
+          return this.rdfNil;
+        }
         return null;
       } else {
         return this.idStack[depth + 1] = this.dataFactory.blankNode();

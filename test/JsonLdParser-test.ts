@@ -236,6 +236,17 @@ describe('JsonLdParser', () => {
         it('should return null', async () => {
           return expect(await parser.valueToTerm(context, 'key', { '@list': [1, 2] }, 0)).toBeFalsy();
         });
+
+        it('should return rdf:nil for an empty anonymous list', async () => {
+          return expect(await parser.valueToTerm(context, 'key', { '@list': [] }, 0))
+            .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
+        });
+
+        it('should return rdf:nil for an empty list', async () => {
+          context = { key: { '@container': '@list' } };
+          return expect(await parser.valueToTerm(context, 'key', [], 0))
+            .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
+        });
       });
     });
 
@@ -611,6 +622,17 @@ describe('JsonLdParser', () => {
           expect(output[3].object).toEqual(output[4].subject);
         });
 
+        it('without @id and an empty list', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@list": [ ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
         it('with @id', async () => {
           const stream = streamifyString(`
 {
@@ -691,6 +713,20 @@ describe('JsonLdParser', () => {
           expect(output[6].object).toEqual(output[0].subject);
           expect(output[1].object).toEqual(output[2].subject);
           expect(output[3].object).toEqual(output[4].subject);
+        });
+
+        it('without @id and an empty list', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "p": []
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toEqualRdfQuadArray([
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
         });
 
         it('with @id', async () => {
