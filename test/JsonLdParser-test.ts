@@ -43,6 +43,30 @@ describe('JsonLdParser', () => {
     });
   });
 
+  describe('#isContextValueReverse', () => {
+    it('should return false as default', async () => {
+      expect(JsonLdParser.isContextValueReverse({}, 'abc')).toBe(false);
+    });
+
+    it('should return true when defined as such', async () => {
+      expect(JsonLdParser.isContextValueReverse({ abc: { '@reverse': 'bla' } }, 'abc')).toBe(true);
+    });
+  });
+
+  describe('#isPropertyReverse', () => {
+    it('should return false as default', async () => {
+      expect(JsonLdParser.isPropertyReverse({}, 'abc', 'def')).toBe(false);
+    });
+
+    it('should return true when the parent key is @reverse', async () => {
+      expect(JsonLdParser.isPropertyReverse({}, 'abc', '@reverse')).toBe(true);
+    });
+
+    it('should return true when the key has @reverse in the context', async () => {
+      expect(JsonLdParser.isPropertyReverse({ abc: { '@reverse': 'bla' } }, 'abc', 'def')).toBe(true);
+    });
+  });
+
   describe('when instantiated without a data factory and context', () => {
     let parser;
 
@@ -248,6 +272,12 @@ describe('JsonLdParser', () => {
             .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
         });
       });
+
+      describe('for a reverse properties', () => {
+        it('should return null', async () => {
+          return expect(await parser.valueToTerm(context, 'key', { '@reverse': {} }, 0)).toBeFalsy();
+        });
+      });
     });
 
     describe('should parse', () => {
@@ -417,6 +447,260 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+          ]);
+        });
+      });
+
+      describe('a single anonymously reversed triple', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@reverse": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@reverse": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('without @id and with empty @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('without @id and with @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/g",
+  "@graph": {
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+              namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('without @id and with out-of-order @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  },
+  "@id": "http://ex.org/g"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+              namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('with @id and with empty @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with @id and with @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/g",
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('with @id and with out-of-order @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "@reverse": {
+      "http://ex.org/pred1": "http://ex.org/obj1"
+    }
+  },
+  "@id": "http://ex.org/g"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
+          ]);
+        });
+      });
+
+      describe('a single context-based reversed triple', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "p": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+   "p": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('without @id and with empty @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@graph": {
+    "p": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+          ]);
+        });
+
+        it('without @id and with @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/g",
+  "@graph": {
+    "p": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+              namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('without @id and with out-of-order @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@graph": {
+    "p": "http://ex.org/obj1"
+  },
+  "@id": "http://ex.org/g"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+              namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('with @id and with empty @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "p": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with @id and with @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/g",
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "p": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
+          ]);
+        });
+
+        it('with @id and with out-of-order @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "p": "http://ex.org/obj1"
+  },
+  "@id": "http://ex.org/g"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
       });

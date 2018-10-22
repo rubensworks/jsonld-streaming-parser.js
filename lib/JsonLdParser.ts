@@ -34,7 +34,7 @@ export class JsonLdParser extends Transform {
   private readonly literalStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
-  private readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term }[][];
+  private readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[][];
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
@@ -123,6 +123,27 @@ export class JsonLdParser extends Transform {
     return JsonLdParser.getContextValue(context, '@type', key, null);
   }
 
+  /**
+   * Check if the given key in the context is a reversed property.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {boolean} If the context value has a @reverse key.
+   */
+  public static isContextValueReverse(context: IJsonLdContextNormalized, key: string): boolean {
+    return !!JsonLdParser.getContextValue(context, '@reverse', key, null);
+  }
+
+  /**
+   * Check if the given key refers to a reversed property.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key The property key.
+   * @param {string} parentKey The parent key.
+   * @return {boolean} If the property must be reversed.
+   */
+  public static isPropertyReverse(context: IJsonLdContextNormalized, key: string, parentKey: string): boolean {
+    return parentKey === '@reverse' || JsonLdParser.isContextValueReverse(context, key);
+  }
+
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
@@ -194,6 +215,10 @@ export class JsonLdParser extends Transform {
         if (value["@list"].length === 0) {
           return this.rdfNil;
         }
+        return null;
+      } else if (value["@reverse"]) {
+        // We handle reverse properties at value level so we can emit earlier,
+        // so this is handled already when we get here.
         return null;
       } else {
         return this.idStack[depth + 1] = this.dataFactory.blankNode();
@@ -300,7 +325,7 @@ export class JsonLdParser extends Transform {
     // Link our list to the subject
     if (!listPointer) {
       listPointer = this.dataFactory.blankNode();
-      this.getUnidentifiedValueBufferSafe(listRootDepth).push({predicate, object: listPointer});
+      this.getUnidentifiedValueBufferSafe(listRootDepth).push({ predicate, object: listPointer, reverse: false });
     } else {
       // rdf:rest links are always emitted before the next element,
       // as the blank node identifier is only created at that point.
@@ -351,23 +376,26 @@ export class JsonLdParser extends Transform {
       // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
       const context = await this.getContext(depth);
       const predicate = this.rdfType;
+      const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
       if (Array.isArray(value)) {
         for (const element of value) {
-          this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.resourceToTerm(context, element) });
+          this.getUnidentifiedValueBufferSafe(depth).push(
+            { predicate, object: this.resourceToTerm(context, element), reverse });
         }
       } else {
-        this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object: this.resourceToTerm(context, value) });
+        this.getUnidentifiedValueBufferSafe(depth).push(
+          { predicate, object: this.resourceToTerm(context, value), reverse });
       }
     } else if (typeof key === 'number') {
       // Our value is part of an array
       const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
+      const parentContext = await this.getContext(depth - 1);
 
       // Check if we have an anonymous list
       if (parentKey === '@list') {
         await this.handleListElement(object, depth, depth - 2, parentParentKey);
       } else if (parentKey && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
-        const parentContext = await this.getContext(depth - 1);
 
         // Check if the predicate is marked as an @list in the context
         if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
@@ -375,7 +403,8 @@ export class JsonLdParser extends Transform {
         } else {
           const predicate = await this.predicateToTerm(parentContext, parentKey);
           if (predicate) {
-            this.getUnidentifiedValueBufferSafe(depth - 1).push({predicate, object});
+            const reverse = JsonLdParser.isPropertyReverse(parentContext, parentKey, parentKey);
+            this.getUnidentifiedValueBufferSafe(depth - 1).push({ predicate, object, reverse });
           }
         }
       }
@@ -385,6 +414,13 @@ export class JsonLdParser extends Transform {
       if (predicate) {
         const object = this.valueToTerm(context, key, value, depth);
         if (object) {
+          const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
+          if (parentKey === '@reverse') {
+            // If we have an anonymous reversed property, inherit the properties from the parent node
+            depth--;
+            atGraph = parentParentKey === '@graph';
+          }
+
           if (this.idStack[depth]) {
             // Emit directly if the @id was already defined
             const subject = this.idStack[depth];
@@ -394,18 +430,31 @@ export class JsonLdParser extends Transform {
               const graph: RDF.Term = this.idStack[depth - 1];
               if (graph) {
                 // Emit our quad if graph @id is known
-                this.push(this.dataFactory.quad(subject, predicate, object, graph));
+                if (reverse) {
+                  this.push(this.dataFactory.quad(object, predicate, subject, graph));
+                } else {
+                  this.push(this.dataFactory.quad(subject, predicate, object, graph));
+                }
               } else {
                 // Buffer our triple if graph @id is not known yet.
-                this.getUnidentifiedGraphBufferSafe(depth - 1).push({subject, predicate, object});
+                if (reverse) {
+                  this.getUnidentifiedGraphBufferSafe(depth - 1).push(
+                    { subject: object, predicate, object: subject });
+                } else {
+                  this.getUnidentifiedGraphBufferSafe(depth - 1).push({ subject, predicate, object });
+                }
               }
             } else {
               // Emit if no @graph was applicable
-              this.push(this.dataFactory.triple(subject, predicate, object));
+              if (reverse) {
+                this.push(this.dataFactory.triple(object, predicate, subject));
+              } else {
+                this.push(this.dataFactory.triple(subject, predicate, object));
+              }
             }
           } else {
             // Buffer until our @id becomes known, or we go up the stack
-            this.getUnidentifiedValueBufferSafe(depth).push({predicate, object});
+            this.getUnidentifiedValueBufferSafe(depth).push({ predicate, object, reverse });
           }
         }
       }
@@ -432,7 +481,8 @@ export class JsonLdParser extends Transform {
 
   protected flushBuffer(subject: RDF.Term, depth: number, atGraph: boolean) {
     // Flush values at this level
-    const valueBuffer: { predicate: RDF.Term, object: RDF.Term }[] = this.unidentifiedValuesBuffer[depth];
+    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
+      this.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
       const graph: RDF.Term = this.graphStack[depth] || atGraph
         ? this.idStack[depth - 1] : this.dataFactory.defaultGraph();
@@ -441,7 +491,11 @@ export class JsonLdParser extends Transform {
         // Flush values to stream if the graph @id is known
         for (const bufferedValue of valueBuffer) {
           if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
-            this.push(this.dataFactory.quad(subject, bufferedValue.predicate, bufferedValue.object, graph));
+            if (bufferedValue.reverse) {
+              this.push(this.dataFactory.quad(bufferedValue.object, bufferedValue.predicate, subject, graph));
+            } else {
+              this.push(this.dataFactory.quad(subject, bufferedValue.predicate, bufferedValue.object, graph));
+            }
           }
         }
       } else {
@@ -449,7 +503,15 @@ export class JsonLdParser extends Transform {
         const subGraphBuffer = this.getUnidentifiedGraphBufferSafe(depth - 1);
         for (const bufferedValue of valueBuffer) {
           if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
-            subGraphBuffer.push({subject, predicate: bufferedValue.predicate, object: bufferedValue.object});
+            if (bufferedValue.reverse) {
+              subGraphBuffer.push({
+                object: subject,
+                predicate: bufferedValue.predicate,
+                subject: bufferedValue.object,
+              });
+            } else {
+              subGraphBuffer.push({ subject, predicate: bufferedValue.predicate, object: bufferedValue.object });
+            }
           }
         }
       }
