@@ -9,6 +9,7 @@ import {Transform, TransformCallback} from "stream";
  */
 export class JsonLdParser extends Transform {
 
+  public static readonly DEFAULT_PROCESSING_MODE: string = '1.0';
   public static readonly XSD: string = 'http://www.w3.org/2001/XMLSchema#';
   public static readonly XSD_BOOLEAN: string = JsonLdParser.XSD + 'boolean';
   public static readonly XSD_INTEGER: string = JsonLdParser.XSD + 'integer';
@@ -20,6 +21,7 @@ export class JsonLdParser extends Transform {
   private readonly allowOutOfOrderContext: boolean;
   private readonly baseIRI: string;
   private readonly produceGeneralizedRdf: boolean;
+  private readonly processingMode: string;
 
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
@@ -56,6 +58,7 @@ export class JsonLdParser extends Transform {
     this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = options.produceGeneralizedRdf;
+    this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
 
     this.jsonParser = new Parser();
     this.idStack = [];
@@ -69,6 +72,7 @@ export class JsonLdParser extends Transform {
     this.lastDepth = 0;
     if (options.context) {
       this.rootContext = this.contextParser.parse(options.context, options.baseIRI);
+      this.rootContext.then((context) => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve({ '@base': this.baseIRI });
     }
@@ -266,6 +270,13 @@ export class JsonLdParser extends Transform {
     return this.rootContext;
   }
 
+  protected async validateContext(context: IJsonLdContextNormalized) {
+    const activeVersion: string = <string> <any> context['@version'];
+    if (activeVersion && parseFloat(activeVersion) > parseFloat(this.processingMode)) {
+      throw new Error(`Unsupported JSON-LD processing mode: ${activeVersion}`);
+    }
+  }
+
   protected getUnidentifiedValueBufferSafe(depth: number) {
     let buffer = this.unidentifiedValuesBuffer[depth];
     if (!buffer) {
@@ -352,6 +363,7 @@ export class JsonLdParser extends Transform {
       const parentContext: Promise<IJsonLdContextNormalized> = this.getContext(depth - 1);
       // Set the context for this scope
       this.contextStack[depth] = this.contextParser.parse(value, this.baseIRI, await parentContext);
+      await this.validateContext(await this.contextStack[depth]);
     } else if (key === '@id') {
       // Error if an @id for this node already existed.
       if (this.idStack[depth]) {
@@ -559,4 +571,9 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   produceGeneralizedRdf?: boolean;
+  /**
+   * The maximum JSON-LD version that should be processable by this parser.
+   * Defaults to JsonLdParser.DEFAULT_PROCESSING_MODE.
+   */
+  processingMode?: string;
 }
