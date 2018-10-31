@@ -1,5 +1,5 @@
 {
-  "name": "streaming-jsonld-parser",
+  "name": "jsonld-streaming-parser",
   "version": "1.0.0",
   "description": "A fast and lightweight streaming JSON-LD parser",
   "keywords": [
