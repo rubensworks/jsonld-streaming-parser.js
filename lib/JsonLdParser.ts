@@ -25,6 +25,8 @@ export class JsonLdParser extends Transform {
 
   private readonly jsonParser: any;
   // Stack of identified ids, tail can be null if unknown
+  private readonly processingStack: boolean[];
+  // Stack of identified ids, tail can be null if unknown
   private readonly idStack: RDF.Term[];
   // Stack of graph flags
   private readonly graphStack: boolean[];
@@ -40,6 +42,8 @@ export class JsonLdParser extends Transform {
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
   private readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
+  // Jobs that are not started yet because of a missing @context
+  private readonly contextAwaitingJobs: (() => Promise<void>)[];
 
   private readonly rdfFirst: RDF.NamedNode;
   private readonly rdfRest: RDF.NamedNode;
@@ -55,12 +59,13 @@ export class JsonLdParser extends Transform {
     options = options || {};
     this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
     this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
-    this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
+    this.allowOutOfOrderContext = options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = options.produceGeneralizedRdf;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
 
     this.jsonParser = new Parser();
+    this.processingStack = [];
     this.idStack = [];
     this.graphStack = [];
     this.listPointerStack = [];
@@ -68,6 +73,7 @@ export class JsonLdParser extends Transform {
     this.literalStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
+    this.contextAwaitingJobs = [];
 
     this.lastDepth = 0;
     if (options.context) {
@@ -305,9 +311,19 @@ export class JsonLdParser extends Transform {
       const atGraph = parentKey === '@graph';
       const atContext = this.isParsingContext(depth);
 
-      // Make sure that our value jobs are chained synchronously
-      this.lastOnValueJob = this.lastOnValueJob.then(
-        () => this.newOnValueJob(value, depth, key, parentKey, parentParentKey, atGraph, atContext));
+      const valueJobCb = () => this.newOnValueJob(value, depth, key, parentKey, parentParentKey, atGraph, atContext);
+      if (this.allowOutOfOrderContext && !this.contextStack[depth] && key !== '@context') {
+        this.contextAwaitingJobs.push(valueJobCb);
+      } else {
+        // Make sure that our value jobs are chained synchronously
+        this.lastOnValueJob = this.lastOnValueJob.then(valueJobCb);
+      }
+
+      // Execute all buffered jobs on deeper levels
+      if (this.allowOutOfOrderContext && depth === 0) {
+        this.lastOnValueJob = this.lastOnValueJob
+          .then(() => this.executeBufferedJobs());
+      }
     };
     this.jsonParser.onError = (error: Error) => {
       this.emit('error', error);
@@ -359,6 +375,12 @@ export class JsonLdParser extends Transform {
     }
 
     if (key === '@context') {
+      // Error if an out-of-order context was found when support is not enabled.
+      if (!this.allowOutOfOrderContext && this.processingStack[depth]) {
+        this.emit('error', new Error('Found an out-of-order context, while support is not enabled.' +
+          '(enable with `allowOutOfOrderContext`)'));
+      }
+
       // Find the parent context to inherit from
       const parentContext: Promise<IJsonLdContextNormalized> = this.getContext(depth - 1);
       // Set the context for this scope
@@ -472,6 +494,9 @@ export class JsonLdParser extends Transform {
       }
     }
 
+    // Flag that this depth is processed
+    this.processingStack[depth] = true;
+
     // When we go up the, emit all unidentified values using the known id or a blank node subject
     if (depth < this.lastDepth) {
       this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth, atGraph);
@@ -483,12 +508,24 @@ export class JsonLdParser extends Transform {
       }
 
       // Reset our stack
+      delete this.processingStack[this.lastDepth];
       delete this.idStack[this.lastDepth];
       delete this.graphStack[this.lastDepth + 1];
-      delete this.contextStack[this.lastDepth];
+      if (!this.allowOutOfOrderContext) {
+        // Only delete context if no out-of-order context is allowed,
+        // because otherwise, we handle them in a different order.
+        delete this.contextStack[this.lastDepth];
+      }
     }
 
     this.lastDepth = depth;
+  }
+
+  protected async executeBufferedJobs() {
+    for (const job of this.contextAwaitingJobs) {
+      await job();
+    }
+    this.contextAwaitingJobs.splice(0, this.contextAwaitingJobs.length);
   }
 
   protected flushBuffer(subject: RDF.Term, depth: number, atGraph: boolean) {

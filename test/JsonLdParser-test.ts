@@ -1813,6 +1813,253 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('allowing an out-of-order context', () => {
+
+        beforeEach(() => {
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext: true });
+        });
+
+        describe('an out-of-order context', () => {
+          it('with a single unrelated triple', async () => {
+            const stream = streamifyString(`
+{
+  "http://ex.org/pred1": "http://ex.org/obj1",
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a single contextified triple', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": "http://ex.org/obj1",
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with @base and @vocab with triples', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "",
+  "pred": { "@id": "bla" },
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab":  "http://ex.org/"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://example.org/'), namedNode('http://ex.org/pred'),
+                namedNode('http://example.org/bla')),
+            ]);
+          });
+        });
+
+        describe('with an out-of-order inner context', () => {
+
+          it('with a single unrelated triple', async () => {
+            const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "@id": "http://ex.org/obj1",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a single contextified triple', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a two contextified triples', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "SomeInnerTerm": "abc",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/obj1'), namedNode('http://example.org/SomeInnerTerm'),
+                literal('abc')),
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a two contextified triples with overlapping contexts', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "SomeTerm": "abc",
+    "@context": {
+      "SomeTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/obj1'), namedNode('http://example.org/SomeInnerTerm'),
+                literal('abc')),
+              triple(blankNode(), namedNode('http://example.org/SomeTerm'), namedNode('http://ex.org/obj1')),
+            ]);
+          });
+        });
+
+      });
+
+      describe('not allowing an out-of-order context', () => {
+
+        beforeEach(() => {
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext: false });
+        });
+
+        describe('an out-of-order context', () => {
+          it('with a single unrelated triple', async () => {
+            const stream = streamifyString(`
+{
+  "http://ex.org/pred1": "http://ex.org/obj1",
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+
+          it('with a single contextified triple', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": "http://ex.org/obj1",
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+
+          it('with @base and @vocab with triples', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "",
+  "pred": { "@id": "bla" },
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab":  "http://ex.org/"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+        });
+
+        describe('with an out-of-order inner context', () => {
+
+          it('with a single unrelated triple', async () => {
+            const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {
+    "@id": "http://ex.org/obj1",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+
+          it('with a single contextified triple', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+
+          it('with a two contextified triples', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "SomeInnerTerm": "abc",
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+
+          it('with a two contextified triples with overlapping contexts', async () => {
+            const stream = streamifyString(`
+{
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "SomeTerm": "abc",
+    "@context": {
+      "SomeTerm": "http://example.org/SomeInnerTerm"
+    }
+  },
+  "@context": {
+    "SomeTerm": "http://example.org/SomeTerm"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+          });
+        });
+
+      });
+
       describe('@type', () => {
         it('on an anonymous node', async () => {
           const stream = streamifyString(`
