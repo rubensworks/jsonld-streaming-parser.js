@@ -1811,6 +1811,81 @@ describe('JsonLdParser', () => {
               namedNode('http://example.org/bla')),
           ]);
         });
+
+        it('with @base and @vocab with triples, with @base=null', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": null,
+    "@vocab":  "http://ex.org/"
+  },
+  "@id": "abc",
+  "pred": { "@id": "bla" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('abc'), namedNode('http://ex.org/pred'),
+              namedNode('bla')),
+          ]);
+        });
+
+        it('with @base and @vocab with triples, with @vocab=null', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab": null
+  },
+  "@id": "",
+  "pred": { "@id": "bla" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/'), namedNode('pred'),
+              namedNode('http://example.org/bla')),
+          ]);
+        });
+
+        it('with @vocab with triples, with a term set to null', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignore": null
+  },
+  "@id": "abc",
+  "pred": { "@id": "bla" },
+  "ignore": { "@id": "bla" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('abc'), namedNode('http://example.org/pred'),
+              namedNode('bla')),
+            triple(namedNode('abc'), namedNode('ignore'),
+              namedNode('bla')),
+          ]);
+        });
+      });
+
+      it('with a null inner context', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignore": null
+  },
+  "@id": "abc",
+  "pred1": {
+    "@context": null,
+    "@id": "bla",
+    "pred2": {
+      "@id": "blabla"
+    }
+  }
+}`);
+        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          triple(namedNode('abc'), namedNode('http://example.org/pred1'),
+            namedNode('bla')),
+          triple(namedNode('bla'), namedNode('pred2'),
+            namedNode('blabla')),
+        ]);
       });
 
       describe('allowing an out-of-order context', () => {
