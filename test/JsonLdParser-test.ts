@@ -324,6 +324,39 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with blank node @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "_:myid",
+  "http://ex.org/pred1": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+          ]);
+        });
+
+        it('with @id and literal value that *looks* like a blank node', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": "_:obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('_:obj1')),
+          ]);
+        });
+
+        it('with @id and blank node value', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@id": "_:obj1" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('obj1')),
+          ]);
+        });
+
         it('with @id and a boolean literal', async () => {
           const stream = streamifyString(`
 {

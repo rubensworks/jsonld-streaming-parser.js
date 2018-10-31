@@ -180,13 +180,16 @@ export class JsonLdParser extends Transform {
   }
 
   /**
-   * Convert a given JSON key to an RDF resource term,
+   * Convert a given JSON key to an RDF resource term or blank node,
    * based on @base.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode {
+  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
+    if (key.startsWith('_:')) {
+      return this.dataFactory.blankNode(key.substr(2));
+    }
     return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, false));
   }
 
@@ -209,7 +212,8 @@ export class JsonLdParser extends Transform {
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
-          return this.dataFactory.literal(value["@value"], this.resourceToTerm(context, value["@type"]));
+          return this.dataFactory.literal(value["@value"],
+            <RDF.NamedNode> this.resourceToTerm(context, value["@type"]));
         }
         return this.dataFactory.literal(value["@value"]);
       } else if (Array.isArray(value)) {
@@ -392,11 +396,8 @@ export class JsonLdParser extends Transform {
         this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
       }
 
-      // Check if value is really a string/URL
-      // TODO?
-
       // Save our @id on the stack
-      const id: RDF.NamedNode = await this.resourceToTerm(await this.getContext(depth), value);
+      const id: RDF.Term = await this.resourceToTerm(await this.getContext(depth), value);
       this.idStack[depth] = id;
 
       // Emit all buffered values that did not have an @id up until now
