@@ -483,6 +483,114 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and a typed literal with out-of-order @value in a @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@type": "http://ex.org/mytype",
+      "@value": "my value"
+    }
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  }],
+  "@id": "http://ex.org/mygraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in an anonymous @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [{
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in a double @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [[{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@type": "http://ex.org/mytype",
+      "@value": "my value"
+    }
+  }]]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in a double o-o-o @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [[{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  }]],
+  "@id": "http://ex.org/mygraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with @id and a typed literal with out-of-order @value in a double anonymous @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [[{
+    "http://ex.org/pred1": {
+      "@value": "my value",
+      "@type": "http://ex.org/mytype"
+    }
+  }]]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
         it('with out-of-order @id', async () => {
           const stream = streamifyString(`
 {
@@ -880,6 +988,34 @@ describe('JsonLdParser', () => {
             triple(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
             triple(blankNode(), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
             triple(blankNode(), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+[
+  { "@id": "http://ex/A", "http://ex.org/pred1": "http://ex.org/obj1" },
+  { "@id": "http://ex/B", "http://ex.org/pred2": "http://ex.org/obj2" },
+  { "@id": "http://ex/C", "http://ex.org/pred3": "http://ex.org/obj3" }
+]`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex/A'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex/B'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex/C'), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
+          ]);
+        });
+
+        it('with o-o-o @id', async () => {
+          const stream = streamifyString(`
+[
+  { "http://ex.org/pred1": "http://ex.org/obj1", "@id": "http://ex/A" },
+  { "http://ex.org/pred2": "http://ex.org/obj2", "@id": "http://ex/B" },
+  { "http://ex.org/pred3": "http://ex.org/obj3", "@id": "http://ex/C" }
+]`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex/A'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex/B'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(namedNode('http://ex/C'), namedNode('http://ex.org/pred3'), literal('http://ex.org/obj3')),
           ]);
         });
       });
@@ -1366,8 +1502,8 @@ describe('JsonLdParser', () => {
 {
   "@graph": {
      "@id": "http://ex.org/myinnerid",
-    "http://ex.org/pred1": "http://ex.org/obj1",
-    "http://ex.org/pred2": "http://ex.org/obj2"
+     "http://ex.org/pred1": "http://ex.org/obj1",
+     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -1673,6 +1809,152 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+      });
+
+      describe('quads with nested properties', () => {
+        it('with an in-order @graph id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner'),
+              namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with an o-o-o @graph id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  },
+  "@id": "http://ex.org/mygraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner'),
+              namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with no @graph id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with an in-order @graph id in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner'),
+              namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with an o-o-o @graph id in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  }],
+  "@id": "http://ex.org/mygraph"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner'),
+              namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with no @graph id in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@id": "http://ex.org/myidinner",
+      "http://ex.org/pred2": {
+        "@value": "my value",
+        "@type": "http://ex.org/mytype"
+      }
+    }
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myidinner')),
+            quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
       });
 
       describe('a top-level context', () => {
@@ -2451,6 +2733,26 @@ describe('JsonLdParser', () => {
     "@version": "1.1"
   },
   "@id": "http://ex.org/myid1"
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
+      it('an @id inside an @reverse', async () => {
+        const stream = streamifyString(`
+{
+  "@reverse": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
+      it('an @graph inside an @reverse', async () => {
+        const stream = streamifyString(`
+{
+  "@reverse": {
+    "@graph": "http://ex.org/myid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
