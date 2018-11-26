@@ -43,6 +43,26 @@ describe('JsonLdParser', () => {
     });
   });
 
+  describe('#getContextValueLanguage', () => {
+    it('should return null as default', async () => {
+      expect(JsonLdParser.getContextValueLanguage({}, 'abc')).toBe(null);
+    });
+
+    it('should return @language on root as default if available', async () => {
+      expect(JsonLdParser.getContextValueLanguage({ '@language': 'nl-be' }, 'abc')).toBe('nl-be');
+    });
+
+    it('should return the entry language', async () => {
+      expect(JsonLdParser.getContextValueLanguage({ abc: { '@language': 'en-us' } }, 'abc'))
+        .toEqual('en-us');
+    });
+
+    it('should return the null entry language even if a root @language is present', async () => {
+      expect(JsonLdParser.getContextValueLanguage({ 'abc': { '@language': null }, '@language': 'nl-be'  }, 'abc'))
+        .toEqual(null);
+    });
+  });
+
   describe('#isContextValueReverse', () => {
     it('should return false as default', async () => {
       expect(JsonLdParser.isContextValueReverse({}, 'abc')).toBe(false);
@@ -182,6 +202,37 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0))
             .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));
         });
+
+        it('with a @value value and @language in the context entry should return a language literal', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'nl-nl' }, 0))
+            .toEqualRdfTerm(literal('abc', 'nl-nl'));
+        });
+
+        it('with a @value without @language should reset the language', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with a raw value and @language in the root context should return a language literal', async () => {
+          context = { '@language': 'en-us' };
+          return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with a raw value and @language in the context entry should return a language literal', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with a raw value and null @language in the context entry should return a literal without language',
+          async () => {
+            context = { 'key': { '@language': null }, '@language': 'nl-be' };
+            return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc'));
+          });
       });
 
       describe('for a string', () => {
@@ -411,6 +462,105 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with @id and a prefixed, context-typed literal', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@type": "ex:mytype" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with @id and another prefixed, context-typed literal', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "created": {"@id": "http://purl.org/dc/terms/created", "@type": "xsd:date"}
+  },
+  "@id":  "http://greggkellogg.net/foaf#me",
+  "created":  "1957-02-27"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://greggkellogg.net/foaf#me'), namedNode('http://purl.org/dc/terms/created'),
+              literal('1957-02-27', namedNode('http://www.w3.org/2001/XMLSchema#date'))),
+          ]);
+        });
+
+        it('with @id and a context-language literal', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@language": "en-us" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'en-us')),
+          ]);
+        });
+
+        it('with @id and literal with default language', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'en-us')),
+          ]);
+        });
+
+        it('with @id and literal with default language but overridden language', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@language": "nl-be" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'nl-be')),
+          ]);
+        });
+
+        it('with @id and literal with default language but unset language', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@language": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value')),
           ]);
         });
 
@@ -915,6 +1065,21 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value', namedNode('http://ex.org/mytype'))),
+          ]);
+        });
+
+        it('with @id and a language literal', async () => {
+          const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@language": "en-us"
+  }
+}]`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'en-us')),
           ]);
         });
 

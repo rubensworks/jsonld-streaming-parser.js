@@ -110,7 +110,7 @@ export class JsonLdParser extends Transform {
       return fallback;
     }
     const type = entry[contextKey];
-    return type || fallback;
+    return type === undefined ? fallback : type;
   }
 
   /**
@@ -131,6 +131,16 @@ export class JsonLdParser extends Transform {
    */
   public static getContextValueType(context: IJsonLdContextNormalized, key: string): string {
     return JsonLdParser.getContextValue(context, '@type', key, null);
+  }
+
+  /**
+   * Get the node type of the given key in the context.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The node type.
+   */
+  public static getContextValueLanguage(context: IJsonLdContextNormalized, key: string): string {
+    return JsonLdParser.getContextValue(context, '@language', key, context['@language'] || null);
   }
 
   /**
@@ -268,6 +278,12 @@ export class JsonLdParser extends Transform {
         return this.dataFactory.literal(value, this.dataFactory.namedNode(contextType));
       }
     }
+
+    const contextLanguage = JsonLdParser.getContextValueLanguage(context, key);
+    if (contextLanguage) {
+      return this.dataFactory.literal(value, contextLanguage);
+    }
+
     return this.dataFactory.literal(value, defaultDatatype);
   }
 
