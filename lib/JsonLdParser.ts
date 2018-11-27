@@ -24,8 +24,10 @@ export class JsonLdParser extends Transform {
   private readonly processingMode: string;
 
   private readonly jsonParser: any;
-  // Stack of identified ids, tail can be null if unknown
+  // Stack of indicating if a depth has been touched.
   private readonly processingStack: boolean[];
+  // Stack of indicating if triples have been emitted (or will be emitted) at each depth.
+  private readonly emittedStack: boolean[];
   // Stack of identified ids, tail can be null if unknown
   private readonly idStack: RDF.Term[];
   // Stack of graph flags
@@ -66,6 +68,7 @@ export class JsonLdParser extends Transform {
 
     this.jsonParser = new Parser();
     this.processingStack = [];
+    this.emittedStack = [];
     this.idStack = [];
     this.graphStack = [];
     this.listPointerStack = [];
@@ -245,7 +248,12 @@ export class JsonLdParser extends Transform {
         // so this is handled already when we get here.
         return null;
       } else {
-        return this.idStack[depth + 1] = this.dataFactory.blankNode();
+        // Only make a blank node if at least one triple was emitted at the value's level.
+        if (this.emittedStack[depth + 1]) {
+          return this.idStack[depth + 1] = this.dataFactory.blankNode();
+        } else {
+          return null;
+        }
       }
     case 'string':
       return this.stringValueToTerm(context, key, value, null);
@@ -408,6 +416,7 @@ export class JsonLdParser extends Transform {
     const parentKey = depth > 0 && keys[depth - 1];
     const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
     const atGraph = depthOffsetGraph >= 0;
+    this.emittedStack[depth] = true;
 
     // Don't parse context contents
     if (atContext) {
@@ -526,8 +535,14 @@ export class JsonLdParser extends Transform {
             // Buffer until our @id becomes known, or we go up the stack
             this.getUnidentifiedValueBufferSafe(depthProperties).push({ predicate, object, reverse });
           }
+        } else {
+          // An invalid value was encountered, so we ignore it higher in the stack.
+          this.emittedStack[depth] = false;
         }
       }
+    } else {
+      // Unknown keyword, or usage of a keyword at the incorrect place
+      this.emittedStack[depth] = false;
     }
 
     // Flag that this depth is processed
@@ -545,6 +560,7 @@ export class JsonLdParser extends Transform {
 
       // Reset our stack
       delete this.processingStack[this.lastDepth];
+      delete this.emittedStack[this.lastDepth];
       delete this.idStack[this.lastDepth];
       delete this.graphStack[this.lastDepth + 1];
       if (!this.allowOutOfOrderContext) {

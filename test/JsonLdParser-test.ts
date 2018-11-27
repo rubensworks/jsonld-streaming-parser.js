@@ -144,15 +144,23 @@ describe('JsonLdParser', () => {
       });
 
       describe('for an object', () => {
-        it('without an @id should return a blank node', async () => {
+        it('without an @id should return null', async () => {
+          return expect(await parser.valueToTerm(context, 'key', {}, 0))
+            .toEqual(null);
+        });
+
+        it('without an @id should return a blank node when a value was emitted at a deeper depth', async () => {
+          parser.emittedStack[1] = true;
           return expect(await parser.valueToTerm(context, 'key', {}, 0))
             .toEqualRdfTerm(blankNode());
         });
 
-        it('without an @id should put a blank node on the id stack', async () => {
-          await parser.valueToTerm(context, 'key', {}, 0);
-          return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
-        });
+        it('without an @id should put a blank node on the id stack when a value was emitted at a deeper depth',
+          async () => {
+            parser.emittedStack[1] = true;
+            await parser.valueToTerm(context, 'key', {}, 0);
+            return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
+          });
 
         it('with an @id should return a named node', async () => {
           return expect(await parser.valueToTerm(context, 'key', { '@id': 'http://ex.org' }, 0))
@@ -1081,6 +1089,17 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value', 'en-us')),
           ]);
+        });
+
+        it('with @id and and incomplete language literal', async () => {
+          const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@language": "en-us"
+  }
+}]`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
         it('with out-of-order @id', async () => {
