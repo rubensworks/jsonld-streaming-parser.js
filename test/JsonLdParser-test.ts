@@ -319,6 +319,16 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', 2, 0))
             .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
         });
+
+        it('for Infinity should return a INF', async () => {
+          return expect(await parser.valueToTerm(context, 'key', Infinity, 0))
+            .toEqualRdfTerm(literal('INF', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
+
+        it('for -Infinity should return a -INF', async () => {
+          return expect(await parser.valueToTerm(context, 'key', -Infinity, 0))
+            .toEqualRdfTerm(literal('-INF', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
       });
 
       describe('for an array', () => {
