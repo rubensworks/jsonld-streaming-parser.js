@@ -426,7 +426,6 @@ export class JsonLdParser extends Transform {
     const key = keys[depth];
     const parentKey = depth > 0 && keys[depth - 1];
     const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
-    const atGraph = depthOffsetGraph >= 0;
     this.emittedStack[depth] = true;
 
     // Don't parse context contents
@@ -515,6 +514,7 @@ export class JsonLdParser extends Transform {
             const subject = this.idStack[depthProperties];
 
             // Check if we're in a @graph context
+            const atGraph = depthOffsetGraph >= 0;
             if (atGraph) {
               const graph: RDF.Term = this.idStack[depthPropertiesGraph - 1];
               if (graph) {
@@ -561,7 +561,7 @@ export class JsonLdParser extends Transform {
 
     // When we go up the, emit all unidentified values using the known id or a blank node subject
     if (depth < this.lastDepth) {
-      this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth, atGraph, keys);
+      this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth, keys);
 
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
       if (this.listPointerStack[this.lastDepth]) {
@@ -590,12 +590,12 @@ export class JsonLdParser extends Transform {
     this.contextAwaitingJobs.splice(0, this.contextAwaitingJobs.length);
   }
 
-  protected flushBuffer(subject: RDF.Term, depth: number, atGraph: boolean, keys: any[]) {
+  protected flushBuffer(subject: RDF.Term, depth: number, keys: any[]) {
     // Flush values at this level
     const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
       this.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
-      const graph: RDF.Term = this.graphStack[depth] || atGraph
+      const graph: RDF.Term = this.graphStack[depth] || this.getDepthOffsetGraph(depth, keys) >= 0
         ? this.idStack[depth - this.getDepthOffsetGraph(depth, keys) - 1] : this.dataFactory.defaultGraph();
       const isLiteral: boolean = this.literalStack[depth];
       if (graph) {

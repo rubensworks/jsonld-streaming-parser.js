@@ -1578,7 +1578,7 @@ describe('JsonLdParser', () => {
 {
   "@graph": {
      "@id": "http://ex.org/myinnerid",
-    "http://ex.org/pred1": "http://ex.org/obj1"
+     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -1599,6 +1599,22 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
               literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('with @id with inner subject @id and @type', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "@type": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myinnerid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -2111,6 +2127,44 @@ describe('JsonLdParser', () => {
               namedNode('http://ex.org/mygraph')),
             quad(namedNode('http://ex.org/myidinner'), namedNode('http://ex.org/pred2'),
               literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with an in-order @graph id in an array with @type', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "@type": "http://ex.org/mytype"
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/mytype'),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with an in-order @graph id in an array with @type array', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "@type": [ "http://ex.org/mytype1", "http://ex.org/mytype2" ]
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/mytype1'),
+              namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/mytype2'),
               namedNode('http://ex.org/mygraph')),
           ]);
         });
