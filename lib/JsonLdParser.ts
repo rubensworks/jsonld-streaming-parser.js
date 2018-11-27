@@ -261,13 +261,17 @@ export class JsonLdParser extends Transform {
       return this.stringValueToTerm(context, key, Boolean(value).toString(),
         this.dataFactory.namedNode(JsonLdParser.XSD_BOOLEAN));
     case 'number':
+      const integer = value % 1 === 0;
       if (Number.isFinite(value)) {
         value = Number(value).toString();
+        if (!integer) {
+          value += 'E0';
+        }
       } else {
         value = value > 0 ? 'INF' : '-INF';
       }
       return this.stringValueToTerm(context, key, value, this.dataFactory.namedNode(
-        value % 1 === 0 ? JsonLdParser.XSD_INTEGER : JsonLdParser.XSD_DOUBLE));
+        integer ? JsonLdParser.XSD_INTEGER : JsonLdParser.XSD_DOUBLE));
     default:
       this.emit('error', new Error(`Could not determine the RDF type of a ${type}`));
     }

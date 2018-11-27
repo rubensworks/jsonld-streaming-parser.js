@@ -299,19 +299,19 @@ describe('JsonLdParser', () => {
 
         it('for 2.2 should return a double literal node', async () => {
           return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE)));
+            .toEqualRdfTerm(literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE)));
         });
 
         it('with an @type: @id should return a named node', async () => {
           context = { key: { '@type': '@id' } };
           return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(namedNode('2.2'));
+            .toEqualRdfTerm(namedNode('2.2E0'));
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
           context = { key: { '@type': 'http://ex.org/' } };
           return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(literal('2.2', namedNode('http://ex.org/')));
+            .toEqualRdfTerm(literal('2.2E0', namedNode('http://ex.org/')));
         });
 
         it('should ignore the language', async () => {
@@ -458,7 +458,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE))),
+              literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE))),
           ]);
         });
 
@@ -1079,7 +1079,7 @@ describe('JsonLdParser', () => {
 }]`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('2.2', namedNode(JsonLdParser.XSD_DOUBLE))),
+              literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE))),
           ]);
         });
 
