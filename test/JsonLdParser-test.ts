@@ -283,6 +283,12 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', false, 0))
             .toEqualRdfTerm(literal('false', namedNode('http://ex.org/')));
         });
+
+        it('should ignore the language', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await parser.valueToTerm(context, 'key', false, 0))
+            .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
+        });
       });
 
       describe('for a number', () => {
@@ -306,6 +312,12 @@ describe('JsonLdParser', () => {
           context = { key: { '@type': 'http://ex.org/' } };
           return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
             .toEqualRdfTerm(literal('2.2', namedNode('http://ex.org/')));
+        });
+
+        it('should ignore the language', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await parser.valueToTerm(context, 'key', 2, 0))
+            .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
         });
       });
 

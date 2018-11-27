@@ -287,9 +287,11 @@ export class JsonLdParser extends Transform {
       }
     }
 
-    const contextLanguage = JsonLdParser.getContextValueLanguage(context, key);
-    if (contextLanguage) {
-      return this.dataFactory.literal(value, contextLanguage);
+    if (!defaultDatatype) {
+      const contextLanguage = JsonLdParser.getContextValueLanguage(context, key);
+      if (contextLanguage) {
+        return this.dataFactory.literal(value, contextLanguage);
+      }
     }
 
     return this.dataFactory.literal(value, defaultDatatype);
