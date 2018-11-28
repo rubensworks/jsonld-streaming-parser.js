@@ -3,6 +3,7 @@ const arrayifyStream = require('arrayify-stream');
 const streamifyString = require('streamify-string');
 import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
+import each from 'jest-each';
 import "jest-rdf";
 
 describe('JsonLdParser', () => {
@@ -119,11 +120,14 @@ describe('JsonLdParser', () => {
     });
   });
 
-  describe('when instantiated with a data factory', () => {
+  each ([
+    false,
+    true,
+  ]).describe('when instantiated with a data factory and allowOutOfOrderContext %s', (allowOutOfOrderContext) => {
     let parser;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ dataFactory });
+      parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext });
     });
 
     describe('#valueToTerm', () => {
