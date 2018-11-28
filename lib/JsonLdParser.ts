@@ -5,6 +5,7 @@ import {ContextParser, IDocumentLoader, IJsonLdContextNormalized, JsonLdContext}
 import {Transform, TransformCallback} from "stream";
 import {IContainerHandler} from './containerhandler/IContainerHandler';
 import {ContainerHandlerLanguage} from "./containerhandler/ContainerHandlerLanguage";
+import {ContainerHandlerIndex} from "./containerhandler/ContainerHandlerIndex";
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -18,6 +19,7 @@ export class JsonLdParser extends Transform {
   public static readonly XSD_DOUBLE: string = JsonLdParser.XSD + 'double';
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
   public static readonly CONTAINER_HANDLERS: {[id: string]: IContainerHandler} = {
+    '@index': new ContainerHandlerIndex(),
     '@language': new ContainerHandlerLanguage(),
   };
 

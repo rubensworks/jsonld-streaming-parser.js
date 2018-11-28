@@ -651,6 +651,80 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and index map', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": "Ninja",
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža')),
+          ]);
+        });
+
+        it('with @id and index map with an array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": [ "Ninja", "Ninja2" ],
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja2')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža')),
+          ]);
+        });
+
+        it('with @id and index map', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": "Ninja",
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža')),
+          ]);
+        });
+
         it('with @id and a typed literal with out-of-order @value', async () => {
           const stream = streamifyString(`
 {
