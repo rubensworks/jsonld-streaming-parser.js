@@ -224,6 +224,9 @@ export class JsonLdParser extends Transform {
       if ("@id" in value) {
         return this.resourceToTerm(context, value["@id"]);
       } else if (value["@value"]) {
+        if (typeof value["@value"] === 'object') {
+          return null;
+        }
         this.literalStack[depth + 1] = true;
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
@@ -506,13 +509,24 @@ export class JsonLdParser extends Transform {
       }
     } else if (key && !key.startsWith('@')) {
       const context = await this.getContext(depth);
-      const predicate = await this.predicateToTerm(context, key);
+      const parentContainer = JsonLdParser.getContextValueContainer(context, parentKey);
+      const languageMap = parentContainer === '@language';
+      const predicate = languageMap
+        ? await this.predicateToTerm(context, parentKey) : await this.predicateToTerm(context, key);
       if (predicate) {
-        const object = this.valueToTerm(context, key, value, depth);
+        const object = languageMap
+          ? this.valueToTerm(context, parentKey, { '@value': value, '@language': key }, depth - 1)
+          : this.valueToTerm(context, key, value, depth);
         if (object) {
           const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
-          const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
+          const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0) - (languageMap ? 1 : 0);
           const depthPropertiesGraph: number = depth - depthOffsetGraph;
+
+          // Language maps emit at a higher level
+          if (languageMap) {
+            this.emittedStack[depth] = false;
+            this.emittedStack[depth - 1] = true;
+          }
 
           if (this.idStack[depthProperties]) {
             // Emit directly if the @id was already defined

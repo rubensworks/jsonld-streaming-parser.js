@@ -124,6 +124,9 @@ describe('JsonLdParser', () => {
     false,
     true,
   ]).describe('when instantiated with a data factory and allowOutOfOrderContext %s', (allowOutOfOrderContext) => {
+    // Enable the following instead if you want to run tests more conveniently with IDE integration
+  /*describe('when instantiated with a data factory and allowOutOfOrderContext %s', () => {
+    const allowOutOfOrderContext = false;*/
     let parser;
 
     beforeEach(() => {
@@ -595,6 +598,56 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value')),
+          ]);
+        });
+
+        it('with @id and language map', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@language" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": "Ninja",
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者', 'ja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja', 'en')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža', 'cs')),
+          ]);
+        });
+
+        it('with @id and language map with an array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@language" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": [ "Ninja", "Ninja2" ],
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者', 'ja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja', 'en')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja2', 'en')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža', 'cs')),
           ]);
         });
 
