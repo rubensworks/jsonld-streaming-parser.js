@@ -3,6 +3,8 @@ import * as RDF from "rdf-js";
 const Parser = require('jsonparse');
 import {ContextParser, IDocumentLoader, IJsonLdContextNormalized, JsonLdContext} from "jsonld-context-parser";
 import {Transform, TransformCallback} from "stream";
+import {IContainerHandler} from './containerhandler/IContainerHandler';
+import {ContainerHandlerLanguage} from "./containerhandler/ContainerHandlerLanguage";
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -15,6 +17,9 @@ export class JsonLdParser extends Transform {
   public static readonly XSD_INTEGER: string = JsonLdParser.XSD + 'integer';
   public static readonly XSD_DOUBLE: string = JsonLdParser.XSD + 'double';
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+  public static readonly CONTAINER_HANDLERS: {[id: string]: IContainerHandler} = {
+    '@language': new ContainerHandlerLanguage(),
+  };
 
   private readonly dataFactory: RDF.DataFactory;
   private readonly contextParser: ContextParser;
@@ -321,6 +326,170 @@ export class JsonLdParser extends Transform {
     return this.rootContext;
   }
 
+  public async newOnValueJob(value: any, depth: number, keys: any[]) {
+    const key = keys[depth];
+    const parentKey = depth > 0 && keys[depth - 1];
+    const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
+    this.emittedStack[depth] = true;
+
+    // Keywords inside @reverse is not allowed
+    if (typeof key === 'string' && key.startsWith('@') && parentKey === '@reverse') {
+      this.emit('error', new Error(`Found the @id '${value}' inside an @reverse property`));
+    }
+
+    if (key === '@context') {
+      // Error if an out-of-order context was found when support is not enabled.
+      if (!this.allowOutOfOrderContext && this.processingStack[depth]) {
+        this.emit('error', new Error('Found an out-of-order context, while support is not enabled.' +
+          '(enable with `allowOutOfOrderContext`)'));
+      }
+
+      // Find the parent context to inherit from
+      const parentContext: Promise<IJsonLdContextNormalized> = this.getContext(depth - 1);
+      // Set the context for this scope
+      this.contextStack[depth] = this.contextParser.parse(value, this.baseIRI, await parentContext);
+      await this.validateContext(await this.contextStack[depth]);
+    } else if (key === '@id') {
+      // Error if an @id for this node already existed.
+      if (this.idStack[depth]) {
+        this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
+      }
+
+      // Save our @id on the stack
+      const id: RDF.Term = await this.resourceToTerm(await this.getContext(depth), value);
+      this.idStack[depth] = id;
+    } else if (key === '@graph') {
+      // The current identifier identifies a graph for the deeper level.
+      this.graphStack[depth + 1] = true;
+    } else if (key === '@type') {
+      // The current identifier identifies an rdf:type predicate.
+      // But we only emit it once the node closes,
+      // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
+      const context = await this.getContext(depth);
+      const predicate = this.rdfType;
+      const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
+      if (Array.isArray(value)) {
+        for (const element of value) {
+          this.getUnidentifiedValueBufferSafe(depth).push(
+            { predicate, object: this.resourceToTerm(context, element), reverse });
+        }
+      } else {
+        this.getUnidentifiedValueBufferSafe(depth).push(
+          { predicate, object: this.resourceToTerm(context, value), reverse });
+      }
+    } else if (typeof key === 'number') {
+      // Check if we have an anonymous list
+      if (parentKey === '@list') {
+        // Our value is part of an array
+        const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
+        await this.handleListElement(object, depth, depth - 2, keys[depth - 2]);
+      } else if (parentKey && parentKey !== '@type') {
+        // Buffer our value using the parent key as predicate
+
+        // Check if the predicate is marked as an @list in the context
+        const parentContext = await this.getContext(depth - 1);
+        if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
+          // Our value is part of an array
+          const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
+          await this.handleListElement(object, depth, depth - 1, parentKey);
+        } else {
+          await this.newOnValueJob(value, depth - 1, keys);
+        }
+      }
+    } else if (key && !key.startsWith('@')) {
+      const context = await this.getContext(depth);
+      const parentContainer = JsonLdParser.getContextValueContainer(context, parentKey);
+
+      // Delegate @container types to dedicated handlers
+      const containerHandler: IContainerHandler = JsonLdParser.CONTAINER_HANDLERS[parentContainer];
+      if (containerHandler) {
+        this.emittedStack[depth] = false;
+        await containerHandler.handle(this, value, depth, keys);
+        return;
+      }
+
+      const predicate = await this.predicateToTerm(context, key);
+      if (predicate) {
+        const object = this.valueToTerm(context, key, value, depth);
+        if (object) {
+          const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
+          const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
+          const depthPropertiesGraph: number = depth - depthOffsetGraph;
+
+          if (this.idStack[depthProperties]) {
+            // Emit directly if the @id was already defined
+            const subject = this.idStack[depthProperties];
+
+            // Check if we're in a @graph context
+            const atGraph = depthOffsetGraph >= 0;
+            if (atGraph) {
+              const graph: RDF.Term = this.idStack[depthPropertiesGraph - 1];
+              if (graph) {
+                // Emit our quad if graph @id is known
+                if (reverse) {
+                  this.push(this.dataFactory.quad(object, predicate, subject, graph));
+                } else {
+                  this.push(this.dataFactory.quad(subject, predicate, object, graph));
+                }
+              } else {
+                // Buffer our triple if graph @id is not known yet.
+                if (reverse) {
+                  this.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
+                    { subject: object, predicate, object: subject });
+                } else {
+                  this.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
+                    .push({ subject, predicate, object });
+                }
+              }
+            } else {
+              // Emit if no @graph was applicable
+              if (reverse) {
+                this.push(this.dataFactory.triple(object, predicate, subject));
+              } else {
+                this.push(this.dataFactory.triple(subject, predicate, object));
+              }
+            }
+          } else {
+            // Buffer until our @id becomes known, or we go up the stack
+            this.getUnidentifiedValueBufferSafe(depthProperties).push({ predicate, object, reverse });
+          }
+        } else {
+          // An invalid value was encountered, so we ignore it higher in the stack.
+          this.emittedStack[depth] = false;
+        }
+      }
+    } else {
+      // Unknown keyword, or usage of a keyword at the incorrect place
+      this.emittedStack[depth] = false;
+    }
+
+    // Flag that this depth is processed
+    this.processingStack[depth] = true;
+
+    // When we go up the stack, emit all unidentified values
+    if (depth < this.lastDepth) {
+      this.flushBuffer(this.lastDepth, keys);
+
+      // Check if we had any RDF lists that need to be terminated with an rdf:nil
+      if (this.listPointerStack[this.lastDepth]) {
+        this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
+        delete this.listPointerStack[this.lastDepth];
+      }
+
+      // Reset our stack
+      delete this.processingStack[this.lastDepth];
+      delete this.emittedStack[this.lastDepth];
+      delete this.idStack[this.lastDepth];
+      delete this.graphStack[this.lastDepth + 1];
+      if (!this.allowOutOfOrderContext) {
+        // Only delete context if no out-of-order context is allowed,
+        // because otherwise, we handle them in a different order.
+        delete this.contextStack[this.lastDepth];
+      }
+    }
+    this.lastDepth = depth;
+  }
+
   protected async validateContext(context: IJsonLdContextNormalized) {
     const activeVersion: string = <string> <any> context['@version'];
     if (activeVersion && parseFloat(activeVersion) > parseFloat(this.processingMode)) {
@@ -435,171 +604,6 @@ export class JsonLdParser extends Transform {
       }
     }
     return -1;
-  }
-
-  protected async newOnValueJob(value: any, depth: number, keys: any[]) {
-    const key = keys[depth];
-    const parentKey = depth > 0 && keys[depth - 1];
-    const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
-    this.emittedStack[depth] = true;
-
-    // Keywords inside @reverse is not allowed
-    if (typeof key === 'string' && key.startsWith('@') && parentKey === '@reverse') {
-      this.emit('error', new Error(`Found the @id '${value}' inside an @reverse property`));
-    }
-
-    if (key === '@context') {
-      // Error if an out-of-order context was found when support is not enabled.
-      if (!this.allowOutOfOrderContext && this.processingStack[depth]) {
-        this.emit('error', new Error('Found an out-of-order context, while support is not enabled.' +
-          '(enable with `allowOutOfOrderContext`)'));
-      }
-
-      // Find the parent context to inherit from
-      const parentContext: Promise<IJsonLdContextNormalized> = this.getContext(depth - 1);
-      // Set the context for this scope
-      this.contextStack[depth] = this.contextParser.parse(value, this.baseIRI, await parentContext);
-      await this.validateContext(await this.contextStack[depth]);
-    } else if (key === '@id') {
-      // Error if an @id for this node already existed.
-      if (this.idStack[depth]) {
-        this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
-      }
-
-      // Save our @id on the stack
-      const id: RDF.Term = await this.resourceToTerm(await this.getContext(depth), value);
-      this.idStack[depth] = id;
-    } else if (key === '@graph') {
-      // The current identifier identifies a graph for the deeper level.
-      this.graphStack[depth + 1] = true;
-    } else if (key === '@type') {
-      // The current identifier identifies an rdf:type predicate.
-      // But we only emit it once the node closes,
-      // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
-      const context = await this.getContext(depth);
-      const predicate = this.rdfType;
-      const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
-      if (Array.isArray(value)) {
-        for (const element of value) {
-          this.getUnidentifiedValueBufferSafe(depth).push(
-            { predicate, object: this.resourceToTerm(context, element), reverse });
-        }
-      } else {
-        this.getUnidentifiedValueBufferSafe(depth).push(
-          { predicate, object: this.resourceToTerm(context, value), reverse });
-      }
-    } else if (typeof key === 'number') {
-      // Check if we have an anonymous list
-      if (parentKey === '@list') {
-        // Our value is part of an array
-        const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
-        await this.handleListElement(object, depth, depth - 2, keys[depth - 2]);
-      } else if (parentKey && parentKey !== '@type') {
-        // Buffer our value using the parent key as predicate
-
-        // Check if the predicate is marked as an @list in the context
-        const parentContext = await this.getContext(depth - 1);
-        if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
-          // Our value is part of an array
-          const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
-          await this.handleListElement(object, depth, depth - 1, parentKey);
-        } else {
-          await this.newOnValueJob(value, depth - 1, keys);
-        }
-      }
-    } else if (key && !key.startsWith('@')) {
-      const context = await this.getContext(depth);
-      const parentContainer = JsonLdParser.getContextValueContainer(context, parentKey);
-      const languageMap = parentContainer === '@language';
-      const predicate = languageMap
-        ? await this.predicateToTerm(context, parentKey) : await this.predicateToTerm(context, key);
-      if (predicate) {
-        const object = languageMap
-          ? this.valueToTerm(context, parentKey, { '@value': value, '@language': key }, depth - 1)
-          : this.valueToTerm(context, key, value, depth);
-        if (object) {
-          const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
-          const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0) - (languageMap ? 1 : 0);
-          const depthPropertiesGraph: number = depth - depthOffsetGraph;
-
-          // Language maps emit at a higher level
-          if (languageMap) {
-            this.emittedStack[depth] = false;
-            this.emittedStack[depth - 1] = true;
-          }
-
-          if (this.idStack[depthProperties]) {
-            // Emit directly if the @id was already defined
-            const subject = this.idStack[depthProperties];
-
-            // Check if we're in a @graph context
-            const atGraph = depthOffsetGraph >= 0;
-            if (atGraph) {
-              const graph: RDF.Term = this.idStack[depthPropertiesGraph - 1];
-              if (graph) {
-                // Emit our quad if graph @id is known
-                if (reverse) {
-                  this.push(this.dataFactory.quad(object, predicate, subject, graph));
-                } else {
-                  this.push(this.dataFactory.quad(subject, predicate, object, graph));
-                }
-              } else {
-                // Buffer our triple if graph @id is not known yet.
-                if (reverse) {
-                  this.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
-                    { subject: object, predicate, object: subject });
-                } else {
-                  this.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
-                    .push({ subject, predicate, object });
-                }
-              }
-            } else {
-              // Emit if no @graph was applicable
-              if (reverse) {
-                this.push(this.dataFactory.triple(object, predicate, subject));
-              } else {
-                this.push(this.dataFactory.triple(subject, predicate, object));
-              }
-            }
-          } else {
-            // Buffer until our @id becomes known, or we go up the stack
-            this.getUnidentifiedValueBufferSafe(depthProperties).push({ predicate, object, reverse });
-          }
-        } else {
-          // An invalid value was encountered, so we ignore it higher in the stack.
-          this.emittedStack[depth] = false;
-        }
-      }
-    } else {
-      // Unknown keyword, or usage of a keyword at the incorrect place
-      this.emittedStack[depth] = false;
-    }
-
-    // Flag that this depth is processed
-    this.processingStack[depth] = true;
-
-    // When we go up the stack, emit all unidentified values
-    if (depth < this.lastDepth) {
-      this.flushBuffer(this.lastDepth, keys);
-
-      // Check if we had any RDF lists that need to be terminated with an rdf:nil
-      if (this.listPointerStack[this.lastDepth]) {
-        this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
-        delete this.listPointerStack[this.lastDepth];
-      }
-
-      // Reset our stack
-      delete this.processingStack[this.lastDepth];
-      delete this.emittedStack[this.lastDepth];
-      delete this.idStack[this.lastDepth];
-      delete this.graphStack[this.lastDepth + 1];
-      if (!this.allowOutOfOrderContext) {
-        // Only delete context if no out-of-order context is allowed,
-        // because otherwise, we handle them in a different order.
-        delete this.contextStack[this.lastDepth];
-      }
-    }
-    this.lastDepth = depth;
   }
 
   protected async executeBufferedJobs() {
