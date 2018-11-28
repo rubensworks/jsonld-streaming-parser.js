@@ -2551,6 +2551,31 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with a contextified inner triple should inherit from the outer context', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "A",
+  "SomeTerm": {
+    "@id": "http://ex.org/obj1",
+    "SomeInnerTerm": "B",
+    "@context": {
+      "SomeInnerTerm2": "http://example.org/SomeInnerTerm2"
+    }
+  },
+  "@context": {
+    "@base": "http://example.org/",
+    "SomeTerm": "http://example.org/SomeTerm",
+    "SomeInnerTerm": "http://example.org/SomeInnerTerm"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://example.org/A'), namedNode('http://example.org/SomeTerm'),
+                namedNode('http://ex.org/obj1')),
+              triple(namedNode('http://ex.org/obj1'), namedNode('http://example.org/SomeInnerTerm'),
+                literal('B')),
+            ]);
+          });
+
           it('with a two contextified triples', async () => {
             const stream = streamifyString(`
 {

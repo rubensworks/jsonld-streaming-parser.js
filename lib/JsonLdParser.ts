@@ -46,6 +46,8 @@ export class JsonLdParser extends Transform {
   private readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
   // Jobs that are not started yet because of a missing @context
   private readonly contextAwaitingJobs: (() => Promise<void>)[];
+  // Jobs that are not started yet that process a @context
+  private readonly contextJobs: (() => Promise<void>)[];
 
   private readonly rdfFirst: RDF.NamedNode;
   private readonly rdfRest: RDF.NamedNode;
@@ -77,6 +79,7 @@ export class JsonLdParser extends Transform {
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
     this.contextAwaitingJobs = [];
+    this.contextJobs = [];
 
     this.lastDepth = 0;
     if (options.context) {
@@ -347,20 +350,29 @@ export class JsonLdParser extends Transform {
       const keys = (new Array(depth + 1).fill(0)).map((v, i) => {
         return i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key;
       });
-      const atContext = this.isParsingContext(depth);
 
-      const valueJobCb = () => this.newOnValueJob(value, depth, keys, atContext);
-      if (this.allowOutOfOrderContext && !this.contextStack[depth] && keys[depth] !== '@context') {
-        this.contextAwaitingJobs.push(valueJobCb);
-      } else {
-        // Make sure that our value jobs are chained synchronously
-        this.lastOnValueJob = this.lastOnValueJob.then(valueJobCb);
-      }
+      if (!this.isParsingContextInner(depth)) { // Don't parse inner nodes inside @context
+        const valueJobCb = () => this.newOnValueJob(value, depth, keys);
+        if (this.allowOutOfOrderContext && !this.contextStack[depth]) {
+          // If an out-of-order context is allowed,
+          // we have to buffer everything.
+          // We store jobs for @context's separately,
+          // because at the end, we have to process them first.
+          if (keys[depth] === '@context') {
+            this.contextJobs[depth] = valueJobCb;
+          } else {
+            this.contextAwaitingJobs.push(valueJobCb);
+          }
+        } else {
+          // Make sure that our value jobs are chained synchronously
+          this.lastOnValueJob = this.lastOnValueJob.then(valueJobCb);
+        }
 
-      // Execute all buffered jobs on deeper levels
-      if (this.allowOutOfOrderContext && depth === 0) {
-        this.lastOnValueJob = this.lastOnValueJob
-          .then(() => this.executeBufferedJobs());
+        // Execute all buffered jobs on deeper levels
+        if (this.allowOutOfOrderContext && depth === 0) {
+          this.lastOnValueJob = this.lastOnValueJob
+            .then(() => this.executeBufferedJobs());
+        }
       }
     };
     this.jsonParser.onError = (error: Error) => {
@@ -368,7 +380,7 @@ export class JsonLdParser extends Transform {
     };
   }
 
-  protected isParsingContext(depth: number) {
+  protected isParsingContextInner(depth: number) {
     for (let i = depth; i > 0; i--) {
       if (this.jsonParser.stack[i - 1].key === '@context') {
         return true;
@@ -422,16 +434,11 @@ export class JsonLdParser extends Transform {
     return -1;
   }
 
-  protected async newOnValueJob(value: any, depth: number, keys: any[], atContext: boolean): Promise<void> {
+  protected async newOnValueJob(value: any, depth: number, keys: any[]) {
     const key = keys[depth];
     const parentKey = depth > 0 && keys[depth - 1];
     const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
     this.emittedStack[depth] = true;
-
-    // Don't parse context contents
-    if (atContext) {
-      return;
-    }
 
     // Keywords inside @reverse is not allowed
     if (typeof key === 'string' && key.startsWith('@') && parentKey === '@reverse') {
@@ -451,16 +458,14 @@ export class JsonLdParser extends Transform {
       this.contextStack[depth] = this.contextParser.parse(value, this.baseIRI, await parentContext);
       await this.validateContext(await this.contextStack[depth]);
     } else if (key === '@id') {
-      const depthProperties: number = depth;
-
       // Error if an @id for this node already existed.
-      if (this.idStack[depthProperties]) {
-        this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depthProperties].value}' and '${value}'`));
+      if (this.idStack[depth]) {
+        this.emit('error', new Error(`Found duplicate @ids '${this.idStack[depth].value}' and '${value}'`));
       }
 
       // Save our @id on the stack
-      const id: RDF.Term = await this.resourceToTerm(await this.getContext(depthProperties), value);
-      this.idStack[depthProperties] = id;
+      const id: RDF.Term = await this.resourceToTerm(await this.getContext(depth), value);
+      this.idStack[depth] = id;
     } else if (key === '@graph') {
       // The current identifier identifies a graph for the deeper level.
       this.graphStack[depth + 1] = true;
@@ -496,7 +501,7 @@ export class JsonLdParser extends Transform {
           const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
           await this.handleListElement(object, depth, depth - 1, parentKey);
         } else {
-          await this.newOnValueJob(value, depth - 1, keys, false);
+          await this.newOnValueJob(value, depth - 1, keys);
         }
       }
     } else if (key && !key.startsWith('@')) {
@@ -559,9 +564,9 @@ export class JsonLdParser extends Transform {
     // Flag that this depth is processed
     this.processingStack[depth] = true;
 
-    // When we go up the, emit all unidentified values using the known id or a blank node subject
+    // When we go up the stack, emit all unidentified values
     if (depth < this.lastDepth) {
-      this.flushBuffer(this.idStack[this.lastDepth] || this.dataFactory.blankNode(), this.lastDepth, keys);
+      this.flushBuffer(this.lastDepth, keys);
 
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
       if (this.listPointerStack[this.lastDepth]) {
@@ -584,13 +589,22 @@ export class JsonLdParser extends Transform {
   }
 
   protected async executeBufferedJobs() {
+    // Handle context jobs
+    for (const job of this.contextJobs) {
+      if (job) {
+        await job();
+      }
+    }
+
+    // Handle non-context jobs
     for (const job of this.contextAwaitingJobs) {
       await job();
     }
-    this.contextAwaitingJobs.splice(0, this.contextAwaitingJobs.length);
   }
 
-  protected flushBuffer(subject: RDF.Term, depth: number, keys: any[]) {
+  protected flushBuffer(depth: number, keys: any[]) {
+    const subject: RDF.Term = this.idStack[depth] || this.dataFactory.blankNode();
+
     // Flush values at this level
     const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
       this.unidentifiedValuesBuffer[depth];
