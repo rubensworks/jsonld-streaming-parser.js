@@ -336,6 +336,18 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', -Infinity, 0))
             .toEqualRdfTerm(literal('-INF', namedNode(JsonLdParser.XSD_DOUBLE)));
         });
+
+        it('for 1 with double context type should return 1.0E0', async () => {
+          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#double' } };
+          return expect(await parser.valueToTerm(context, 'key', 1, 0))
+            .toEqualRdfTerm(literal('1.0E0', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
+
+        it('for 1.1 with int context type should return 1.1E0', async () => {
+          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#integer' } };
+          return expect(await parser.valueToTerm(context, 'key', 1.1, 0))
+            .toEqualRdfTerm(literal('1.1E0', namedNode(JsonLdParser.XSD_INTEGER)));
+        });
       });
 
       describe('for an array', () => {

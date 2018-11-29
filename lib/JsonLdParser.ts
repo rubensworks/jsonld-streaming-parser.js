@@ -277,19 +277,39 @@ export class JsonLdParser extends Transform {
       return this.stringValueToTerm(context, key, Boolean(value).toString(),
         this.dataFactory.namedNode(JsonLdParser.XSD_BOOLEAN));
     case 'number':
-      const integer = value % 1 === 0;
-      if (Number.isFinite(value)) {
-        value = Number(value).toString();
-        if (!integer) {
-          value += 'E0';
-        }
-      } else {
-        value = value > 0 ? 'INF' : '-INF';
-      }
       return this.stringValueToTerm(context, key, value, this.dataFactory.namedNode(
-        integer ? JsonLdParser.XSD_INTEGER : JsonLdParser.XSD_DOUBLE));
+        value % 1 === 0 ? JsonLdParser.XSD_INTEGER : JsonLdParser.XSD_DOUBLE));
     default:
       this.emit('error', new Error(`Could not determine the RDF type of a ${type}`));
+    }
+  }
+
+  /**
+   * Ensure that the given value becomes a string.
+   * @param {string | number} value A string or number.
+   * @param {NamedNode} datatype The intended datatype.
+   * @return {string} The returned string.
+   */
+  public intToString(value: string | number, datatype: RDF.NamedNode): string {
+    if (typeof value === 'number') {
+      if (Number.isFinite(value)) {
+        const isInteger = value % 1 === 0;
+        let stringValue = Number(value).toString();
+        if (datatype.value !== JsonLdParser.XSD_INTEGER) {
+          if (isInteger) {
+            stringValue += '.0';
+          }
+          stringValue += 'E0';
+          return stringValue;
+        } else if (!isInteger) {
+          stringValue += 'E0';
+        }
+        return stringValue;
+      } else {
+        return value > 0 ? 'INF' : '-INF';
+      }
+    } else {
+      return value;
     }
   }
 
@@ -301,25 +321,28 @@ export class JsonLdParser extends Transform {
    * @param {NamedNode} defaultDatatype The default datatype for the given value.
    * @return {RDF.Term} An RDF term.
    */
-  public stringValueToTerm(context: IJsonLdContextNormalized, key: string, value: string,
+  public stringValueToTerm(context: IJsonLdContextNormalized, key: string, value: string | number,
                            defaultDatatype: RDF.NamedNode): RDF.Term {
+    // Check the datatype from the context
     const contextType = JsonLdParser.getContextValueType(context, key);
     if (contextType) {
       if (contextType === '@id') {
-        return this.resourceToTerm(context, value);
+        return this.resourceToTerm(context, this.intToString(value, defaultDatatype));
       } else {
-        return this.dataFactory.literal(value, this.dataFactory.namedNode(contextType));
+        defaultDatatype = this.dataFactory.namedNode(contextType);
       }
     }
 
+    // If we don't find such a datatype, check the language from the context
     if (!defaultDatatype) {
       const contextLanguage = JsonLdParser.getContextValueLanguage(context, key);
       if (contextLanguage) {
-        return this.dataFactory.literal(value, contextLanguage);
+        return this.dataFactory.literal(this.intToString(value, defaultDatatype), contextLanguage);
       }
     }
 
-    return this.dataFactory.literal(value, defaultDatatype);
+    // If all else fails, make a literal based on the default content type
+    return this.dataFactory.literal(this.intToString(value, defaultDatatype), defaultDatatype);
   }
 
   public getContext(depth: number): Promise<IJsonLdContextNormalized> {
