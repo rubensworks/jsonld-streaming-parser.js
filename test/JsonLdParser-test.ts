@@ -502,6 +502,49 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and a raw @value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/"
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value')),
+          ]);
+        });
+
+        it('with @id and a null @value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/"
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": null
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with @id and a null value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/"
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": null
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with @id and a prefixed, context-typed literal', async () => {
           const stream = streamifyString(`
 {
