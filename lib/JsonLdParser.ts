@@ -228,11 +228,11 @@ export class JsonLdParser extends Transform {
     const type: string = typeof value;
     switch (type) {
     case 'object':
-      if (!value) {
+      if (value === null || value === undefined) {
         return null;
       } else if ("@id" in value) {
         return this.resourceToTerm(context, value["@id"]);
-      } else if (value["@value"]) {
+      } else if (value["@value"] !== null && value["@value"] !== undefined) {
         if (typeof value["@value"] === 'object') {
           return null;
         }
@@ -243,7 +243,8 @@ export class JsonLdParser extends Transform {
           return this.dataFactory.literal(value["@value"],
             <RDF.NamedNode> this.resourceToTerm(context, value["@type"]));
         }
-        return this.dataFactory.literal(value["@value"]);
+        // We don't pass the context, because context-based things like @language should be ignored
+        return this.valueToTerm({}, key, value["@value"], depth);
       } else if (Array.isArray(value)) {
         // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
         // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
@@ -387,7 +388,7 @@ export class JsonLdParser extends Transform {
         // Our value is part of an array
         const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
         await this.handleListElement(object, depth, depth - 2, keys[depth - 2]);
-      } else if (parentKey && parentKey !== '@type') {
+      } else if (parentKey !== undefined && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
 
         // Check if the predicate is marked as an @list in the context
@@ -397,6 +398,7 @@ export class JsonLdParser extends Transform {
           const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
           await this.handleListElement(object, depth, depth - 1, parentKey);
         } else {
+          this.emittedStack[depth] = false;
           await this.newOnValueJob(value, depth - 1, keys);
         }
       }
@@ -624,6 +626,23 @@ export class JsonLdParser extends Transform {
     }
   }
 
+  /**
+   * Check if we are processing a literal at the given depth.
+   * This will also check higher levels,
+   * because if a parent is a literal,
+   * then the deeper levels are definitely a literal as well.
+   * @param {number} depth The depth.
+   * @return {boolean} If we are processing a literal.
+   */
+  protected isLiteral(depth: number): boolean {
+    for (let i = depth; i >= 0; i--) {
+      if (this.literalStack[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected flushBuffer(depth: number, keys: any[]) {
     const subject: RDF.Term = this.idStack[depth] || this.dataFactory.blankNode();
 
@@ -633,7 +652,7 @@ export class JsonLdParser extends Transform {
     if (valueBuffer) {
       const graph: RDF.Term = this.graphStack[depth] || this.getDepthOffsetGraph(depth, keys) >= 0
         ? this.idStack[depth - this.getDepthOffsetGraph(depth, keys) - 1] : this.dataFactory.defaultGraph();
-      const isLiteral: boolean = this.literalStack[depth];
+      const isLiteral: boolean = this.isLiteral(depth);
       if (graph) {
         // Flush values to stream if the graph @id is known
         for (const bufferedValue of valueBuffer) {

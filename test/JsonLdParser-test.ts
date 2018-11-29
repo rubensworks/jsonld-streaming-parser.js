@@ -768,7 +768,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @index in value should be ignored', async () => {
+        it('with @index in a string value should be ignored', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -779,18 +779,201 @@ describe('JsonLdParser', () => {
     {
       "@value": "a",
       "@index": "prop"
-    },
-    {
-      "@value": "b",
-      "@index": "prop"
-    },
+    }
   ]
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
               literal('a')),
+          ]);
+        });
+
+        it('with a string value in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": "a"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
-              literal('b')),
+              literal('a')),
+          ]);
+        });
+
+        it('with a true boolean value in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": true
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('true', JsonLdParser.XSD_BOOLEAN)),
+          ]);
+        });
+
+        it('with a false boolean value in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": false
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('false', JsonLdParser.XSD_BOOLEAN)),
+          ]);
+        });
+
+        it('with a null value in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": null
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with a typed string', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": {
+    "@value": "typed literal Prop",
+    "@type": "http://example.org/type"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
+          ]);
+        });
+
+        it('with a typed string (opposite order)', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": {
+    "@type": "http://example.org/type",
+    "@value": "typed literal Prop"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
+          ]);
+        });
+
+        it('with a typed string in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": "typed literal Prop",
+      "@type": "http://example.org/type"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
+          ]);
+        });
+
+        it('with a typed string (opposite order) in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@type": "http://example.org/type",
+      "@value": "typed literal Prop"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
+          ]);
+        });
+
+        it('with a typed string in a double array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [[
+    {
+      "@value": "typed literal Prop",
+      "@type": "http://example.org/type"
+    }
+  ]]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
+          ]);
+        });
+
+        it('with a typed string (opposite order) in a double array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [[
+    {
+      "@type": "http://example.org/type",
+      "@value": "typed literal Prop"
+    }
+  ]]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('typed literal Prop', namedNode('http://example.org/type'))),
           ]);
         });
 
