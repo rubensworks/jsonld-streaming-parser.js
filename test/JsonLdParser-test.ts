@@ -725,6 +725,32 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @index in value should be ignored', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": "a",
+      "@index": "prop"
+    },
+    {
+      "@value": "b",
+      "@index": "prop"
+    },
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('a')),
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('b')),
+          ]);
+        });
+
         it('with @id and a typed literal with out-of-order @value', async () => {
           const stream = streamifyString(`
 {
