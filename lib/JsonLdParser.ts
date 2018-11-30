@@ -3,9 +3,9 @@ import * as RDF from "rdf-js";
 const Parser = require('jsonparse');
 import {ContextParser, IDocumentLoader, IJsonLdContextNormalized, JsonLdContext} from "jsonld-context-parser";
 import {Transform, TransformCallback} from "stream";
-import {IContainerHandler} from './containerhandler/IContainerHandler';
-import {ContainerHandlerLanguage} from "./containerhandler/ContainerHandlerLanguage";
 import {ContainerHandlerIndex} from "./containerhandler/ContainerHandlerIndex";
+import {ContainerHandlerLanguage} from "./containerhandler/ContainerHandlerLanguage";
+import {IContainerHandler} from './containerhandler/IContainerHandler';
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -177,6 +177,15 @@ export class JsonLdParser extends Transform {
     return parentKey === '@reverse' || JsonLdParser.isContextValueReverse(context, key);
   }
 
+  /**
+   * Check if the given key is a keyword.
+   * @param {string} key A key, can be falsy.
+   * @return {boolean} If the given key starts with an @.
+   */
+  public static isKeyword(key: any): boolean {
+    return typeof key === 'string' && key.startsWith('@');
+  }
+
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
@@ -224,13 +233,29 @@ export class JsonLdParser extends Transform {
    * @param {number} depth The depth the value is at.
    * @return {RDF.Term} An RDF term.
    */
-  public valueToTerm(context: IJsonLdContextNormalized, key: string, value: any, depth: number): RDF.Term {
+  public async valueToTerm(context: IJsonLdContextNormalized, key: string,
+                           value: any, depth: number): Promise<RDF.Term> {
     const type: string = typeof value;
     switch (type) {
     case 'object':
+      // Skip if we have a null or undefined object
       if (value === null || value === undefined) {
         return null;
-      } else if ("@id" in value) {
+      }
+
+      // Special case for arrays
+      if (Array.isArray(value)) {
+        // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
+        // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
+        if (JsonLdParser.getContextValueContainer(context, key) === '@list' && value.length === 0) {
+          return this.rdfNil;
+        }
+        return null;
+      }
+
+      // In all other cases, we have a hash
+      value = await this.unaliasKeywords(value, depth); // Un-alias potential keywords in this hash
+      if ("@id" in value) {
         return this.resourceToTerm(context, value["@id"]);
       } else if (value["@value"] !== null && value["@value"] !== undefined) {
         if (typeof value["@value"] === 'object') {
@@ -244,14 +269,7 @@ export class JsonLdParser extends Transform {
             <RDF.NamedNode> this.resourceToTerm(context, value["@type"]));
         }
         // We don't pass the context, because context-based things like @language should be ignored
-        return this.valueToTerm({}, key, value["@value"], depth);
-      } else if (Array.isArray(value)) {
-        // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
-        // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
-        if (JsonLdParser.getContextValueContainer(context, key) === '@list' && value.length === 0) {
-          return this.rdfNil;
-        }
-        return null;
+        return await this.valueToTerm({}, key, value["@value"], depth);
       } else if (value["@list"]) {
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
         // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
@@ -355,13 +373,13 @@ export class JsonLdParser extends Transform {
   }
 
   public async newOnValueJob(value: any, depth: number, keys: any[]) {
-    const key = keys[depth];
-    const parentKey = depth > 0 && keys[depth - 1];
-    const depthOffsetGraph = this.getDepthOffsetGraph(depth, keys);
+    const key = await this.unaliasKeyword(keys[depth], depth);
+    const parentKey = await this.unaliasKeyword(depth > 0 && keys[depth - 1], depth - 1);
+    const depthOffsetGraph = await this.getDepthOffsetGraph(depth, keys);
     this.emittedStack[depth] = true;
 
     // Keywords inside @reverse is not allowed
-    if (typeof key === 'string' && key.startsWith('@') && parentKey === '@reverse') {
+    if (JsonLdParser.isKeyword(key) && parentKey === '@reverse') {
       this.emit('error', new Error(`Found the @id '${value}' inside an @reverse property`));
     }
 
@@ -409,7 +427,7 @@ export class JsonLdParser extends Transform {
       // Check if we have an anonymous list
       if (parentKey === '@list') {
         // Our value is part of an array
-        const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
+        const object = await this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
         await this.handleListElement(object, depth, depth - 2, keys[depth - 2]);
       } else if (parentKey !== undefined && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
@@ -418,14 +436,14 @@ export class JsonLdParser extends Transform {
         const parentContext = await this.getContext(depth - 1);
         if (JsonLdParser.getContextValueContainer(parentContext, parentKey) === '@list') {
           // Our value is part of an array
-          const object = this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
+          const object = await this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
           await this.handleListElement(object, depth, depth - 1, parentKey);
         } else {
           this.emittedStack[depth] = false;
           await this.newOnValueJob(value, depth - 1, keys);
         }
       }
-    } else if (key && !key.startsWith('@')) {
+    } else if (key && !JsonLdParser.isKeyword(key)) {
       const context = await this.getContext(depth);
       const parentContainer = JsonLdParser.getContextValueContainer(context, parentKey);
 
@@ -439,7 +457,7 @@ export class JsonLdParser extends Transform {
 
       const predicate = await this.predicateToTerm(context, key);
       if (predicate) {
-        const object = this.valueToTerm(context, key, value, depth);
+        const object = await this.valueToTerm(context, key, value, depth);
         if (object) {
           const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
           const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
@@ -497,7 +515,7 @@ export class JsonLdParser extends Transform {
 
     // When we go up the stack, emit all unidentified values
     if (depth < this.lastDepth) {
-      this.flushBuffer(this.lastDepth, keys);
+      await this.flushBuffer(this.lastDepth, keys);
 
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
       if (this.listPointerStack[this.lastDepth]) {
@@ -517,6 +535,38 @@ export class JsonLdParser extends Transform {
       }
     }
     this.lastDepth = depth;
+  }
+
+  /**
+   * If the key is not a keyword, try to check if it is an alias for a keyword,
+   * and if so, un-alias it.
+   * @param {string} key A key, can be falsy.
+   * @param {number} depth The depth at which the key occurs.
+   * @return {Promise<string>} A promise resolving to the key itself, or another key.
+   */
+  protected async unaliasKeyword(key: any, depth: number): Promise<any> {
+    if (!JsonLdParser.isKeyword(key)) {
+      const context = await this.getContext(depth);
+      const unliased = context[key];
+      if (JsonLdParser.isKeyword(unliased)) {
+        return unliased;
+      }
+    }
+    return key;
+  }
+
+  /**
+   * Un-alias all keywords in the given hash.
+   * @param {{[p: string]: any}} hash A hash object.
+   * @param {number} depth A depth at which the hash occurs.
+   * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
+   */
+  protected async unaliasKeywords(hash: {[id: string]: any}, depth: number): Promise<{[id: string]: any}> {
+    const newHash: {[id: string]: any} = {};
+    for (const key in hash) {
+      newHash[await this.unaliasKeyword(key, depth)] = hash[key];
+    }
+    return newHash;
   }
 
   protected async validateContext(context: IJsonLdContextNormalized) {
@@ -626,9 +676,9 @@ export class JsonLdParser extends Transform {
    * @param {any[]} keys An array of keys.
    * @return {number} The graph depth offset.
    */
-  protected getDepthOffsetGraph(depth: number, keys: any[]): number {
+  protected async getDepthOffsetGraph(depth: number, keys: any[]): Promise<number> {
     for (let i = depth - 1; i > 0; i--) {
-      if (keys[i] === '@graph') {
+      if (await this.unaliasKeyword(keys[i], i) === '@graph') {
         return depth - i - 1;
       }
     }
@@ -666,15 +716,15 @@ export class JsonLdParser extends Transform {
     return false;
   }
 
-  protected flushBuffer(depth: number, keys: any[]) {
+  protected async flushBuffer(depth: number, keys: any[]) {
     const subject: RDF.Term = this.idStack[depth] || this.dataFactory.blankNode();
 
     // Flush values at this level
     const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
       this.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
-      const graph: RDF.Term = this.graphStack[depth] || this.getDepthOffsetGraph(depth, keys) >= 0
-        ? this.idStack[depth - this.getDepthOffsetGraph(depth, keys) - 1] : this.dataFactory.defaultGraph();
+      const graph: RDF.Term = this.graphStack[depth] || await this.getDepthOffsetGraph(depth, keys) >= 0
+        ? this.idStack[depth - await this.getDepthOffsetGraph(depth, keys) - 1] : this.dataFactory.defaultGraph();
       const isLiteral: boolean = this.isLiteral(depth);
       if (graph) {
         // Flush values to stream if the graph @id is known
@@ -689,7 +739,8 @@ export class JsonLdParser extends Transform {
         }
       } else {
         // Place the values in the graphs buffer if the graph @id is not yet known
-        const subGraphBuffer = this.getUnidentifiedGraphBufferSafe(depth - this.getDepthOffsetGraph(depth, keys) - 1);
+        const subGraphBuffer = this.getUnidentifiedGraphBufferSafe(
+          depth - await this.getDepthOffsetGraph(depth, keys) - 1);
         for (const bufferedValue of valueBuffer) {
           if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
             if (bufferedValue.reverse) {

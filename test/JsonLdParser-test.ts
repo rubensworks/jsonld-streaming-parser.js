@@ -145,7 +145,7 @@ describe('JsonLdParser', () => {
         it('should emit an error', async () => {
           return new Promise(async (resolve, reject) => {
             parser.on('error', () => resolve());
-            parser.valueToTerm(context, 'key', Symbol(), 0);
+            await parser.valueToTerm(context, 'key', Symbol(), 0);
           });
         });
       });
@@ -3385,6 +3385,130 @@ describe('JsonLdParser', () => {
               triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
             ]);
           });
+        });
+      });
+
+      describe('with keyword aliases', () => {
+        it('should alias @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "url": "@id"
+  },
+  "url": "http://ex.org/myid",
+  "http://xmlns.com/foaf/0.1/name": "Bob",
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob')),
+          ]);
+        });
+
+        it('should alias @type', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "a": "@type"
+  },
+  "@id": "http://ex.org/myid",
+  "a": "http://ex.org/bla",
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/bla')),
+          ]);
+        });
+
+        it('should alias @value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "val": "@value"
+  },
+  "@id": "http://ex.org/myid",
+  "http://xmlns.com/foaf/0.1/name": { "val": "Bob" },
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'),
+              namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob')),
+          ]);
+        });
+
+        it('should alias @value and @language', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "val": "@value",
+    "lang": "@language"
+  },
+  "@id": "http://ex.org/myid",
+  "http://xmlns.com/foaf/0.1/name": { "val": "Bob", "lang": "en" },
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'),
+              namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob', 'en')),
+          ]);
+        });
+
+        it('should alias @list', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "myList": "@list"
+  },
+  "http://ex.org/pred1": { "myList": [ "a", "b", "c" ] }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('should alias @reverse', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "rev": "@reverse"
+  },
+  "@id": "http://ex.org/myid",
+  "rev": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('should alias @graph', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "g": "@graph"
+  },
+  "@id": "http://ex.org/mygraph",
+  "g": {
+    "@id": "http://ex.org/myid",
+    "http://ex.org/pred1": {
+      "@type": "http://ex.org/mytype",
+      "@value": "my value"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', namedNode('http://ex.org/mytype')),
+              namedNode('http://ex.org/mygraph')),
+          ]);
         });
       });
     });
