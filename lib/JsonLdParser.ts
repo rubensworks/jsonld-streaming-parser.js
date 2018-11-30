@@ -429,6 +429,9 @@ export class JsonLdParser extends Transform {
         // Our value is part of an array
         const object = await this.valueToTerm(await this.getContext(depth), parentKey, value, depth);
         await this.handleListElement(object, depth, depth - 2, keys[depth - 2]);
+      } else if (parentKey === '@set') {
+        // Our value is part of a set, so we just add it to the parent-parent
+        await this.newOnValueJob(value, depth - 2, keys);
       } else if (parentKey !== undefined && parentKey !== '@type') {
         // Buffer our value using the parent key as predicate
 

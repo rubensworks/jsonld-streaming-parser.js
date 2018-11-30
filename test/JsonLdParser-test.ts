@@ -1661,6 +1661,58 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('a triple with an anonymous set array', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), literal('c')),
+          ]);
+        });
+
+        it('without @id and an empty list', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@set": [ ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
+          ]);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] },
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
+          ]);
+        });
+      });
+
       describe('a triple with an anonymous list array', () => {
         it('without @id', async () => {
           const stream = streamifyString(`
@@ -3508,6 +3560,23 @@ describe('JsonLdParser', () => {
             quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value', namedNode('http://ex.org/mytype')),
               namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('should alias @set', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "set": "@set"
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "set": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('a')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('b')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('c')),
           ]);
         });
       });
