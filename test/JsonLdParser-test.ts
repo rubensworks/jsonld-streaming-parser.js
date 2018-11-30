@@ -88,6 +88,40 @@ describe('JsonLdParser', () => {
     });
   });
 
+  describe('#isValidIri', () => {
+    it('should return false for null', async () => {
+      expect(JsonLdParser.isValidIri(null)).toBe(false);
+    });
+
+    it('should return false for undefined', async () => {
+      expect(JsonLdParser.isValidIri(undefined)).toBe(false);
+    });
+
+    it('should return false for false', async () => {
+      expect(JsonLdParser.isValidIri(<any> false)).toBe(false);
+    });
+
+    it('should return false for true', async () => {
+      expect(JsonLdParser.isValidIri(<any> true)).toBe(false);
+    });
+
+    it('should return false for the empty string', async () => {
+      expect(JsonLdParser.isValidIri('')).toBe(false);
+    });
+
+    it('should return false for a', async () => {
+      expect(JsonLdParser.isValidIri('a')).toBe(false);
+    });
+
+    it('should return true for http://abc', async () => {
+      expect(JsonLdParser.isValidIri('http://abc')).toBe(true);
+    });
+
+    it('should return true for _:b', async () => {
+      expect(JsonLdParser.isValidIri('_:b')).toBe(true);
+    });
+  });
+
   describe('when instantiated without a data factory and context', () => {
     let parser;
 
@@ -402,6 +436,16 @@ describe('JsonLdParser', () => {
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
+      describe('an invalid keyword', () => {
+        it('should be ignored', async () => {
+          const stream = streamifyString(`
+{
+  "@unknown": "dummy"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+      });
+
       describe('a single triple', () => {
         it('without @id', async () => {
           const stream = streamifyString(`
@@ -422,6 +466,15 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
           ]);
+        });
+
+        it('with @id but invalid predicate IRI that should be skipped', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "pred1": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
         it('with blank node @id', async () => {
@@ -2858,10 +2911,11 @@ describe('JsonLdParser', () => {
     "@vocab": null
   },
   "@id": "",
-  "pred": { "@id": "bla" }
+  "pred": { "@id": "bla" },
+  "http://ex.org/pred": { "@id": "bla" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('http://example.org/'), namedNode('pred'),
+            triple(namedNode('http://example.org/'), namedNode('http://ex.org/pred'),
               namedNode('http://example.org/bla')),
           ]);
         });
@@ -2874,13 +2928,28 @@ describe('JsonLdParser', () => {
     "ignore": null
   },
   "@id": "abc",
+  "pred": "bla",
+  "ignore": "bla"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('abc'), namedNode('http://example.org/pred'),
+              literal('bla')),
+          ]);
+        });
+
+        it('with @vocab with triples, with a term set to null with object values', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignore": null
+  },
+  "@id": "abc",
   "pred": { "@id": "bla" },
   "ignore": { "@id": "bla" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('abc'), namedNode('http://example.org/pred'),
-              namedNode('bla')),
-            triple(namedNode('abc'), namedNode('ignore'),
               namedNode('bla')),
           ]);
         });
@@ -2905,8 +2974,6 @@ describe('JsonLdParser', () => {
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
           triple(namedNode('abc'), namedNode('http://example.org/pred1'),
             namedNode('bla')),
-          triple(namedNode('bla'), namedNode('pred2'),
-            namedNode('blabla')),
         ]);
       });
 
@@ -3629,6 +3696,41 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
+    });
+  });
+
+  describe('when instantiated with errorOnInvalidProperties true', () => {
+    let parser;
+
+    beforeEach(() => {
+      parser = new JsonLdParser({ errorOnInvalidProperties: true });
+    });
+
+    it('should error on an unknown keyword', async () => {
+      const stream = streamifyString(`
+{
+  "@unknown": "dummy"
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+    });
+
+    it('should error on a predicate that is not an IRI', async () => {
+      const stream = streamifyString(`
+{
+  "bla": "dummy"
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+    });
+
+    it('should not error on a predicate that is mapped to null', async () => {
+      const stream = streamifyString(`
+{
+  "@context": {
+    "bla": null
+  },
+  "bla": "dummy"
+}`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
     });
   });
 });

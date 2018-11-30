@@ -13,6 +13,7 @@ import {IContainerHandler} from './containerhandler/IContainerHandler';
 export class JsonLdParser extends Transform {
 
   public static readonly DEFAULT_PROCESSING_MODE: string = '1.0';
+  public static readonly IRI_REGEX: RegExp = /^([A-Za-z][A-Za-z0-9+-.]*|_):/;
   public static readonly XSD: string = 'http://www.w3.org/2001/XMLSchema#';
   public static readonly XSD_BOOLEAN: string = JsonLdParser.XSD + 'boolean';
   public static readonly XSD_INTEGER: string = JsonLdParser.XSD + 'integer';
@@ -29,6 +30,7 @@ export class JsonLdParser extends Transform {
   private readonly baseIRI: string;
   private readonly produceGeneralizedRdf: boolean;
   private readonly processingMode: string;
+  private readonly errorOnInvalidProperties: boolean;
 
   private readonly jsonParser: any;
   // Stack of indicating if a depth has been touched.
@@ -74,6 +76,7 @@ export class JsonLdParser extends Transform {
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = options.produceGeneralizedRdf;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
+    this.errorOnInvalidProperties = options.errorOnInvalidProperties;
 
     this.jsonParser = new Parser();
     this.processingStack = [];
@@ -186,6 +189,15 @@ export class JsonLdParser extends Transform {
     return typeof key === 'string' && key.startsWith('@');
   }
 
+  /**
+   * Check if the given IRI is valid.
+   * @param {string} iri A potential IRI.
+   * @return {boolean} If the given IRI is valid.
+   */
+  public static isValidIri(iri: string): boolean {
+    return JsonLdParser.IRI_REGEX.test(iri);
+  }
+
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
@@ -201,6 +213,13 @@ export class JsonLdParser extends Transform {
    */
   public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
     const expanded: string = ContextParser.expandTerm(key, context, true);
+
+    // Immediately return if the predicate was disabled in the context
+    if (!expanded) {
+      return null;
+    }
+
+    // Check if the predicate is a blank node
     if (expanded.startsWith('_:')) {
       if (this.produceGeneralizedRdf) {
         return this.dataFactory.blankNode(expanded.substr(2));
@@ -208,7 +227,17 @@ export class JsonLdParser extends Transform {
         return null;
       }
     }
-    return this.dataFactory.namedNode(expanded);
+
+    // Check if the predicate is a valid IRI
+    if (JsonLdParser.isValidIri(expanded)) {
+      return this.dataFactory.namedNode(expanded);
+    } else {
+      if (expanded && this.errorOnInvalidProperties) {
+        this.emit('error', new Error(`Invalid predicate IRI: ${expanded}`));
+      } else {
+        return null;
+      }
+    }
   }
 
   /**
@@ -510,7 +539,11 @@ export class JsonLdParser extends Transform {
       }
     } else {
       // Unknown keyword, or usage of a keyword at the incorrect place
-      this.emittedStack[depth] = false;
+      if (depth && this.errorOnInvalidProperties) {
+        this.emit('error', new Error(`Unknown keyword '${key}' with value '${value}'`));
+      } else {
+        this.emittedStack[depth] = false;
+      }
     }
 
     // Flag that this depth is processed
@@ -811,4 +844,15 @@ export interface IJsonLdParserOptions {
    * Defaults to JsonLdParser.DEFAULT_PROCESSING_MODE.
    */
   processingMode?: string;
+  /**
+   * By default, JSON-LD requires that
+   * all properties that are not URIs,
+   * are unknown keywords,
+   * and do not occur in the context
+   * should be silently dropped.
+   * When setting this value to true,
+   * an error will be thrown when such properties occur.
+   * Defaults to false.
+   */
+  errorOnInvalidProperties?: boolean;
 }
