@@ -405,6 +405,11 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', [], 0))
             .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
         });
+
+        it('should return null for a list with null elements', async () => {
+          context = { key: { '@container': '@list' } };
+          return expect(await parser.valueToTerm(context, 'key', [null, null], 0)).toEqual(null);
+        });
       });
 
       describe('for a reverse properties', () => {
@@ -1784,9 +1789,43 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('without @id and it being an @list container', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
         it('without @id and an empty list', async () => {
           const stream = streamifyString(`
 {
+  "http://ex.org/pred1": { "@list": [ ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
+        it('without @id and an empty list and it being an @list container', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
@@ -1813,10 +1852,168 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and it being an @list container', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with @id and an empty list', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
+        it('with @id and an empty list and it being an @list container', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
         it('with out-of-order @id', async () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] },
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with an anonymous list with a null value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ null ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
+        it('with an anonymous list with null values', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with an anonymous list with a null @value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": { "@list": [ { "@value": null } ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
+        it('with a context-based list with null values', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": [ null, "a", null, "b", null, "c", null ]
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with a context-based list with a null @value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "http://ex.org/pred1": { "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": [ { "@value": null } ]
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode(JsonLdParser.RDF + 'nil')),
+          ]);
+        });
+
+        it('with out-of-order @id with null values', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] },
   "@id": "http://ex.org/myid",
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
@@ -1886,14 +2083,6 @@ describe('JsonLdParser', () => {
             triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
-
-          expect(output[0].subject).toEqual(output[1].subject);
-          expect(output[2].subject).toEqual(output[3].subject);
-          expect(output[4].subject).toEqual(output[5].subject);
-
-          expect(output[6].object).toEqual(output[0].subject);
-          expect(output[1].object).toEqual(output[2].subject);
-          expect(output[3].object).toEqual(output[4].subject);
         });
 
         it('with out-of-order @id', async () => {
@@ -1915,14 +2104,110 @@ describe('JsonLdParser', () => {
             triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
+        });
+      });
 
-          expect(output[0].subject).toEqual(output[1].subject);
-          expect(output[2].subject).toEqual(output[3].subject);
-          expect(output[4].subject).toEqual(output[5].subject);
+      describe('a triple with a context-based list element', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "p": "a"
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
 
-          expect(output[6].object).toEqual(output[0].subject);
-          expect(output[1].object).toEqual(output[2].subject);
-          expect(output[3].object).toEqual(output[4].subject);
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "a"
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@container": "@list" }
+  },
+  "p": "a",
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+      });
+
+      describe('a triple with a single anonymous list element', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": { "@list": "a" }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": "a" }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+
+        it('with out-of-order @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": { "@list": "a" },
+  "@id": "http://ex.org/myid",
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
         });
       });
 

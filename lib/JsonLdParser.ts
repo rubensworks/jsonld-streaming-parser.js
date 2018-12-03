@@ -42,7 +42,7 @@ export class JsonLdParser extends Transform {
   // Stack of graph flags
   private readonly graphStack: boolean[];
   // Stack of RDF list pointers (for @list)
-  private readonly listPointerStack: RDF.Term[];
+  private readonly listPointerStack: { term: RDF.Term, initialPredicate: RDF.Term, listRootDepth: number }[];
   // Stack of active contexts
   private readonly contextStack: Promise<IJsonLdContextNormalized>[];
   // Stack of flags indicating if the node is a literal
@@ -300,12 +300,19 @@ export class JsonLdParser extends Transform {
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, value["@value"], depth);
       } else if (value["@list"]) {
+        const listValue = value["@list"];
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
         // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
-        if (value["@list"].length === 0) {
-          return this.rdfNil;
+        if (Array.isArray(listValue)) {
+          if (listValue.length === 0) {
+            return this.rdfNil;
+          } else {
+            return null;
+          }
+        } else {
+          // We only have a single list element here, so emit this directly as single element
+          return this.valueToTerm(context, key, listValue, depth - 1);
         }
-        return null;
       } else if (value["@reverse"]) {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
@@ -489,8 +496,19 @@ export class JsonLdParser extends Transform {
 
       const predicate = await this.predicateToTerm(context, key);
       if (predicate) {
-        const object = await this.valueToTerm(context, key, value, depth);
+        let object = await this.valueToTerm(context, key, value, depth);
         if (object) {
+          // Special case if our term was defined as an @list, but does not occur in an array,
+          // In that case we just emit it as an RDF list with a single element.
+          if ((JsonLdParser.getContextValueContainer(context, key) === '@list'
+            || (value['@list'] && !Array.isArray(value['@list'])))
+            && object !== this.rdfNil) {
+            const listPointer: RDF.Term = this.dataFactory.blankNode();
+            this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, this.rdfNil));
+            this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, object));
+            object = listPointer;
+          }
+
           const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
           const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
           const depthPropertiesGraph: number = depth - depthOffsetGraph;
@@ -551,13 +569,20 @@ export class JsonLdParser extends Transform {
 
     // When we go up the stack, emit all unidentified values
     if (depth < this.lastDepth) {
-      await this.flushBuffer(this.lastDepth, keys);
-
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
-      if (this.listPointerStack[this.lastDepth]) {
-        this.emit('data', this.dataFactory.triple(this.listPointerStack[this.lastDepth], this.rdfRest, this.rdfNil));
+      const listPointer = this.listPointerStack[this.lastDepth];
+      if (listPointer) {
+        if (listPointer.term) {
+          this.emit('data', this.dataFactory.triple(listPointer.term, this.rdfRest, this.rdfNil));
+        } else {
+          this.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
+            .push({ predicate: listPointer.initialPredicate, object: this.rdfNil, reverse: false });
+        }
         delete this.listPointerStack[this.lastDepth];
       }
+
+      // Flush the buffer for lastDepth
+      await this.flushBuffer(this.lastDepth, keys);
 
       // Reset our stack
       delete this.processingStack[this.lastDepth];
@@ -684,23 +709,33 @@ export class JsonLdParser extends Transform {
     }
 
     // Buffer our value as an RDF list using the listRootKey as predicate
-    let listPointer: RDF.Term = this.listPointerStack[depth];
+    let listPointer = this.listPointerStack[depth];
 
-    // Link our list to the subject
-    if (!listPointer) {
-      listPointer = this.dataFactory.blankNode();
-      this.getUnidentifiedValueBufferSafe(listRootDepth).push(
-        { predicate, object: listPointer, reverse: false });
+    if (value) {
+      if (!listPointer || !listPointer.term) {
+        const linkTerm: RDF.BlankNode = this.dataFactory.blankNode();
+        this.getUnidentifiedValueBufferSafe(listRootDepth).push({ predicate, object: linkTerm, reverse: false });
+        listPointer = { term: linkTerm, initialPredicate: null, listRootDepth };
+      } else {
+        // rdf:rest links are always emitted before the next element,
+        // as the blank node identifier is only created at that point.
+        // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
+        const newLinkTerm: RDF.Term = this.dataFactory.blankNode();
+        this.emit('data', this.dataFactory.triple(listPointer.term, this.rdfRest, newLinkTerm));
+
+        // Update the list pointer for the next element
+        listPointer.term = newLinkTerm;
+      }
+
+      // Emit a list element for the current value
+      this.emit('data', this.dataFactory.triple(listPointer.term, this.rdfFirst, value));
     } else {
-      // rdf:rest links are always emitted before the next element,
-      // as the blank node identifier is only created at that point.
-      // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
-      const newListPointer: RDF.Term = this.dataFactory.blankNode();
-      this.emit('data', this.dataFactory.triple(listPointer, this.rdfRest, newListPointer));
-      listPointer = newListPointer;
+      // A falsy list element if found.
+      // Just enable the list flag for this depth if it has not been set before.
+      if (!listPointer) {
+        listPointer = { term: null, initialPredicate: predicate, listRootDepth };
+      }
     }
-
-    this.emit('data', this.dataFactory.triple(listPointer, this.rdfFirst, value));
 
     this.listPointerStack[depth] = listPointer;
   }
