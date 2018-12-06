@@ -225,6 +225,24 @@ describe('JsonLdParser', () => {
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });
 
+        it('with a relative @id with @base in context should return a named node', async () => {
+          context = { '@base': 'http://ex.org/' };
+          return expect(await parser.valueToTerm(context, 'key', { '@id': '.' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/'));
+        });
+
+        it('with a relative to parent @id with @base in context should return a named node', async () => {
+          context = { '@base': 'http://ex.org/abc/' };
+          return expect(await parser.valueToTerm(context, 'key', { '@id': '..' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/'));
+        });
+
+        it('with a relative to parent with query @id with @base in context should return a named node', async () => {
+          context = { '@base': 'http://ex.org/abc/' };
+          return expect(await parser.valueToTerm(context, 'key', { '@id': '..?a=b' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/?a=b'));
+        });
+
         it('with a relative @id with baseIRI should return a named node', async () => {
           parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
           return expect(await parser.valueToTerm(await parser.getContext(0), 'key', { '@id': 'abc' }, 0))
