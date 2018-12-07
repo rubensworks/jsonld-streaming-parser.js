@@ -374,17 +374,11 @@ export class JsonLdParser extends Transform {
     if (typeof value === 'number') {
       if (Number.isFinite(value)) {
         const isInteger = value % 1 === 0;
-        let stringValue = Number(value).toString();
-        if (datatype.value !== JsonLdParser.XSD_INTEGER) {
-          if (isInteger) {
-            stringValue += '.0';
-          }
-          stringValue += 'E0';
-          return stringValue;
-        } else if (!isInteger) {
-          stringValue += 'E0';
+        if (isInteger && datatype.value === JsonLdParser.XSD_INTEGER) {
+          return Number(value).toString();
+        } else {
+          return value.toExponential(15).replace(/(\d)0*e\+?/, '$1E');
         }
-        return stringValue;
       } else {
         return value > 0 ? 'INF' : '-INF';
       }

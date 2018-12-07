@@ -407,6 +407,16 @@ describe('JsonLdParser', () => {
           return expect(await parser.valueToTerm(context, 'key', 1.1, 0))
             .toEqualRdfTerm(literal('1.1E0', namedNode(JsonLdParser.XSD_INTEGER)));
         });
+
+        it('for 100.1 with int context type should return 1.001E2', async () => {
+          return expect(await parser.valueToTerm(context, 'key', 100.1, 0))
+            .toEqualRdfTerm(literal('1.001E2', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
+
+        it('for 123.45 with int context type should return 1.001E2', async () => {
+          return expect(await parser.valueToTerm(context, 'key', 123.45, 0))
+            .toEqualRdfTerm(literal('1.2345E2', namedNode(JsonLdParser.XSD_DOUBLE)));
+        });
       });
 
       describe('for an array', () => {
