@@ -628,7 +628,10 @@ export class JsonLdParser extends Transform {
   protected async unaliasKeyword(key: any, depth: number): Promise<any> {
     if (!JsonLdParser.isKeyword(key)) {
       const context = await this.getContext(depth);
-      const unliased = context[key];
+      let unliased = context[key];
+      if (unliased && typeof unliased === 'object') {
+        unliased = unliased['@id'];
+      }
       if (JsonLdParser.isKeyword(unliased)) {
         return unliased;
       }
