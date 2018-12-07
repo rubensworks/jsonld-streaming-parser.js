@@ -3369,6 +3369,23 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @vocab with triples, with a term @id set to null', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignore": { "@id": null }
+  },
+  "@id": "abc",
+  "pred": "bla",
+  "ignore": "bla"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('abc'), namedNode('http://example.org/pred'),
+              literal('bla')),
+          ]);
+        });
+
         it('with @vocab with triples, with a term set to null with object values', async () => {
           const stream = streamifyString(`
 {
