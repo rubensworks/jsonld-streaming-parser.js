@@ -255,6 +255,13 @@ describe('JsonLdParser', () => {
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });
 
+        it('with an empty @id with baseIRI and vocabIRI should return a named node for @type = @vocab', async () => {
+          parser = new JsonLdParser();
+          context = { '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' };
+          return expect(await parser.valueToTerm(context, 'key', { '@id': '', '@type': '@vocab' }, 0))
+            .toEqualRdfTerm(namedNode('http://vocab.org/'));
+        });
+
         it('with an @value should return a literal', async () => {
           return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
             .toEqualRdfTerm(literal('abc'));
@@ -4000,6 +4007,87 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode(), namedNode('http://ex.org/predicate'),
               namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('with value @id should be relative to baseIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@id" }
+  },
+  "p": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              namedNode('http://base.org/abc')),
+          ]);
+        });
+
+        it('with value @vocab should be relative to vocabIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@vocab" }
+  },
+  "p": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              namedNode('http://vocab.org/abc')),
+          ]);
+        });
+
+        it('without value @vocab should be relative to baseIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@vocab" }
+  },
+  "p": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              namedNode('http://base.org/abc')),
+          ]);
+        });
+
+        it('should use context terms for @type: @vocab', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@vocab" },
+    "abc": "http://ex.org/use-me"
+  },
+  "p": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              namedNode('http://ex.org/use-me')),
+          ]);
+        });
+
+        it('should not use context terms for @type: @vocab', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@id" },
+    "abc": "http://ex.org/do-not-use-me"
+  },
+  "p": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              namedNode('http://base.org/abc')),
           ]);
         });
       });
