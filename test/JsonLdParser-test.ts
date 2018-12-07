@@ -3352,6 +3352,58 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @base and @vocab with triples, with @vocab=null, should resolve @type to baseIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab": null
+  },
+  "@id": "",
+  "@type": "bla"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/bla')),
+          ]);
+        });
+
+        it('with @base and @vocab with triples, with @vocab=null, should resolve typed nodes to baseIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab": null
+  },
+  "@id": "",
+  "http://ex.org/p": { "@value": "val", "@type": "bla" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/'),
+              namedNode('http://ex.org/p'),
+              literal('val', namedNode('http://example.org/bla'))),
+          ]);
+        });
+
+        it('with @base and @vocab with triples, with @vocab=null, should resolve context type to baseIRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "@vocab": null,
+    "p": { "@id": "http://ex.org/p", "@type": "bla" }
+  },
+  "@id": "",
+  "p": "val"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/'),
+              namedNode('http://ex.org/p'),
+              literal('val', namedNode('http://example.org/bla'))),
+          ]);
+        });
+
         it('with @vocab with triples, with a term set to null', async () => {
           const stream = streamifyString(`
 {
