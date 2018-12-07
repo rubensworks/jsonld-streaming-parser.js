@@ -427,7 +427,8 @@ export class JsonLdParser extends Transform {
   }
 
   public async newOnValueJob(value: any, depth: number, keys: any[]) {
-    const key = await this.unaliasKeyword(keys[depth], depth);
+    const keyOriginal = keys[depth];
+    const key = await this.unaliasKeyword(keyOriginal, depth);
     const parentKey = await this.unaliasKeyword(depth > 0 && keys[depth - 1], depth - 1);
     const depthOffsetGraph = await this.getDepthOffsetGraph(depth, keys);
     this.emittedStack[depth] = true;
@@ -467,7 +468,7 @@ export class JsonLdParser extends Transform {
       // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
       const context = await this.getContext(depth);
       const predicate = this.rdfType;
-      const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
+      const reverse = JsonLdParser.isPropertyReverse(context, keyOriginal, parentKey);
       if (Array.isArray(value)) {
         for (const element of value) {
           this.getUnidentifiedValueBufferSafe(depth).push(
@@ -527,7 +528,7 @@ export class JsonLdParser extends Transform {
             object = listPointer;
           }
 
-          const reverse = JsonLdParser.isPropertyReverse(context, key, parentKey);
+          const reverse = JsonLdParser.isPropertyReverse(context, keyOriginal, parentKey);
           const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
           const depthPropertiesGraph: number = depth - depthOffsetGraph;
 

@@ -4327,6 +4327,22 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('should alias a reversed @type', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "a": { "@reverse": "@type" }
+  },
+  "@id": "http://ex.org/myid",
+  "a": "http://ex.org/bla",
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/bla'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/myid')),
+          ]);
+        });
+
         it('should alias @value', async () => {
           const stream = streamifyString(`
 {
