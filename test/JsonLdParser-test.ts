@@ -3457,6 +3457,73 @@ describe('JsonLdParser', () => {
                 namedNode('http://example.org/bla')),
             ]);
           });
+
+          it('with a context entry referring to itself, but should be resolved against @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.com/anotherVocab#",
+    "term": "term"
+  },
+  "term": "value of term"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://example.com/anotherVocab#term'),
+                literal('value of term')),
+            ]);
+          });
+
+          it('with a context entry referring to itself, should ignore the base', async () => {
+            parser = new JsonLdParser(
+              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.com/anotherVocab#",
+    "term": "term"
+  },
+  "term": "value of term"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://example.com/anotherVocab#term'),
+                literal('value of term')),
+            ]);
+          });
+
+          it('with context-based @type based on @vocab', async () => {
+            parser = new JsonLdParser(
+              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "date": { "@type": "dateTime" }
+  },
+  "date": "2011-01-25T00:00:00Z"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://vocab.org/date'),
+                literal('2011-01-25T00:00:00Z', namedNode('http://vocab.org/dateTime'))),
+            ]);
+          });
+
+          it('with inline @type based on @vocab', async () => {
+            parser = new JsonLdParser(
+              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+  },
+  "date": { "@value": "2011-01-25T00:00:00Z", "@type": "dateTime" }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode(), namedNode('http://vocab.org/date'),
+                literal('2011-01-25T00:00:00Z', namedNode('http://vocab.org/dateTime'))),
+            ]);
+          });
         });
 
         describe('with an out-of-order inner context', () => {
@@ -3706,6 +3773,22 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('on a named node should work with @vocab', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/"
+  },
+  "@id": "http://example.org/node",
+  "@type": "abc"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc')),
+          ]);
+        });
+
         it('on a named node with a prefixed @type', async () => {
           const stream = streamifyString(`
 {
@@ -3766,6 +3849,32 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://example.org/node'),
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://example.org/abc')),
+          ]);
+        });
+
+        it('on a named node with multiple @types should work with @vocab', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/"
+  },
+  "@id": "http://example.org/node",
+  "@type": [
+    "abc1",
+    "abc2",
+    "abc3"
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc1')),
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc2')),
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/abc3')),
           ]);
         });
 

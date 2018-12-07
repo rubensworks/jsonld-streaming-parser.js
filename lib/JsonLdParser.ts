@@ -258,6 +258,17 @@ export class JsonLdParser extends Transform {
   }
 
   /**
+   * Convert a given JSON key to an RDF resource term,
+   * based on @vocab.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param key A JSON key.
+   * @return {RDF.NamedNode} An RDF named node.
+   */
+  public vocabToTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode {
+    return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, true));
+  }
+
+  /**
    * Convert a given JSON value to an RDF term.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The current JSON key.
@@ -297,8 +308,7 @@ export class JsonLdParser extends Transform {
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
-          return this.dataFactory.literal(value["@value"],
-            <RDF.NamedNode> this.resourceToTerm(context, value["@type"]));
+          return this.dataFactory.literal(value["@value"], this.vocabToTerm(context, value["@type"]));
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, value["@value"], depth);
@@ -456,11 +466,11 @@ export class JsonLdParser extends Transform {
       if (Array.isArray(value)) {
         for (const element of value) {
           this.getUnidentifiedValueBufferSafe(depth).push(
-            { predicate, object: this.resourceToTerm(context, element), reverse });
+            { predicate, object: this.vocabToTerm(context, element), reverse });
         }
       } else {
         this.getUnidentifiedValueBufferSafe(depth).push(
-          { predicate, object: this.resourceToTerm(context, value), reverse });
+          { predicate, object: this.vocabToTerm(context, value), reverse });
       }
     } else if (typeof key === 'number') {
       // Check if we have an anonymous list
