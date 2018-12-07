@@ -518,6 +518,19 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with blank node @type', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@type": "_:type"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+            triple(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              blankNode('type')),
+          ]);
+        });
+
         it('with @id and literal value that *looks* like a blank node', async () => {
           const stream = streamifyString(`
 {

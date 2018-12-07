@@ -265,7 +265,10 @@ export class JsonLdParser extends Transform {
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode {
+  public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
+    if (key.startsWith('_:')) {
+      return this.dataFactory.blankNode(key.substr(2));
+    }
     let expanded = ContextParser.expandTerm(key, context, true);
     if (expanded === key) {
       expanded = ContextParser.expandTerm(key, context, false);
@@ -317,7 +320,8 @@ export class JsonLdParser extends Transform {
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
-          return this.dataFactory.literal(value["@value"], this.createVocabOrBaseTerm(context, value["@type"]));
+          return this.dataFactory.literal(value["@value"],
+            <RDF.NamedNode> this.createVocabOrBaseTerm(context, value["@type"]));
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, value["@value"], depth);
