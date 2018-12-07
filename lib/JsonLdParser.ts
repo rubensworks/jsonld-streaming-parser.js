@@ -33,6 +33,8 @@ export class JsonLdParser extends Transform {
   private readonly errorOnInvalidProperties: boolean;
 
   private readonly jsonParser: any;
+  // If there are top-level properties
+  private topLevelProperties: boolean;
   // Stack of indicating if a depth has been touched.
   private readonly processingStack: boolean[];
   // Stack of indicating if triples have been emitted (or will be emitted) at each depth.
@@ -79,6 +81,7 @@ export class JsonLdParser extends Transform {
     this.errorOnInvalidProperties = options.errorOnInvalidProperties;
 
     this.jsonParser = new Parser();
+    this.topLevelProperties = false;
     this.processingStack = [];
     this.emittedStack = [];
     this.idStack = [];
@@ -523,6 +526,7 @@ export class JsonLdParser extends Transform {
               const graph: RDF.Term = this.idStack[depthPropertiesGraph - 1];
               if (graph) {
                 // Emit our quad if graph @id is known
+                this.onPush(depth);
                 if (reverse) {
                   this.push(this.dataFactory.quad(object, predicate, subject, graph));
                 } else {
@@ -540,6 +544,7 @@ export class JsonLdParser extends Transform {
               }
             } else {
               // Emit if no @graph was applicable
+              this.onPush(depth);
               if (reverse) {
                 this.push(this.dataFactory.triple(object, predicate, subject));
               } else {
@@ -801,6 +806,7 @@ export class JsonLdParser extends Transform {
         // Flush values to stream if the graph @id is known
         for (const bufferedValue of valueBuffer) {
           if (!isLiteral || !bufferedValue.predicate.equals(this.rdfType)) { // Skip @type on literals with an @value
+            this.onPush(depth);
             if (bufferedValue.reverse) {
               this.push(this.dataFactory.quad(bufferedValue.object, bufferedValue.predicate, subject, graph));
             } else {
@@ -839,13 +845,21 @@ export class JsonLdParser extends Transform {
       this.unidentifiedGraphsBuffer[depth];
     if (graphBuffer) {
       // A @graph statement at the root without @id relates to the default graph,
+      // unless there are top-level properties,
       // others relate to blank nodes.
-      const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
+      const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode' && !this.topLevelProperties
         ? this.dataFactory.defaultGraph() : subject;
       for (const bufferedValue of graphBuffer) {
+        this.onPush(depth);
         this.push(this.dataFactory.quad(bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
       }
       delete this.unidentifiedGraphsBuffer[depth];
+    }
+  }
+
+  protected onPush(depth: number) {
+    if (depth === 1) {
+      this.topLevelProperties = true;
     }
   }
 }

@@ -2519,6 +2519,100 @@ describe('JsonLdParser', () => {
               namedNode('http://ex.org/myid')),
           ]);
         });
+
+        it('without @id, but with a top-level property afterwards, should create a blank node graph id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              blankNode('g1')),
+            quad(blankNode('g1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('without @id, but with a top-level property before, should create a blank node graph id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred2": "http://ex.org/obj2",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              blankNode('g1')),
+            quad(blankNode('g1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with @id, but with a top-level property afterwards', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with @id, but with a top-level property before', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred2": "http://ex.org/obj2",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with o-o-o @id, but with a top-level property afterwards', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "http://ex.org/pred2": "http://ex.org/obj2",
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with o-o-o @id, but with a top-level property before', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred2": "http://ex.org/obj2",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              namedNode('http://ex.org/myid')),
+            quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
       });
 
       describe('two quads', () => {
@@ -2673,6 +2767,42 @@ describe('JsonLdParser', () => {
               namedNode('http://ex.org/myid')),
             quad(blankNode('a'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'),
               namedNode('http://ex.org/myid')),
+          ]);
+        });
+
+        it('without @id, but with a top-level property afterwards, should create a blank node graph id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  },
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode('a'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              blankNode('g1')),
+            quad(blankNode('a'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'),
+              blankNode('g1')),
+            quad(blankNode('g1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('without @id, but with a top-level property before, should create a blank node graph id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred2": "http://ex.org/obj2",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "http://ex.org/pred2": "http://ex.org/obj2"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode('a'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+              blankNode('g1')),
+            quad(blankNode('a'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2'),
+              blankNode('g1')),
+            quad(blankNode('g1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
           ]);
         });
       });
@@ -2833,7 +2963,6 @@ describe('JsonLdParser', () => {
               literal('http://ex.org/obj1'), namedNode('http://ex.org/mymiddleid')),
           ]);
         });
-
       });
 
       describe('quads with nested properties', () => {
