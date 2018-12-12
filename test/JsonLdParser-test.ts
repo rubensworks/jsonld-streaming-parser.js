@@ -2403,6 +2403,40 @@ describe('JsonLdParser', () => {
               namedNode('http://ex.org/myinnerid')),
           ]);
         });
+
+        it('should skipped inner nodes behind an invalid predicate', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": "ABC",
+  "pred1": {
+    "http://ex.org/pred2": "http://ex.org/obj2",
+    "@id": "http://ex.org/myinnerid"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('ABC')),
+          ]);
+        });
+
+        it('should skipped inner nodes behind a nested invalid predicates', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": "ABC",
+  "pred1": {
+    "pred2": {
+      "http://ex.org/pred3": "http://ex.org/obj2",
+      "@id": "http://ex.org/myinnerid"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('ABC')),
+          ]);
+        });
       });
 
       describe('a single quad', () => {
