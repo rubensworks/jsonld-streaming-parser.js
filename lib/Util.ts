@@ -101,7 +101,8 @@ export class Util {
    * @return {boolean} If the property must be reversed.
    */
   public static isPropertyReverse(context: IJsonLdContextNormalized, key: string, parentKey: string): boolean {
-    return parentKey === '@reverse' || Util.isContextValueReverse(context, key);
+    // '!==' is needed because reversed properties in a @reverse container should cancel each other out.
+    return parentKey === '@reverse' !== Util.isContextValueReverse(context, key);
   }
 
   /**

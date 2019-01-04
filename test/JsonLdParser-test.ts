@@ -1136,6 +1136,22 @@ describe('JsonLdParser', () => {
               namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
+
+        it('with @id and a @reverse container', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@reverse": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "@reverse": {
+     "p": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+          ]);
+        });
       });
 
       describe('a single triple in an array', () => {
