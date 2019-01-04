@@ -1,4 +1,4 @@
-import {JsonLdParser} from "../JsonLdParser";
+import {ParsingContext} from "../ParsingContext";
 import {IContainerHandler} from "./IContainerHandler";
 
 /**
@@ -8,8 +8,8 @@ import {IContainerHandler} from "./IContainerHandler";
  */
 export class ContainerHandlerIndex implements IContainerHandler {
 
-  public async handle(parser: JsonLdParser, value: any, depth: number, keys: string[]): Promise<void> {
-    await parser.newOnValueJob(value, depth - 1, keys);
+  public async handle(parsingContext: ParsingContext, keys: string[], value: any, depth: number): Promise<void> {
+    await parsingContext.newOnValueJob(keys, value, depth - 1);
   }
 
 }

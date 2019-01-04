@@ -5,122 +5,9 @@ import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
 import each from 'jest-each';
 import "jest-rdf";
+import {Util} from "../lib/Util";
 
 describe('JsonLdParser', () => {
-
-  describe('#getContextValue', () => {
-    it('should return the fallback when the context does not contain the given key', async () => {
-      expect(JsonLdParser.getContextValue({}, 'a', 'x', 'FB')).toEqual('FB');
-    });
-
-    it('should return the fallback when the context contains the given key, without contextKey', async () => {
-      expect(JsonLdParser.getContextValue({ x: {} }, 'a', 'x', 'FB')).toEqual('FB');
-    });
-
-    it('should return the value when the context contains the given key, with contextKey', async () => {
-      expect(JsonLdParser.getContextValue({ x: { a: 'b' } }, 'a', 'x', 'FB')).toEqual('b');
-    });
-  });
-
-  describe('#getContextValueContainer', () => {
-    it('should return @set as default', async () => {
-      expect(JsonLdParser.getContextValueContainer({}, 'abc')).toEqual('@set');
-    });
-
-    it('should return @list when defined as such', async () => {
-      expect(JsonLdParser.getContextValueContainer({ abc: { '@container': '@list' } }, 'abc'))
-        .toEqual('@list');
-    });
-  });
-
-  describe('#getContextValueType', () => {
-    it('should return null as default', async () => {
-      expect(JsonLdParser.getContextValueType({}, 'abc')).toBe(null);
-    });
-
-    it('should return @id when defined as such', async () => {
-      expect(JsonLdParser.getContextValueType({ abc: { '@type': '@id' } }, 'abc'))
-        .toEqual('@id');
-    });
-  });
-
-  describe('#getContextValueLanguage', () => {
-    it('should return null as default', async () => {
-      expect(JsonLdParser.getContextValueLanguage({}, 'abc')).toBe(null);
-    });
-
-    it('should return @language on root as default if available', async () => {
-      expect(JsonLdParser.getContextValueLanguage({ '@language': 'nl-be' }, 'abc')).toBe('nl-be');
-    });
-
-    it('should return the entry language', async () => {
-      expect(JsonLdParser.getContextValueLanguage({ abc: { '@language': 'en-us' } }, 'abc'))
-        .toEqual('en-us');
-    });
-
-    it('should return the null entry language even if a root @language is present', async () => {
-      expect(JsonLdParser.getContextValueLanguage({ 'abc': { '@language': null }, '@language': 'nl-be'  }, 'abc'))
-        .toEqual(null);
-    });
-  });
-
-  describe('#isContextValueReverse', () => {
-    it('should return false as default', async () => {
-      expect(JsonLdParser.isContextValueReverse({}, 'abc')).toBe(false);
-    });
-
-    it('should return true when defined as such', async () => {
-      expect(JsonLdParser.isContextValueReverse({ abc: { '@reverse': 'bla' } }, 'abc')).toBe(true);
-    });
-  });
-
-  describe('#isPropertyReverse', () => {
-    it('should return false as default', async () => {
-      expect(JsonLdParser.isPropertyReverse({}, 'abc', 'def')).toBe(false);
-    });
-
-    it('should return true when the parent key is @reverse', async () => {
-      expect(JsonLdParser.isPropertyReverse({}, 'abc', '@reverse')).toBe(true);
-    });
-
-    it('should return true when the key has @reverse in the context', async () => {
-      expect(JsonLdParser.isPropertyReverse({ abc: { '@reverse': 'bla' } }, 'abc', 'def')).toBe(true);
-    });
-  });
-
-  describe('#isValidIri', () => {
-    it('should return false for null', async () => {
-      expect(JsonLdParser.isValidIri(null)).toBe(false);
-    });
-
-    it('should return false for undefined', async () => {
-      expect(JsonLdParser.isValidIri(undefined)).toBe(false);
-    });
-
-    it('should return false for false', async () => {
-      expect(JsonLdParser.isValidIri(<any> false)).toBe(false);
-    });
-
-    it('should return false for true', async () => {
-      expect(JsonLdParser.isValidIri(<any> true)).toBe(false);
-    });
-
-    it('should return false for the empty string', async () => {
-      expect(JsonLdParser.isValidIri('')).toBe(false);
-    });
-
-    it('should return false for a', async () => {
-      expect(JsonLdParser.isValidIri('a')).toBe(false);
-    });
-
-    it('should return true for http://abc', async () => {
-      expect(JsonLdParser.isValidIri('http://abc')).toBe(true);
-    });
-
-    it('should return true for _:b', async () => {
-      expect(JsonLdParser.isValidIri('_:b')).toBe(true);
-    });
-  });
 
   describe('when instantiated without a data factory and context', () => {
     let parser;
@@ -130,11 +17,11 @@ describe('JsonLdParser', () => {
     });
 
     it('should have a default data factory', async () => {
-      expect(parser.dataFactory).toBeTruthy();
+      expect(parser.util.dataFactory).toBeTruthy();
     });
 
     it('should have a default root context', async () => {
-      expect(await parser.rootContext).toEqual({ '@base': undefined });
+      expect(await parser.parsingContext.rootContext).toEqual({ '@base': undefined });
     });
   });
 
@@ -146,11 +33,11 @@ describe('JsonLdParser', () => {
     });
 
     it('should have a default data factory', async () => {
-      expect(parser.dataFactory).toBeTruthy();
+      expect(parser.util.dataFactory).toBeTruthy();
     });
 
     it('should have no root context', async () => {
-      expect(await parser.rootContext).toEqual({ SomeTerm: 'http://example.org/' });
+      expect(await parser.parsingContext.rootContext).toEqual({ SomeTerm: 'http://example.org/' });
     });
   });
 
@@ -165,293 +52,6 @@ describe('JsonLdParser', () => {
 
     beforeEach(() => {
       parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext });
-    });
-
-    describe('#valueToTerm', () => {
-
-      let context;
-
-      beforeEach(() => {
-        context = {};
-      });
-
-      describe('for an unknown type', () => {
-        it('should emit an error', async () => {
-          return new Promise(async (resolve, reject) => {
-            parser.on('error', () => resolve());
-            await parser.valueToTerm(context, 'key', Symbol(), 0);
-          });
-        });
-      });
-
-      describe('for an object', () => {
-        it('without an @id should return null', async () => {
-          return expect(await parser.valueToTerm(context, 'key', {}, 0))
-            .toEqual(null);
-        });
-
-        it('without an @id should return a blank node when a value was emitted at a deeper depth', async () => {
-          parser.emittedStack[1] = true;
-          return expect(await parser.valueToTerm(context, 'key', {}, 0))
-            .toEqualRdfTerm(blankNode());
-        });
-
-        it('without an @id should put a blank node on the id stack when a value was emitted at a deeper depth',
-          async () => {
-            parser.emittedStack[1] = true;
-            await parser.valueToTerm(context, 'key', {}, 0);
-            return expect(parser.idStack[1]).toEqualRdfTerm(blankNode());
-          });
-
-        it('with an @id should return a named node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@id': 'http://ex.org' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org'));
-        });
-
-        it('with a relative @id without @base in context should return a named node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@id': 'abc' }, 0))
-            .toEqualRdfTerm(namedNode('abc'));
-        });
-
-        it('with a relative @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': 'abc' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
-        });
-
-        it('with an empty @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': '' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/'));
-        });
-
-        it('with a relative @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': '.' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/'));
-        });
-
-        it('with a relative to parent @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/abc/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': '..' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/'));
-        });
-
-        it('with a relative to parent with query @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/abc/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': '..?a=b' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/?a=b'));
-        });
-
-        it('with a relative @id with baseIRI should return a named node', async () => {
-          parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
-          return expect(await parser.valueToTerm(await parser.getContext(0), 'key', { '@id': 'abc' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
-        });
-
-        it('with an empty @id with baseIRI should return a named node', async () => {
-          parser = new JsonLdParser({ baseIRI: 'http://ex.org/' });
-          return expect(await parser.valueToTerm(await parser.getContext(0), 'key', { '@id': '' }, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/'));
-        });
-
-        it('with an empty @id with baseIRI and vocabIRI should return a named node for @type = @vocab', async () => {
-          parser = new JsonLdParser();
-          context = { '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' };
-          return expect(await parser.valueToTerm(context, 'key', { '@id': '', '@type': '@vocab' }, 0))
-            .toEqualRdfTerm(namedNode('http://vocab.org/'));
-        });
-
-        it('with an @value should return a literal', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
-            .toEqualRdfTerm(literal('abc'));
-        });
-
-        it('with an @value and @language should return a language-tagged string literal', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-us' }, 0))
-            .toEqualRdfTerm(literal('abc', 'en-us'));
-        });
-
-        it('with an @value and @type should return a typed literal', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0))
-            .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));
-        });
-
-        it('with a @value value and @language in the context entry should return a language literal', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
-          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'nl-nl' }, 0))
-            .toEqualRdfTerm(literal('abc', 'nl-nl'));
-        });
-
-        it('with a @value without @language should reset the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
-          return expect(await parser.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
-            .toEqualRdfTerm(literal('abc'));
-        });
-
-        it('with a raw value and @language in the root context should return a language literal', async () => {
-          context = { '@language': 'en-us' };
-          return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
-            .toEqualRdfTerm(literal('abc', 'en-us'));
-        });
-
-        it('with a raw value and @language in the context entry should return a language literal', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
-          return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
-            .toEqualRdfTerm(literal('abc', 'en-us'));
-        });
-
-        it('with a raw value and null @language in the context entry should return a literal without language',
-          async () => {
-            context = { 'key': { '@language': null }, '@language': 'nl-be' };
-            return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
-              .toEqualRdfTerm(literal('abc'));
-          });
-      });
-
-      describe('for a string', () => {
-        it('should return a literal node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', 'abc', 0)).toEqualRdfTerm(literal('abc'));
-        });
-
-        it('with an @type: @id should return a named node', async () => {
-          context = { key: { '@type': '@id' } };
-          return expect(await parser.valueToTerm(context, 'key', 'http://ex.org/', 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/'));
-        });
-
-        it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
-          return expect(await parser.valueToTerm(context, 'key', 'abc', 0))
-            .toEqualRdfTerm(literal('abc', namedNode('http://ex.org/')));
-        });
-      });
-
-      describe('for a boolean', () => {
-        it('for true should return a boolean literal node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', true, 0))
-            .toEqualRdfTerm(literal('true', namedNode(JsonLdParser.XSD_BOOLEAN)));
-        });
-
-        it('for false should return a boolean literal node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
-        });
-
-        it('with an @type: @id should return a named node', async () => {
-          context = { key: { '@type': '@id' } };
-          return expect(await parser.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(namedNode('false'));
-        });
-
-        it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
-          return expect(await parser.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(literal('false', namedNode('http://ex.org/')));
-        });
-
-        it('should ignore the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
-          return expect(await parser.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(literal('false', namedNode(JsonLdParser.XSD_BOOLEAN)));
-        });
-      });
-
-      describe('for a number', () => {
-        it('for 2 should return an integer literal node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', 2, 0))
-            .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
-        });
-
-        it('for 2.2 should return a double literal node', async () => {
-          return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-
-        it('with an @type: @id should return a named node', async () => {
-          context = { key: { '@type': '@id' } };
-          return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(namedNode('2.2E0'));
-        });
-
-        it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
-          return expect(await parser.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(literal('2.2E0', namedNode('http://ex.org/')));
-        });
-
-        it('should ignore the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
-          return expect(await parser.valueToTerm(context, 'key', 2, 0))
-            .toEqualRdfTerm(literal('2', namedNode(JsonLdParser.XSD_INTEGER)));
-        });
-
-        it('for Infinity should return a INF', async () => {
-          return expect(await parser.valueToTerm(context, 'key', Infinity, 0))
-            .toEqualRdfTerm(literal('INF', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-
-        it('for -Infinity should return a -INF', async () => {
-          return expect(await parser.valueToTerm(context, 'key', -Infinity, 0))
-            .toEqualRdfTerm(literal('-INF', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-
-        it('for 1 with double context type should return 1.0E0', async () => {
-          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#double' } };
-          return expect(await parser.valueToTerm(context, 'key', 1, 0))
-            .toEqualRdfTerm(literal('1.0E0', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-
-        it('for 1.1 with int context type should return 1.1E0', async () => {
-          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#integer' } };
-          return expect(await parser.valueToTerm(context, 'key', 1.1, 0))
-            .toEqualRdfTerm(literal('1.1E0', namedNode(JsonLdParser.XSD_INTEGER)));
-        });
-
-        it('for 100.1 with int context type should return 1.001E2', async () => {
-          return expect(await parser.valueToTerm(context, 'key', 100.1, 0))
-            .toEqualRdfTerm(literal('1.001E2', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-
-        it('for 123.45 with int context type should return 1.001E2', async () => {
-          return expect(await parser.valueToTerm(context, 'key', 123.45, 0))
-            .toEqualRdfTerm(literal('1.2345E2', namedNode(JsonLdParser.XSD_DOUBLE)));
-        });
-      });
-
-      describe('for an array', () => {
-        it('should return null', async () => {
-          return expect(await parser.valueToTerm(context, 'key', [1, 2], 0)).toBeFalsy();
-        });
-      });
-
-      describe('for a list', () => {
-        it('should return null', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@list': [1, 2] }, 0)).toBeFalsy();
-        });
-
-        it('should return rdf:nil for an empty anonymous list', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@list': [] }, 0))
-            .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
-        });
-
-        it('should return rdf:nil for an empty list', async () => {
-          context = { key: { '@container': '@list' } };
-          return expect(await parser.valueToTerm(context, 'key', [], 0))
-            .toEqual(namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'));
-        });
-
-        it('should return null for a list with null elements', async () => {
-          context = { key: { '@container': '@list' } };
-          return expect(await parser.valueToTerm(context, 'key', [null, null], 0)).toEqual(null);
-        });
-      });
-
-      describe('for a reverse properties', () => {
-        it('should return null', async () => {
-          return expect(await parser.valueToTerm(context, 'key', { '@reverse': {} }, 0)).toBeFalsy();
-        });
-      });
     });
 
     describe('should parse', () => {
@@ -571,7 +171,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('true', namedNode(JsonLdParser.XSD_BOOLEAN))),
+              literal('true', namedNode(Util.XSD_BOOLEAN))),
           ]);
         });
 
@@ -583,7 +183,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE))),
+              literal('2.2E0', namedNode(Util.XSD_DOUBLE))),
           ]);
         });
 
@@ -940,7 +540,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
-              literal('true', JsonLdParser.XSD_BOOLEAN)),
+              literal('true', Util.XSD_BOOLEAN)),
           ]);
         });
 
@@ -959,7 +559,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
-              literal('false', JsonLdParser.XSD_BOOLEAN)),
+              literal('false', Util.XSD_BOOLEAN)),
           ]);
         });
 
@@ -1568,7 +1168,7 @@ describe('JsonLdParser', () => {
 }]`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('true', namedNode(JsonLdParser.XSD_BOOLEAN))),
+              literal('true', namedNode(Util.XSD_BOOLEAN))),
           ]);
         });
 
@@ -1580,7 +1180,7 @@ describe('JsonLdParser', () => {
 }]`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              literal('2.2E0', namedNode(JsonLdParser.XSD_DOUBLE))),
+              literal('2.2E0', namedNode(Util.XSD_DOUBLE))),
           ]);
         });
 
@@ -1827,12 +1427,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -1847,12 +1447,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -1864,7 +1464,7 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -1878,7 +1478,7 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -1890,12 +1490,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -1911,12 +1511,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -1930,7 +1530,7 @@ describe('JsonLdParser', () => {
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              namedNode(JsonLdParser.RDF + 'nil')),
+              namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -1946,7 +1546,7 @@ describe('JsonLdParser', () => {
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              namedNode(JsonLdParser.RDF + 'nil')),
+              namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -1958,12 +1558,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -1980,7 +1580,7 @@ describe('JsonLdParser', () => {
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              namedNode(JsonLdParser.RDF + 'nil')),
+              namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -1995,12 +1595,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2017,7 +1617,7 @@ describe('JsonLdParser', () => {
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              namedNode(JsonLdParser.RDF + 'nil')),
+              namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -2032,12 +1632,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2054,7 +1654,7 @@ describe('JsonLdParser', () => {
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
-              namedNode(JsonLdParser.RDF + 'nil')),
+              namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -2066,12 +1666,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2088,12 +1688,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2108,7 +1708,7 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode(), namedNode('http://ex.org/pred1'), namedNode(Util.RDF + 'nil')),
           ]);
         });
 
@@ -2123,12 +1723,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2144,12 +1744,12 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2166,8 +1766,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2183,8 +1783,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2200,8 +1800,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2218,8 +1818,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2235,8 +1835,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -2252,8 +1852,8 @@ describe('JsonLdParser', () => {
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
           expect(output).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -3352,7 +2952,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/obj1"
   }
 }`);
-            parser.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
+            parser.parsingContext.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
         });
@@ -4247,12 +3847,12 @@ describe('JsonLdParser', () => {
   "p": [ "a", "b", "c" ],
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
               triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
             ]);
           });
@@ -4267,12 +3867,12 @@ describe('JsonLdParser', () => {
   "p": { "@list": [ "a", "b", "c" ] },
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
               triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
             ]);
           });
@@ -4393,12 +3993,12 @@ describe('JsonLdParser', () => {
   "p": [ "a", "b", "c" ],
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
               triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
             ]);
           });
@@ -4413,12 +4013,12 @@ describe('JsonLdParser', () => {
   "p": { "@list": [ "a", "b", "c" ] },
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-              triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-              triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l3')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-              triple(blankNode('l3'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('a')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('b')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), blankNode('l3')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'first'), literal('c')),
+              triple(blankNode('l3'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
               triple(namedNode('http://ex.org/myid'), blankNode('p'), blankNode('l1')),
             ]);
           });
@@ -4530,12 +4130,12 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": { "myList": [ "a", "b", "c" ] }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'first'), literal('a')),
-            triple(blankNode('l0'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l1')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'first'), literal('b')),
-            triple(blankNode('l1'), namedNode(JsonLdParser.RDF + 'rest'), blankNode('l2')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'first'), literal('c')),
-            triple(blankNode('l2'), namedNode(JsonLdParser.RDF + 'rest'), namedNode(JsonLdParser.RDF + 'nil')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
             triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
@@ -4660,7 +4260,8 @@ describe('JsonLdParser', () => {
 {
   "@unknown": "dummy"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Unknown keyword \'@unknown\' with value \'dummy\''));
     });
 
     it('should error on a predicate that is not an IRI', async () => {
@@ -4668,7 +4269,8 @@ describe('JsonLdParser', () => {
 {
   "bla": "dummy"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Invalid predicate IRI: bla'));
     });
 
     it('should not error on a predicate that is mapped to null', async () => {

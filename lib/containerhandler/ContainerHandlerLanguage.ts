@@ -1,4 +1,4 @@
-import {JsonLdParser} from "../JsonLdParser";
+import {ParsingContext} from "../ParsingContext";
 import {IContainerHandler} from "./IContainerHandler";
 
 /**
@@ -9,9 +9,9 @@ import {IContainerHandler} from "./IContainerHandler";
  */
 export class ContainerHandlerLanguage implements IContainerHandler {
 
-  public async handle(parser: JsonLdParser, value: any, depth: number, keys: string[]): Promise<void> {
+  public async handle(parsingContext: ParsingContext, keys: string[], value: any, depth: number): Promise<void> {
     value = { '@value': value, '@language': keys[depth] };
-    await parser.newOnValueJob(value, depth - 1, keys);
+    await parsingContext.newOnValueJob(keys, value, depth - 1);
   }
 
 }
