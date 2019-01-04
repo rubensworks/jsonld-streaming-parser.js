@@ -13,6 +13,7 @@ import {EntryHandlerKeywordGraph} from "./entryhandler/keyword/EntryHandlerKeywo
 import {EntryHandlerKeywordId} from "./entryhandler/keyword/EntryHandlerKeywordId";
 import {EntryHandlerKeywordType} from "./entryhandler/keyword/EntryHandlerKeywordType";
 import {EntryHandlerKeywordUnknownFallback} from "./entryhandler/keyword/EntryHandlerKeywordUnknownFallback";
+import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywordValue";
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
 
@@ -28,6 +29,7 @@ export class JsonLdParser extends Transform {
     new EntryHandlerKeywordId(),
     new EntryHandlerKeywordGraph(),
     new EntryHandlerKeywordType(),
+    new EntryHandlerKeywordValue(),
     new EntryHandlerKeywordUnknownFallback(),
     new EntryHandlerContainer(),
     new EntryHandlerPredicate(),
@@ -101,6 +103,11 @@ export class JsonLdParser extends Transform {
       }
     }
 
+    // Skip further processing if this node is part of a literal
+    if (this.util.isLiteral(depth)) {
+      handleKey = false;
+    }
+
     // Get handler
     if (handleKey) {
       for (const entryHandler of JsonLdParser.ENTRY_HANDLERS) {
@@ -138,6 +145,7 @@ export class JsonLdParser extends Transform {
       delete this.parsingContext.emittedStack[this.lastDepth];
       delete this.parsingContext.idStack[this.lastDepth];
       delete this.parsingContext.graphStack[this.lastDepth + 1];
+      delete this.parsingContext.literalStack[this.lastDepth];
       if (!this.parsingContext.allowOutOfOrderContext) {
         // Only delete context if no out-of-order context is allowed,
         // because otherwise, we handle them in a different order.
@@ -255,19 +263,15 @@ export class JsonLdParser extends Transform {
       const graph: RDF.Term = this.parsingContext.graphStack[depth]
       || await this.util.getDepthOffsetGraph(depth, keys) >= 0 ? this.parsingContext
         .idStack[depth - await this.util.getDepthOffsetGraph(depth, keys) - 1] : this.util.dataFactory.defaultGraph();
-      const isLiteral: boolean = this.util.isLiteral(depth);
       if (graph) {
         // Flush values to stream if the graph @id is known
         for (const bufferedValue of valueBuffer) {
-          // Skip @type on literals with an @value
-          if (!isLiteral || !bufferedValue.predicate.equals(this.util.rdfType)) {
-            if (bufferedValue.reverse) {
-              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                bufferedValue.object, bufferedValue.predicate, subject, graph));
-            } else {
-              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                subject, bufferedValue.predicate, bufferedValue.object, graph));
-            }
+          if (bufferedValue.reverse) {
+            this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+              bufferedValue.object, bufferedValue.predicate, subject, graph));
+          } else {
+            this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+              subject, bufferedValue.predicate, bufferedValue.object, graph));
           }
         }
       } else {
@@ -275,21 +279,18 @@ export class JsonLdParser extends Transform {
         const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
           depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
         for (const bufferedValue of valueBuffer) {
-          // Skip @type on literals with an @value
-          if (!isLiteral || !bufferedValue.predicate.equals(this.util.rdfType)) {
-            if (bufferedValue.reverse) {
-              subGraphBuffer.push({
-                object: subject,
-                predicate: bufferedValue.predicate,
-                subject: bufferedValue.object,
-              });
-            } else {
-              subGraphBuffer.push({
-                object: bufferedValue.object,
-                predicate: bufferedValue.predicate,
-                subject,
-              });
-            }
+          if (bufferedValue.reverse) {
+            subGraphBuffer.push({
+              object: subject,
+              predicate: bufferedValue.predicate,
+              subject: bufferedValue.object,
+            });
+          } else {
+            subGraphBuffer.push({
+              object: bufferedValue.object,
+              predicate: bufferedValue.predicate,
+              subject,
+            });
           }
         }
       }

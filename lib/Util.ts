@@ -163,7 +163,6 @@ export class Util {
         if (typeof value["@value"] === 'object') {
           return null;
         }
-        this.parsingContext.literalStack[depth + 1] = true;
         if (value["@language"]) {
           return this.dataFactory.literal(value["@value"], value["@language"]);
         } else if (value["@type"]) {
