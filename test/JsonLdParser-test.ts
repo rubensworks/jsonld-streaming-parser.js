@@ -1155,6 +1155,46 @@ describe('JsonLdParser', () => {
       });
 
       describe('a free-floating node', () => {
+        it('with string in array', async () => {
+          const stream = streamifyString(`
+[ "abc" ]`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with string in @set array', async () => {
+          const stream = streamifyString(`
+{
+  "@set": [
+    "abc", "cde"
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with string in @list array', async () => {
+          const stream = streamifyString(`
+{
+  "@list": [
+    "abc", "cde"
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with string in @list array in @graph array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [
+    {
+      "@list": [
+        "abc", "cde"
+      ]
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with typed @value', async () => {
           const stream = streamifyString(`
 { "@value": "free-floating value typed value", "@type": "http://example.com/type" }`);

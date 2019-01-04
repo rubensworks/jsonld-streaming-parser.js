@@ -25,7 +25,20 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     if (parentKey === '@list') {
       // Our value is part of an array
       const object = await util.valueToTerm(await parsingContext.getContext(depth), parentKey, value, depth);
-      await this.handleListElement(parsingContext, util, object, depth, depth - 2, keys[depth - 2]);
+
+      // Determine the list root key
+      let listRootKey: string = null;
+      for (let i = depth - 2; i >= 0; i--) {
+        const keyOption = keys[depth - 2];
+        if (typeof keyOption === 'string') {
+          listRootKey = keyOption;
+          break;
+        }
+      }
+
+      if (listRootKey !== null) {
+        await this.handleListElement(parsingContext, util, object, depth, depth - 2, listRootKey);
+      }
     } else if (parentKey === '@set') {
       // Our value is part of a set, so we just add it to the parent-parent
       await parsingContext.newOnValueJob(keys, value, depth - 2);
@@ -47,14 +60,13 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
   protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term, depth: number,
                                     listRootDepth: number, listRootKey: string) {
-    const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootDepth), listRootKey);
-
-    // Buffer our value as an RDF list using the listRootKey as predicate
+        // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer = parsingContext.listPointerStack[depth];
 
     if (value) {
       if (!listPointer || !listPointer.term) {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
+        const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootDepth), listRootKey);
         parsingContext.getUnidentifiedValueBufferSafe(listRootDepth)
           .push({ predicate, object: linkTerm, reverse: false });
         listPointer = { term: linkTerm, initialPredicate: null, listRootDepth };
@@ -75,6 +87,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       // A falsy list element if found.
       // Just enable the list flag for this depth if it has not been set before.
       if (!listPointer) {
+        const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootDepth), listRootKey);
         listPointer = { term: null, initialPredicate: predicate, listRootDepth };
       }
     }
