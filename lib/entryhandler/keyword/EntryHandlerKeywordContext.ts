@@ -25,7 +25,7 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
 
     // Set the context for this scope
     parsingContext.contextStack[depth] = parsingContext.contextParser.parse(
-      value, parsingContext.baseIRI, await parentContext);
+      value, null, await parentContext);
     await parsingContext.validateContext(await parsingContext.contextStack[depth]);
   }
 

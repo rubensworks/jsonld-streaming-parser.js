@@ -257,7 +257,15 @@ export class Util {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
-    return this.dataFactory.namedNode(ContextParser.expandTerm(key, context, false));
+    const iri = ContextParser.expandTerm(key, context, false);
+    if (!Util.isValidIri(iri)) {
+      if (iri && this.parsingContext.errorOnInvalidProperties) {
+        this.parsingContext.emitError(new Error(`Invalid resource IRI: ${iri}`));
+      } else {
+        return null;
+      }
+    }
+    return this.dataFactory.namedNode(iri);
   }
 
   /**

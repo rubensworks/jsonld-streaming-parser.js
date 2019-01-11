@@ -48,7 +48,7 @@ export class ParsingContext {
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = options.produceGeneralizedRdf;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
-    this.errorOnInvalidProperties = options.errorOnInvalidProperties;
+    this.errorOnInvalidProperties = options.errorOnInvalidIris;
 
     // Initialize stacks
     this.processingStack = [];

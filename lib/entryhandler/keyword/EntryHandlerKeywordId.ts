@@ -14,7 +14,7 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // Error if an @id for this node already existed.
-    if (parsingContext.idStack[depth]) {
+    if (parsingContext.idStack[depth] !== undefined) {
       parsingContext.emitError(new Error(`Found duplicate @ids '${parsingContext
         .idStack[depth].value}' and '${value}'`));
     }

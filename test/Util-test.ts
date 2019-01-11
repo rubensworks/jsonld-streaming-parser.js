@@ -168,9 +168,9 @@ describe('Util', () => {
             .toEqualRdfTerm(namedNode('http://ex.org'));
         });
 
-        it('with a relative @id without @base in context should return a named node', async () => {
+        it('with a relative @id without @base in context should return null', async () => {
           return expect(await util.valueToTerm(context, 'key', { '@id': 'abc' }, 0))
-            .toEqualRdfTerm(namedNode('abc'));
+            .toBe(null);
         });
 
         it('with a relative @id with @base in context should return a named node', async () => {
@@ -300,10 +300,16 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('false', namedNode(Util.XSD_BOOLEAN)));
         });
 
-        it('with an @type: @id should return a named node', async () => {
+        it('with an @type: @id with baseIRI should return a named node', async () => {
+          context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
+          return expect(await util.valueToTerm(context, 'key', false, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/false'));
+        });
+
+        it('with an @type: @id should return null', async () => {
           context = { key: { '@type': '@id' } };
           return expect(await util.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(namedNode('false'));
+            .toBe(null);
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
@@ -330,10 +336,16 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('2.2E0', namedNode(Util.XSD_DOUBLE)));
         });
 
-        it('with an @type: @id should return a named node', async () => {
+        it('with an @type: @id with baseIRI should return a named node', async () => {
+          context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
+          return expect(await util.valueToTerm(context, 'key', 2.2, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/2.2E0'));
+        });
+
+        it('with an @type: @id should return null', async () => {
           context = { key: { '@type': '@id' } };
           return expect(await util.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(namedNode('2.2E0'));
+            .toBe(null);
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {

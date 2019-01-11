@@ -254,43 +254,48 @@ export class JsonLdParser extends Transform {
    * @return {Promise<void>} A promise resolving if flushing is done.
    */
   protected async flushBuffer(depth: number, keys: any[]) {
-    const subject: RDF.Term = this.parsingContext.idStack[depth] || this.util.dataFactory.blankNode();
+    let subject: RDF.Term = this.parsingContext.idStack[depth];
+    if (subject === undefined) {
+      subject = this.util.dataFactory.blankNode();
+    }
 
     // Flush values at this level
     const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
       this.parsingContext.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
-      const graph: RDF.Term = this.parsingContext.graphStack[depth]
-      || await this.util.getDepthOffsetGraph(depth, keys) >= 0 ? this.parsingContext
-        .idStack[depth - await this.util.getDepthOffsetGraph(depth, keys) - 1] : this.util.dataFactory.defaultGraph();
-      if (graph) {
-        // Flush values to stream if the graph @id is known
-        for (const bufferedValue of valueBuffer) {
-          if (bufferedValue.reverse) {
-            this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-              bufferedValue.object, bufferedValue.predicate, subject, graph));
-          } else {
-            this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-              subject, bufferedValue.predicate, bufferedValue.object, graph));
+      if (subject) {
+        const graph: RDF.Term = this.parsingContext.graphStack[depth]
+        || await this.util.getDepthOffsetGraph(depth, keys) >= 0 ? this.parsingContext
+          .idStack[depth - await this.util.getDepthOffsetGraph(depth, keys) - 1] : this.util.dataFactory.defaultGraph();
+        if (graph) {
+          // Flush values to stream if the graph @id is known
+          for (const bufferedValue of valueBuffer) {
+            if (bufferedValue.reverse) {
+              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+                bufferedValue.object, bufferedValue.predicate, subject, graph));
+            } else {
+              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+                subject, bufferedValue.predicate, bufferedValue.object, graph));
+            }
           }
-        }
-      } else {
-        // Place the values in the graphs buffer if the graph @id is not yet known
-        const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
-          depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
-        for (const bufferedValue of valueBuffer) {
-          if (bufferedValue.reverse) {
-            subGraphBuffer.push({
-              object: subject,
-              predicate: bufferedValue.predicate,
-              subject: bufferedValue.object,
-            });
-          } else {
-            subGraphBuffer.push({
-              object: bufferedValue.object,
-              predicate: bufferedValue.predicate,
-              subject,
-            });
+        } else {
+          // Place the values in the graphs buffer if the graph @id is not yet known
+          const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
+            depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
+          for (const bufferedValue of valueBuffer) {
+            if (bufferedValue.reverse) {
+              subGraphBuffer.push({
+                object: subject,
+                predicate: bufferedValue.predicate,
+                subject: bufferedValue.object,
+              });
+            } else {
+              subGraphBuffer.push({
+                object: bufferedValue.object,
+                predicate: bufferedValue.predicate,
+                subject,
+              });
+            }
           }
         }
       }
@@ -302,14 +307,16 @@ export class JsonLdParser extends Transform {
     const graphBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] =
       this.parsingContext.unidentifiedGraphsBuffer[depth];
     if (graphBuffer) {
-      // A @graph statement at the root without @id relates to the default graph,
-      // unless there are top-level properties,
-      // others relate to blank nodes.
-      const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode' && !this.parsingContext.topLevelProperties
-        ? this.util.dataFactory.defaultGraph() : subject;
-      for (const bufferedValue of graphBuffer) {
-        this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-          bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
+      if (subject) {
+        // A @graph statement at the root without @id relates to the default graph,
+        // unless there are top-level properties,
+        // others relate to blank nodes.
+        const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
+        && !this.parsingContext.topLevelProperties ? this.util.dataFactory.defaultGraph() : subject;
+        for (const bufferedValue of graphBuffer) {
+          this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+            bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
+        }
       }
       delete this.parsingContext.unidentifiedGraphsBuffer[depth];
     }
@@ -356,7 +363,7 @@ export interface IJsonLdParserOptions {
   processingMode?: string;
   /**
    * By default, JSON-LD requires that
-   * all properties that are not URIs,
+   * all properties (or @id's) that are not URIs,
    * are unknown keywords,
    * and do not occur in the context
    * should be silently dropped.
@@ -364,5 +371,5 @@ export interface IJsonLdParserOptions {
    * an error will be thrown when such properties occur.
    * Defaults to false.
    */
-  errorOnInvalidProperties?: boolean;
+  errorOnInvalidIris?: boolean;
 }

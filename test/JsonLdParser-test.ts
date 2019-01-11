@@ -108,6 +108,24 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id that has an invalid IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "not-an-iri",
+  "http://ex.org/pred1": "http://ex.org/obj1"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with an o-o-o @id that has an invalid IRI', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": "http://ex.org/obj1",
+  "@id": "not-an-iri"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with @id but invalid predicate IRI that should be skipped', async () => {
           const stream = streamifyString(`
 {
@@ -2143,6 +2161,42 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id with invalid IRI with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "not-an-iri",
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with @id with inner subject @id that has an invalid IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@id": "not-an-iri",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with @id with inner o-o-o subject @id that has an invalid IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "http://ex.org/pred1": "http://ex.org/obj1",
+    "@id": "not-an-iri"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with @id with inner subject @id and @type', async () => {
           const stream = streamifyString(`
 {
@@ -2172,6 +2226,18 @@ describe('JsonLdParser', () => {
             quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/pred1'),
               literal('http://ex.org/obj1'), namedNode('http://ex.org/myid')),
           ]);
+        });
+
+        it('with out-of-order @id with invalid IRI with inner subject @id', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  },
+  "@id": "not-an-iri"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
         it('without @id with out-of-order inner subject @id', async () => {
@@ -3064,12 +3130,12 @@ describe('JsonLdParser', () => {
     "@base": null,
     "@vocab":  "http://ex.org/"
   },
-  "@id": "abc",
-  "pred": { "@id": "bla" }
+  "@id": "http://abc",
+  "pred": { "@id": "http://bla" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('abc'), namedNode('http://ex.org/pred'),
-              namedNode('bla')),
+            triple(namedNode('http://abc'), namedNode('http://ex.org/pred'),
+              namedNode('http://bla')),
           ]);
         });
 
@@ -3149,13 +3215,13 @@ describe('JsonLdParser', () => {
     "@vocab": "http://example.org/",
     "ignore": null
   },
-  "@id": "abc",
-  "pred": "bla",
-  "ignore": "bla"
+  "@id": "http://abc",
+  "pred": "http://bla",
+  "ignore": "http://bla"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('abc'), namedNode('http://example.org/pred'),
-              literal('bla')),
+            triple(namedNode('http://abc'), namedNode('http://example.org/pred'),
+              literal('http://bla')),
           ]);
         });
 
@@ -3166,13 +3232,13 @@ describe('JsonLdParser', () => {
     "@vocab": "http://example.org/",
     "ignore": { "@id": null }
   },
-  "@id": "abc",
-  "pred": "bla",
-  "ignore": "bla"
+  "@id": "http://abc",
+  "pred": "http://bla",
+  "ignore": "http://bla"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('abc'), namedNode('http://example.org/pred'),
-              literal('bla')),
+            triple(namedNode('http://abc'), namedNode('http://example.org/pred'),
+              literal('http://bla')),
           ]);
         });
 
@@ -3183,13 +3249,13 @@ describe('JsonLdParser', () => {
     "@vocab": "http://example.org/",
     "ignore": null
   },
-  "@id": "abc",
-  "pred": { "@id": "bla" },
-  "ignore": { "@id": "bla" }
+  "@id": "http://abc",
+  "pred": { "@id": "http://bla" },
+  "ignore": { "@id": "http://bla" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('abc'), namedNode('http://example.org/pred'),
-              namedNode('bla')),
+            triple(namedNode('http://abc'), namedNode('http://example.org/pred'),
+              namedNode('http://bla')),
           ]);
         });
       });
@@ -3201,18 +3267,18 @@ describe('JsonLdParser', () => {
     "@vocab": "http://example.org/",
     "ignore": null
   },
-  "@id": "abc",
+  "@id": "http://abc",
   "pred1": {
     "@context": null,
-    "@id": "bla",
+    "@id": "http://bla",
     "pred2": {
-      "@id": "blabla"
+      "@id": "http://blabla"
     }
   }
 }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-          triple(namedNode('abc'), namedNode('http://example.org/pred1'),
-            namedNode('bla')),
+          triple(namedNode('http://abc'), namedNode('http://example.org/pred1'),
+            namedNode('http://bla')),
         ]);
       });
 
@@ -4115,6 +4181,55 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('should multi-level alias @id', async () => {
+          const stream = streamifyString(`
+{
+  "@context": [
+    { "id": "@id" },
+    { "url": "id" }
+  ],
+  "url": "http://ex.org/myid",
+  "http://xmlns.com/foaf/0.1/name": "Bob",
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob')),
+          ]);
+        });
+
+        it('should alias @id with a relative IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "url": "@id"
+  },
+  "url": "/myid",
+  "http://xmlns.com/foaf/0.1/name": "Bob",
+}`);
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, baseIRI: 'http://ex.org/' });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob')),
+          ]);
+        });
+
+        it('should multi-level alias @id with a relative IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": [
+    { "id": "@id" },
+    { "url": "id" }
+  ],
+  "url": "/myid",
+  "http://xmlns.com/foaf/0.1/name": "Bob",
+}`);
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, baseIRI: 'http://ex.org/' });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
+              literal('Bob')),
+          ]);
+        });
+
         it('should alias @id nested in @id', async () => {
           const stream = streamifyString(`
 {
@@ -4322,11 +4437,11 @@ describe('JsonLdParser', () => {
     });
   });
 
-  describe('when instantiated with errorOnInvalidProperties true', () => {
+  describe('when instantiated with errorOnInvalidIris true', () => {
     let parser;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ errorOnInvalidProperties: true });
+      parser = new JsonLdParser({ errorOnInvalidIris: true });
     });
 
     it('should error on an unknown keyword', async () => {
@@ -4347,6 +4462,24 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid predicate IRI: bla'));
     });
 
+    it('should error on a subject that is not an IRI', async () => {
+      const stream = streamifyString(`
+{
+  "@id": "dummy"
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Invalid resource IRI: dummy'));
+    });
+
+    it('should error on an object that is not an IRI', async () => {
+      const stream = streamifyString(`
+{
+  "http://ex.org/pred": { "@id": "dummy" }
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Invalid resource IRI: dummy'));
+    });
+
     it('should not error on a predicate that is mapped to null', async () => {
       const stream = streamifyString(`
 {
@@ -4354,6 +4487,17 @@ describe('JsonLdParser', () => {
     "bla": null
   },
   "bla": "dummy"
+}`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+    });
+
+    it('should not error on a subject that is mapped to null', async () => {
+      const stream = streamifyString(`
+{
+  "@context": {
+    "id": { "@id": null }
+  },
+  "id": "dummy"
 }`);
       return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
     });
