@@ -299,7 +299,7 @@ export class Util {
     if (typeof value === 'number') {
       if (Number.isFinite(value)) {
         const isInteger = value % 1 === 0;
-        if (isInteger && datatype.value === Util.XSD_INTEGER) {
+        if (isInteger && datatype.value !== Util.XSD_DOUBLE) {
           return Number(value).toString();
         } else {
           return value.toExponential(15).replace(/(\d)0*e\+?/, '$1E');

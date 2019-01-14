@@ -382,6 +382,12 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('1.1E0', namedNode(Util.XSD_INTEGER)));
         });
 
+        it('for 1 with dummy context type should return 1.0E0', async () => {
+          context = { key: { '@type': 'http://ex.org/' } };
+          return expect(await util.valueToTerm(context, 'key', 1, 0))
+            .toEqualRdfTerm(literal('1', namedNode('http://ex.org/')));
+        });
+
         it('for 100.1 with int context type should return 1.001E2', async () => {
           return expect(await util.valueToTerm(context, 'key', 100.1, 0))
             .toEqualRdfTerm(literal('1.001E2', namedNode(Util.XSD_DOUBLE)));
