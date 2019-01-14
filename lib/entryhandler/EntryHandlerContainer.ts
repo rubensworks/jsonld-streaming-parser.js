@@ -24,7 +24,7 @@ export class EntryHandlerContainer implements IEntryHandler<IContainerHandler> {
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
     : Promise<IContainerHandler> {
     return EntryHandlerContainer.CONTAINER_HANDLERS[Util.getContextValueContainer(
-      await parsingContext.getContext(depth), keys[depth - 1])];
+      await parsingContext.getContext(keys), keys[depth - 1])];
   }
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number,

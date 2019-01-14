@@ -3095,6 +3095,126 @@ describe('JsonLdParser', () => {
             parser.parsingContext.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
+
+          it('with two separate inner contexts at the same level', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "http://ex.org/s",
+  "http://ex.org/p1": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm1"
+    },
+    "@id": "http://ex.org/obj11",
+    "SomeInnerTerm": "http://ex.org/obj2"
+  },
+  "http://ex.org/p2": {
+    "@context": {
+      "SomeInnerTerm": "http://example.org/SomeInnerTerm2"
+    },
+    "@id": "http://ex.org/obj12",
+    "SomeInnerTerm": "http://ex.org/obj2"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/s'), namedNode('http://ex.org/p1'),
+                namedNode('http://ex.org/obj11')),
+              triple(namedNode('http://ex.org/obj11'), namedNode('http://example.org/SomeInnerTerm1'),
+                literal('http://ex.org/obj2')),
+              triple(namedNode('http://ex.org/s'), namedNode('http://ex.org/p2'),
+                namedNode('http://ex.org/obj12')),
+              triple(namedNode('http://ex.org/obj12'), namedNode('http://example.org/SomeInnerTerm2'),
+                literal('http://ex.org/obj2')),
+            ]);
+          });
+
+          it('with overriding of @base', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "property": "http://example.com/vocab#property"
+  },
+  "@id": "../document-relative",
+  "property": {
+    "@context": {
+      "@base": "http://example.org/test/"
+    },
+    "@id": "../document-base-overwritten",
+    "property": [
+      {
+        "@context": null,
+        "@id": "../document-relative",
+        "property": "context completely reset, drops property"
+      }
+    ]
+  }
+}`);
+            parser = new JsonLdParser({
+              allowOutOfOrderContext,
+              baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
+              dataFactory,
+            });
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('https://json-ld.org/test-suite/document-relative'),
+                namedNode('http://example.com/vocab#property'),
+                namedNode('http://example.org/document-base-overwritten')),
+              triple(namedNode('http://example.org/document-base-overwritten'),
+                namedNode('http://example.com/vocab#property'),
+                namedNode('https://json-ld.org/test-suite/document-relative')),
+            ]);
+          });
+
+          it('with complex overriding of @base', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "property": "http://example.com/vocab#property"
+  },
+  "@id": "../document-relative",
+  "@type": "#document-relative",
+  "property": {
+    "@context": {
+      "@base": "http://example.org/test/"
+    },
+    "@id": "../document-base-overwritten",
+    "@type": "#document-base-overwritten",
+    "property": [
+      {
+        "@context": null,
+        "@id": "../document-relative",
+        "@type": "#document-relative",
+        "property": "context completely reset, drops property"
+      },
+      {
+        "@context": {
+          "@base": null
+        },
+        "@id": "../document-relative",
+        "@type": "#document-relative",
+        "property": "@base is set to none"
+      }
+    ]
+  }
+}`);
+            parser = new JsonLdParser({
+              allowOutOfOrderContext,
+              baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
+              dataFactory,
+            });
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://example.org/document-base-overwritten'),
+                namedNode('http://example.com/vocab#property'),
+                namedNode('https://json-ld.org/test-suite/document-relative')),
+              triple(namedNode('http://example.org/document-base-overwritten'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/test/#document-base-overwritten')),
+              triple(namedNode('https://json-ld.org/test-suite/document-relative'),
+                namedNode('http://example.com/vocab#property'),
+                namedNode('http://example.org/document-base-overwritten')),
+              triple(namedNode('https://json-ld.org/test-suite/document-relative'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld#document-relative')),
+            ]);
+          });
         });
 
         it('with @base without triples', async () => {

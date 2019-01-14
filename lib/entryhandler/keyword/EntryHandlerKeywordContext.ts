@@ -21,12 +21,12 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     }
 
     // Find the parent context to inherit from
-    const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(depth - 1);
+    const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(keys.slice(0, -1));
 
     // Set the context for this scope
-    parsingContext.contextStack[depth] = parsingContext.contextParser.parse(
-      value, null, await parentContext);
-    await parsingContext.validateContext(await parsingContext.contextStack[depth]);
+    const context = parsingContext.contextParser.parse(value, parsingContext.baseIRI, await parentContext);
+    parsingContext.contextTree.setContext(keys.slice(0, -1), context);
+    await parsingContext.validateContext(await context);
   }
 
 }

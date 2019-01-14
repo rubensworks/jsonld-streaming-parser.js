@@ -20,7 +20,7 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
     }
 
     // Save our @id on the stack
-    parsingContext.idStack[depth] = await util.resourceToTerm(await parsingContext.getContext(depth), value);
+    parsingContext.idStack[depth] = await util.resourceToTerm(await parsingContext.getContext(keys), value);
   }
 
 }

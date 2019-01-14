@@ -10,7 +10,7 @@ import {IEntryHandler} from "./IEntryHandler";
 export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean> {
-    return keys[depth] && !!await util.predicateToTerm(await parsingContext.getContext(depth), keys[depth]);
+    return keys[depth] && !!await util.predicateToTerm(await parsingContext.getContext(keys), keys[depth]);
   }
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
@@ -22,11 +22,12 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
                       testResult: boolean): Promise<any> {
     const keyOriginal = keys[depth];
     const parentKey = await util.unaliasKeywordParent(keys, depth);
-    const context = await parsingContext.getContext(depth);
+    const context = await parsingContext.getContext(keys);
 
     const predicate = await util.predicateToTerm(context, key);
     if (predicate) {
-      let object = await util.valueToTerm(context, key, value, depth);
+      const objectContext = await parsingContext.getContext(keys, 0);
+      let object = await util.valueToTerm(objectContext, key, value, depth, keys);
       if (object) {
         // Special case if our term was defined as an @list, but does not occur in an array,
         // In that case we just emit it as an RDF list with a single element.

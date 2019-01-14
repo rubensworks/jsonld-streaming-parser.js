@@ -43,7 +43,7 @@ export class JsonLdParser extends Transform {
   // Jobs that are not started yet because of a missing @context
   private readonly contextAwaitingJobs: (() => Promise<void>)[];
   // Jobs that are not started yet that process a @context
-  private readonly contextJobs: (() => Promise<void>)[];
+  private readonly contextJobs: (() => Promise<void>)[][];
 
   // The last depth that was processed.
   private lastDepth: number;
@@ -84,7 +84,7 @@ export class JsonLdParser extends Transform {
    */
   public async newOnValueJob(keys: any[], value: any, depth: number) {
     const keyOriginal = keys[depth];
-    const key = await this.util.unaliasKeyword(keyOriginal, depth);
+    const key = await this.util.unaliasKeyword(keyOriginal, keys);
     const parentKey = await this.util.unaliasKeywordParent(keys, depth);
     this.parsingContext.emittedStack[depth] = true;
     let handleKey = true;
@@ -96,7 +96,7 @@ export class JsonLdParser extends Transform {
 
     // Skip further processing if one of the parent nodes are invalid
     for (let i = 1; i < keys.length - 1; i++) {
-      if (!await this.isValidKey(keys, i)) {
+      if (!await this.isValidKey(keys.slice(0, i + 1), i)) {
         this.parsingContext.emittedStack[depth] = false;
         handleKey = false;
         break;
@@ -146,11 +146,6 @@ export class JsonLdParser extends Transform {
       delete this.parsingContext.idStack[this.lastDepth];
       delete this.parsingContext.graphStack[this.lastDepth + 1];
       delete this.parsingContext.literalStack[this.lastDepth];
-      if (!this.parsingContext.allowOutOfOrderContext) {
-        // Only delete context if no out-of-order context is allowed,
-        // because otherwise, we handle them in a different order.
-        delete this.parsingContext.contextStack[this.lastDepth];
-      }
     }
     this.lastDepth = depth;
   }
@@ -185,13 +180,18 @@ export class JsonLdParser extends Transform {
 
       if (!this.isParsingContextInner(depth)) { // Don't parse inner nodes inside @context
         const valueJobCb = () => this.newOnValueJob(keys, value, depth);
-        if (this.parsingContext.allowOutOfOrderContext && !this.parsingContext.contextStack[depth]) {
+        if (this.parsingContext.allowOutOfOrderContext
+          && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
           // If an out-of-order context is allowed,
           // we have to buffer everything.
           // We store jobs for @context's separately,
           // because at the end, we have to process them first.
           if (keys[depth] === '@context') {
-            this.contextJobs[depth] = valueJobCb;
+            let jobs = this.contextJobs[depth];
+            if (!jobs) {
+              jobs = this.contextJobs[depth] = [];
+            }
+            jobs.push(valueJobCb);
           } else {
             this.contextAwaitingJobs.push(valueJobCb);
           }
@@ -232,9 +232,11 @@ export class JsonLdParser extends Transform {
    */
   protected async executeBufferedJobs() {
     // Handle context jobs
-    for (const job of this.contextJobs) {
-      if (job) {
-        await job();
+    for (const jobs of this.contextJobs) {
+      if (jobs) {
+        for (const job of jobs) {
+          await job();
+        }
       }
     }
 

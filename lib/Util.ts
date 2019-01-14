@@ -129,10 +129,11 @@ export class Util {
    * @param {string} key The current JSON key.
    * @param value A JSON value.
    * @param {number} depth The depth the value is at.
+   * @param {string[]} keys The path of keys.
    * @return {RDF.Term} An RDF term.
    */
   public async valueToTerm(context: IJsonLdContextNormalized, key: string,
-                           value: any, depth: number): Promise<RDF.Term> {
+                           value: any, depth: number, keys: string[]): Promise<RDF.Term> {
     const type: string = typeof value;
     switch (type) {
     case 'object':
@@ -152,7 +153,7 @@ export class Util {
       }
 
       // In all other cases, we have a hash
-      value = await this.unaliasKeywords(value, depth); // Un-alias potential keywords in this hash
+      value = await this.unaliasKeywords(value, keys); // Un-alias potential keywords in this hash
       if ("@id" in value) {
         if (value["@type"] === '@vocab') {
           return this.createVocabOrBaseTerm(context, value["@id"]);
@@ -170,7 +171,7 @@ export class Util {
             <RDF.NamedNode> this.createVocabOrBaseTerm(context, value["@type"]));
         }
         // We don't pass the context, because context-based things like @language should be ignored
-        return await this.valueToTerm({}, key, value["@value"], depth);
+        return await this.valueToTerm({}, key, value["@value"], depth, keys);
       } else if (value["@list"]) {
         const listValue = value["@list"];
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
@@ -183,7 +184,8 @@ export class Util {
           }
         } else {
           // We only have a single list element here, so emit this directly as single element
-          return this.valueToTerm(context, key, listValue, depth - 1);
+          return this.valueToTerm(await this.parsingContext.getContext(keys),
+            key, listValue, depth - 1, keys.slice(0, -1));
         }
       } else if (value["@reverse"]) {
         // We handle reverse properties at value level so we can emit earlier,
@@ -348,12 +350,12 @@ export class Util {
    * If the key is not a keyword, try to check if it is an alias for a keyword,
    * and if so, un-alias it.
    * @param {string} key A key, can be falsy.
-   * @param {number} depth The depth at which the key occurs.
+   * @param {string[]} keys The path of keys.
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
-  public async unaliasKeyword(key: any, depth: number): Promise<any> {
+  public async unaliasKeyword(key: any, keys: string[]): Promise<any> {
     if (!Util.isKeyword(key)) {
-      const context = await this.parsingContext.getContext(depth);
+      const context = await this.parsingContext.getContext(keys);
       let unliased = context[key];
       if (unliased && typeof unliased === 'object') {
         unliased = unliased['@id'];
@@ -373,19 +375,19 @@ export class Util {
    * @return {Promise<any>} A promise resolving to the parent key, or another key.
    */
   public async unaliasKeywordParent(keys: any[], depth: number): Promise<any> {
-    return await this.unaliasKeyword(depth > 0 && keys[depth - 1], depth - 1);
+    return await this.unaliasKeyword(depth > 0 && keys[depth - 1], keys.slice(0, -1));
   }
 
   /**
    * Un-alias all keywords in the given hash.
    * @param {{[p: string]: any}} hash A hash object.
-   * @param {number} depth A depth at which the hash occurs.
+   * @param {string[]} keys The path of keys.
    * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
    */
-  public async unaliasKeywords(hash: {[id: string]: any}, depth: number): Promise<{[id: string]: any}> {
+  public async unaliasKeywords(hash: {[id: string]: any}, keys: string[]): Promise<{[id: string]: any}> {
     const newHash: {[id: string]: any} = {};
     for (const key in hash) {
-      newHash[await this.unaliasKeyword(key, depth)] = hash[key];
+      newHash[await this.unaliasKeyword(key, keys)] = hash[key];
     }
     return newHash;
   }
@@ -416,7 +418,7 @@ export class Util {
    */
   public async getDepthOffsetGraph(depth: number, keys: any[]): Promise<number> {
     for (let i = depth - 1; i > 0; i--) {
-      if (await this.unaliasKeyword(keys[i], i) === '@graph') {
+      if (await this.unaliasKeyword(keys[i], keys.slice(0, depth)) === '@graph') {
         return depth - i - 1;
       }
     }

@@ -19,7 +19,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // The current identifier identifies an rdf:type predicate.
     // But we only emit it once the node closes,
     // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
-    const context = await parsingContext.getContext(depth);
+    const context = await parsingContext.getContext(keys);
     const predicate = util.rdfType;
     const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
 

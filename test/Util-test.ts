@@ -206,14 +206,14 @@ describe('Util', () => {
         it('with a relative @id with baseIRI should return a named node', async () => {
           util = new Util({ dataFactory, parsingContext: new ParsingContextMocked(
             { baseIRI: 'http://ex.org/', parser: null }) });
-          return expect(await util.valueToTerm(await util.parsingContext.getContext(0), 'key', { '@id': 'abc' }, 0))
+          return expect(await util.valueToTerm(await util.parsingContext.getContext([]), 'key', { '@id': 'abc' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/abc'));
         });
 
         it('with an empty @id with baseIRI should return a named node', async () => {
           util = new Util({ dataFactory, parsingContext: new ParsingContextMocked(
               { baseIRI: 'http://ex.org/', parser: null }) });
-          return expect(await util.valueToTerm(await util.parsingContext.getContext(0), 'key', { '@id': '' }, 0))
+          return expect(await util.valueToTerm(await util.parsingContext.getContext([]), 'key', { '@id': '' }, 0))
             .toEqualRdfTerm(namedNode('http://ex.org/'));
         });
 

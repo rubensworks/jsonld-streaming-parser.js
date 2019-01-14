@@ -1,5 +1,6 @@
 import {ContextParser, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
+import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
 
 /**
@@ -13,6 +14,7 @@ export class ParsingContext {
   public readonly produceGeneralizedRdf: boolean;
   public readonly processingMode: string;
   public readonly errorOnInvalidProperties: boolean;
+  public readonly rootContext: Promise<IJsonLdContextNormalized>;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -25,7 +27,7 @@ export class ParsingContext {
   // Stack of RDF list pointers (for @list)
   public readonly listPointerStack: { term: RDF.Term, initialPredicate: RDF.Term, listRootDepth: number }[];
   // Stack of active contexts
-  public readonly contextStack: Promise<IJsonLdContextNormalized>[];
+  public readonly contextTree: ContextTree;
   // Stack of flags indicating if the node is a literal
   public readonly literalStack: boolean[];
   // Triples that don't know their subject @id yet.
@@ -39,7 +41,6 @@ export class ParsingContext {
   public topLevelProperties: boolean;
 
   private readonly parser: JsonLdParser;
-  private readonly rootContext: Promise<IJsonLdContextNormalized>;
 
   constructor(options: IParsingContextOptions) {
     // Initialize settings
@@ -56,7 +57,7 @@ export class ParsingContext {
     this.idStack = [];
     this.graphStack = [];
     this.listPointerStack = [];
-    this.contextStack = [];
+    this.contextTree = new ContextTree();
     this.literalStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
@@ -85,17 +86,16 @@ export class ParsingContext {
   }
 
   /**
-   * Get the context at the given depth.
-   * @param {number} depth A depth.
+   * Get the context at the given path.
+   * @param {keys} keys The path of keys to get the context at.
+   * @param {number} offset The path offset, defaults to 1.
    * @return {Promise<IJsonLdContextNormalized>} A promise resolving to a context.
    */
-  public getContext(depth: number): Promise<IJsonLdContextNormalized> {
-    for (let i = depth; i >= 0; i--) {
-      if (this.contextStack[i]) {
-        return this.contextStack[i];
-      }
+  public getContext(keys: string[], offset = 1): Promise<IJsonLdContextNormalized> {
+    if (offset) {
+      keys = keys.slice(0, -offset);
     }
-    return this.rootContext;
+    return this.contextTree.getContext(keys) || this.rootContext;
   }
 
   /**

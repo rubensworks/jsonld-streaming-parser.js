@@ -9,7 +9,7 @@ import {IEntryHandler} from "../IEntryHandler";
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean> {
-    return Util.isKeyword(await util.unaliasKeyword(keys[depth], depth));
+    return Util.isKeyword(await util.unaliasKeyword(keys[depth], keys));
   }
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
