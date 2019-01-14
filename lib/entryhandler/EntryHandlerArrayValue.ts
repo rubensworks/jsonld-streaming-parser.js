@@ -24,7 +24,8 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     // Check if we have an anonymous list
     if (parentKey === '@list') {
       // Our value is part of an array
-      const object = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
+      const parentParentKey = depth > 0 && keys[depth - 2];
+      const object = await util.valueToTerm(await parsingContext.getContext(keys), parentParentKey, value, depth, keys);
 
       // Determine the list root key
       let listRootKey: string = null;

@@ -1767,6 +1767,26 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
           ]);
         });
+
+        it('with datatyped values', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@type": "http://ex.org/datatype" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ "value" ] }
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('l')),
+            triple(blankNode('l'), namedNode(Util.RDF + 'first'),
+              literal('value', namedNode('http://ex.org/datatype'))),
+            triple(blankNode('l'), namedNode(Util.RDF + 'rest'),
+              namedNode(Util.RDF + 'nil')),
+          ]);
+        });
       });
 
       describe('a triple with a context-based list array', () => {
