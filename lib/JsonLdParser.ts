@@ -80,9 +80,10 @@ export class JsonLdParser extends Transform {
    * @param {any[]} keys The stack of keys.
    * @param value The value to parse.
    * @param {number} depth The depth to parse at.
+   * @param preflush An optional callback that will be executed before the buffer is flushed.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number) {
+  public async newOnValueJob(keys: any[], value: any, depth: number, preflush?: () => void) {
     const keyOriginal = keys[depth];
     const key = await this.util.unaliasKeyword(keyOriginal, keys);
     const parentKey = await this.util.unaliasKeywordParent(keys, depth);
@@ -121,6 +122,11 @@ export class JsonLdParser extends Transform {
 
       // Flag that this depth is processed
       this.parsingContext.processingStack[depth] = true;
+    }
+
+    // Execute pre-flush callback if present
+    if (preflush) {
+      preflush();
     }
 
     // When we go up the stack, emit all unidentified values

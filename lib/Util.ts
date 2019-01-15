@@ -160,18 +160,22 @@ export class Util {
         } else {
           return this.resourceToTerm(context, value["@id"]);
         }
-      } else if (value["@value"] !== null && value["@value"] !== undefined) {
-        if (typeof value["@value"] === 'object') {
+      } else if (value["@value"] !== undefined) {
+        const val = value["@value"];
+        if (val === null || typeof val === 'object') {
           return null;
         }
         if (value["@language"]) {
-          return this.dataFactory.literal(value["@value"], value["@language"]);
+          return this.dataFactory.literal(val, value["@language"]);
         } else if (value["@type"]) {
-          return this.dataFactory.literal(value["@value"],
+          return this.dataFactory.literal(val,
             <RDF.NamedNode> this.createVocabOrBaseTerm(context, value["@type"]));
         }
         // We don't pass the context, because context-based things like @language should be ignored
-        return await this.valueToTerm({}, key, value["@value"], depth, keys);
+        return await this.valueToTerm({}, key, val, depth, keys);
+      } else if (value["@set"]) {
+        // No need to do anything here, this is handled at the deeper level.
+        return null;
       } else if (value["@list"]) {
         const listValue = value["@list"];
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.

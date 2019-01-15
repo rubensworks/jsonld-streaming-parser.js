@@ -42,7 +42,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       }
     } else if (parentKey === '@set') {
       // Our value is part of a set, so we just add it to the parent-parent
-      await parsingContext.newOnValueJob(keys, value, depth - 2);
+      await parsingContext.newOnValueJob(keys.slice(0, -2), value, depth - 2);
     } else if (parentKey !== undefined && parentKey !== '@type') {
       // Buffer our value using the parent key as predicate
 
@@ -53,8 +53,13 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         const object = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
         await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1, parentKey);
       } else {
-        parsingContext.emittedStack[depth] = false;
-        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1);
+        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, () => {
+          // Do this so that deeper values without @id can make use of this id when they are flushed
+          if (parsingContext.idStack[depth]) {
+            parsingContext.idStack[depth + 1] = parsingContext.idStack[depth];
+          }
+          parsingContext.emittedStack[depth] = false;
+        });
       }
     }
   }
