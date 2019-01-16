@@ -9,7 +9,7 @@ const TIMER = 'Parsing file ' + fileName;
 console.time(TIMER);
 
 let count = 0;
-const parsed = createReadStream(fileName).pipe(new JsonLdParser());
+const parsed = createReadStream(fileName).pipe(new JsonLdParser({ baseIRI: 'http://example.org/' }));
 parsed.on('data', (quad) => {
   count++;
 });

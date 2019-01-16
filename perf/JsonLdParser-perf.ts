@@ -9,11 +9,13 @@ const TIMER = 'Parsing file ' + fileName;
 // tslint:disable:no-console
 console.time(TIMER);
 
-jsonld.promises.toRDF(JSON.parse(readFileSync(fileName, 'utf-8')))
+jsonld.promises.toRDF(JSON.parse(readFileSync(fileName, 'utf-8')), { base: 'http://example.org/' })
   .then((plainQuads: any[]) => {
     console.timeEnd(TIMER);
     console.log('* Quads parsed: ' + plainQuads.length);
     console.log('* Memory usage: ' + Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB');
-  }).catch((e: Error) => {
-  throw e;
-});
+  })
+  .catch((e: Error) => {
+    console.log((<any> e).details); // TOD
+    throw e;
+  });
