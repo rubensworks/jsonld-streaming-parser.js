@@ -1,3 +1,4 @@
+import * as RDF from "rdf-js";
 import {IParsingContextOptions, ParsingContext} from "../lib/ParsingContext";
 
 /**
@@ -5,15 +6,22 @@ import {IParsingContextOptions, ParsingContext} from "../lib/ParsingContext";
  */
 export class ParsingContextMocked extends ParsingContext {
 
+  public readonly emittedQuads: RDF.BaseQuad[];
+
   constructor(options?: IParsingContextOptions) {
     super({
       ...options,
       parser: null,
     });
+    this.emittedQuads = [];
   }
 
   public emitError(error: Error) {
     // Do nothing
+  }
+
+  public emitQuad(depth: number, quad: RDF.BaseQuad) {
+    this.emittedQuads.push(quad);
   }
 
 }
