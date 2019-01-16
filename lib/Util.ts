@@ -111,7 +111,7 @@ export class Util {
    * @return {boolean} If the given key starts with an @.
    */
   public static isKeyword(key: any): boolean {
-    return typeof key === 'string' && key.startsWith('@');
+    return typeof key === 'string' && key[0] === '@';
   }
 
   /**
@@ -232,7 +232,7 @@ export class Util {
     }
 
     // Check if the predicate is a blank node
-    if (expanded.startsWith('_:')) {
+    if (expanded[0] === '_' && expanded[1] === ':') {
       if (this.parsingContext.produceGeneralizedRdf) {
         return this.dataFactory.blankNode(expanded.substr(2));
       } else {
