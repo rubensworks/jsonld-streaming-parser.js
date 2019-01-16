@@ -144,18 +144,18 @@ export class JsonLdParser extends Transform {
           this.parsingContext.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
             .push({ predicate: listPointer.initialPredicate, object: this.util.rdfNil, reverse: false });
         }
-        delete this.parsingContext.listPointerStack[this.lastDepth];
+        this.parsingContext.listPointerStack.splice(this.lastDepth, 1);
       }
 
       // Flush the buffer for lastDepth
       await this.flushBuffer(this.lastDepth, keys);
 
       // Reset our stack
-      delete this.parsingContext.processingStack[this.lastDepth];
-      delete this.parsingContext.emittedStack[this.lastDepth];
-      delete this.parsingContext.idStack[this.lastDepth];
-      delete this.parsingContext.graphStack[this.lastDepth + 1];
-      delete this.parsingContext.literalStack[this.lastDepth];
+      this.parsingContext.processingStack.splice(this.lastDepth, 1);
+      this.parsingContext.emittedStack.splice(this.lastDepth, 1);
+      this.parsingContext.idStack.splice(this.lastDepth, 1);
+      this.parsingContext.graphStack.splice(this.lastDepth + 1, 1);
+      this.parsingContext.literalStack.splice(this.lastDepth, 1);
     }
     this.lastDepth = depth;
   }
@@ -313,8 +313,8 @@ export class JsonLdParser extends Transform {
           }
         }
       }
-      delete this.parsingContext.unidentifiedValuesBuffer[depth];
-      delete this.parsingContext.literalStack[depth];
+      this.parsingContext.unidentifiedValuesBuffer.splice(depth, 1);
+      this.parsingContext.literalStack.splice(depth, 1);
     }
 
     // Flush graphs at this level
@@ -332,7 +332,7 @@ export class JsonLdParser extends Transform {
             bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
         }
       }
-      delete this.parsingContext.unidentifiedGraphsBuffer[depth];
+      this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
     }
   }
 }
