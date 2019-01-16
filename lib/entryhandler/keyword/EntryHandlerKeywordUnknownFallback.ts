@@ -8,8 +8,24 @@ import {IEntryHandler} from "../IEntryHandler";
  */
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean> {
-    return Util.isKeyword(await util.unaliasKeyword(keys[depth], keys));
+  public isPropertyHandler(): boolean {
+    return false;
+  }
+
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
+    : Promise<boolean> {
+    const key = await util.unaliasKeyword(keys[depth], keys);
+    if (Util.isKeyword(key)) {
+      // Don't emit anything inside free-floating lists
+      if (!inProperty) {
+        if ((key === '@list' || key === '@list')) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    return false;
   }
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)

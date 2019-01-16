@@ -9,7 +9,12 @@ import {IEntryHandler} from "./IEntryHandler";
  */
 export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean> {
+  public isPropertyHandler(): boolean {
+    return true;
+  }
+
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
+    : Promise<boolean> {
     return keys[depth] && !!await util.predicateToTerm(await parsingContext.getContext(keys), keys[depth]);
   }
 

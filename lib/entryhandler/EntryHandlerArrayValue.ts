@@ -8,7 +8,12 @@ import {IEntryHandler} from "./IEntryHandler";
  */
 export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
-  public validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean> {
+  public isPropertyHandler(): boolean {
+    return false;
+  }
+
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
+    : Promise<boolean> {
     return this.test(parsingContext, util, null, keys, depth);
   }
 

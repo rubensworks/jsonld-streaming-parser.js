@@ -16,7 +16,11 @@ export class EntryHandlerContainer implements IEntryHandler<IContainerHandler> {
     '@language': new ContainerHandlerLanguage(),
   };
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number)
+  public isPropertyHandler(): boolean {
+    return false;
+  }
+
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     return !!await this.test(parsingContext, util, null, keys, depth);
   }

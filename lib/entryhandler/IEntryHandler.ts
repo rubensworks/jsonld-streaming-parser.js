@@ -7,6 +7,11 @@ import {Util} from "../Util";
 export interface IEntryHandler<T> {
 
   /**
+   * @return {boolean} If this can handle properties and generate predicates for them.
+   */
+  isPropertyHandler(): boolean;
+
+  /**
    * Check if the given key is valid.
    *
    * This is called when validating parent keys.
@@ -15,9 +20,11 @@ export interface IEntryHandler<T> {
    * @param {Util} util A utility instance.
    * @param {any[]} keys A stack of keys.
    * @param {number} depth The current depth.
+   * @param {boolean} inProperty If the current depth is part of a valid property node.
    * @return {Promise<boolean>} A promise resolving to a boolean representing if the key is valid.
    */
-  validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number): Promise<boolean>;
+  validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
+    : Promise<boolean>;
 
   /**
    * Check if this handler can handle the given key.

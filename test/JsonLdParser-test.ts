@@ -1284,6 +1284,20 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
+        it('with @list should also remove inner nodes', async () => {
+          const stream = streamifyString(`
+{
+  "@list": [
+    "abc",
+    {
+      "@id": "http://ex.org/mynode",
+      "http://ex.org": "this should not exist"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with string in @list array in @graph array', async () => {
           const stream = streamifyString(`
 {

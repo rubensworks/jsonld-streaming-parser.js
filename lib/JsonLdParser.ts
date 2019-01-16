@@ -96,11 +96,15 @@ export class JsonLdParser extends Transform {
     }
 
     // Skip further processing if one of the parent nodes are invalid
+    let inProperty: boolean = false;
     for (let i = 1; i < keys.length - 1; i++) {
-      if (!await this.isValidKey(keys.slice(0, i + 1), i)) {
+      const validationResult = await this.validateKey(keys.slice(0, i + 1), i, inProperty);
+      if (!validationResult.valid) {
         this.parsingContext.emittedStack[depth] = false;
         handleKey = false;
         break;
+      } else if (!inProperty && validationResult.property) {
+        inProperty = true;
       }
     }
 
@@ -157,18 +161,20 @@ export class JsonLdParser extends Transform {
   }
 
   /**
-   * Return true if at least one {@link IEntryHandler} validates the entry to true.
+   * Check if at least one {@link IEntryHandler} validates the entry to true.
    * @param {any[]} keys A stack of keys.
    * @param {number} depth A depth.
-   * @return {Promise<boolean>} A promise resolving to true or false.
+   * @param {boolean} inProperty If the current depth is part of a valid property node.
+   * @return {Promise<{ valid: boolean, property: boolean }>} A promise resolving to true or false.
    */
-  protected async isValidKey(keys: any[], depth: number): Promise<boolean> {
+  protected async validateKey(keys: any[], depth: number, inProperty: boolean)
+    : Promise<{ valid: boolean, property: boolean }> {
     for (const entryHandler of JsonLdParser.ENTRY_HANDLERS) {
-      if (await entryHandler.validate(this.parsingContext, this.util, keys, depth)) {
-        return true;
+      if (await entryHandler.validate(this.parsingContext, this.util, keys, depth, inProperty)) {
+        return { valid: true, property: inProperty || entryHandler.isPropertyHandler() };
       }
     }
-    return false;
+    return { valid: false, property: false };
   }
 
   /**
