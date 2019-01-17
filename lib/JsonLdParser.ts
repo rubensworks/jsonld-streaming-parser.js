@@ -95,10 +95,15 @@ export class JsonLdParser extends Transform {
       this.emit('error', new Error(`Found the @id '${value}' inside an @reverse property`));
     }
 
-    // Skip further processing if one of the parent nodes are invalid
+    // Skip further processing if one of the parent nodes are invalid.
+    // We use the validationStack to reuse validation results that were produced before with common key stacks.
     let inProperty: boolean = false;
-    for (let i = 1; i < keys.length - 1; i++) {
-      const validationResult = await this.validateKey(keys.slice(0, i + 1), i, inProperty);
+    if (this.parsingContext.validationStack.length > 1) {
+      inProperty = this.parsingContext.validationStack[this.parsingContext.validationStack.length - 1].property;
+    }
+    for (let i = Math.max(1, this.parsingContext.validationStack.length - 1); i < keys.length - 1; i++) {
+      const validationResult = this.parsingContext.validationStack[i]
+        || (this.parsingContext.validationStack[i] = await this.validateKey(keys.slice(0, i + 1), i, inProperty));
       if (!validationResult.valid) {
         this.parsingContext.emittedStack[depth] = false;
         handleKey = false;
@@ -156,6 +161,7 @@ export class JsonLdParser extends Transform {
       this.parsingContext.idStack.splice(this.lastDepth, 1);
       this.parsingContext.graphStack.splice(this.lastDepth + 1, 1);
       this.parsingContext.literalStack.splice(this.lastDepth, 1);
+      this.parsingContext.validationStack.splice(this.lastDepth - 1, 2);
     }
     this.lastDepth = depth;
   }

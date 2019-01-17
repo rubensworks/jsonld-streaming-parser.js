@@ -30,6 +30,8 @@ export class ParsingContext {
   public readonly contextTree: ContextTree;
   // Stack of flags indicating if the node is a literal
   public readonly literalStack: boolean[];
+  // Stack with validation results.
+  public readonly validationStack: { valid: boolean, property: boolean }[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
   public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[][];
@@ -59,6 +61,7 @@ export class ParsingContext {
     this.listPointerStack = [];
     this.contextTree = new ContextTree();
     this.literalStack = [];
+    this.validationStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
 
