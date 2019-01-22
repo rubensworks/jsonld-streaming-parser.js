@@ -84,8 +84,7 @@ export class JsonLdParser extends Transform {
    * @return {Promise<void>} A promise resolving when the job is done.
    */
   public async newOnValueJob(keys: any[], value: any, depth: number, preflush?: () => void) {
-    const keyOriginal = keys[depth];
-    const key = await this.util.unaliasKeyword(keyOriginal, keys);
+    const key = await this.util.unaliasKeyword(keys[depth], keys, depth);
     const parentKey = await this.util.unaliasKeywordParent(keys, depth);
     this.parsingContext.emittedStack[depth] = true;
     let handleKey = true;
@@ -164,6 +163,9 @@ export class JsonLdParser extends Transform {
       this.parsingContext.validationStack.splice(this.lastDepth - 1, 2);
     }
     this.lastDepth = depth;
+
+    // Clear the keyword cache at this depth, and everything underneath.
+    this.parsingContext.unaliasedKeywordCacheStack.splice(depth - 1);
   }
 
   /**
@@ -284,9 +286,9 @@ export class JsonLdParser extends Transform {
       this.parsingContext.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
       if (subject) {
-        const graph: RDF.Term = this.parsingContext.graphStack[depth]
-        || await this.util.getDepthOffsetGraph(depth, keys) >= 0 ? this.parsingContext
-          .idStack[depth - await this.util.getDepthOffsetGraph(depth, keys) - 1] : this.util.dataFactory.defaultGraph();
+        const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
+        const graph: RDF.Term = this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0
+          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : this.util.dataFactory.defaultGraph();
         if (graph) {
           // Flush values to stream if the graph @id is known
           for (const bufferedValue of valueBuffer) {

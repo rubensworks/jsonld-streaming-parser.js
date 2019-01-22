@@ -153,7 +153,7 @@ export class Util {
       }
 
       // In all other cases, we have a hash
-      value = await this.unaliasKeywords(value, keys); // Un-alias potential keywords in this hash
+      value = await this.unaliasKeywords(value, keys, depth); // Un-alias potential keywords in this hash
       if ("@id" in value) {
         if (value["@type"] === '@vocab') {
           return this.createVocabOrBaseTerm(context, value["@id"]);
@@ -355,9 +355,19 @@ export class Util {
    * and if so, un-alias it.
    * @param {string} key A key, can be falsy.
    * @param {string[]} keys The path of keys.
+   * @param {number} depth The depth to
+   * @param {boolean} disableCache If the cache should be disabled
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
-  public async unaliasKeyword(key: any, keys: string[]): Promise<any> {
+  public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean): Promise<any> {
+    // Try to grab from cache if it was already un-aliased before.
+    if (!disableCache) {
+      const cachedUnaliasedKeyword = this.parsingContext.unaliasedKeywordCacheStack[depth];
+      if (cachedUnaliasedKeyword) {
+        return cachedUnaliasedKeyword;
+      }
+    }
+
     if (!Util.isKeyword(key)) {
       const context = await this.parsingContext.getContext(keys);
       let unliased = context[key];
@@ -365,10 +375,11 @@ export class Util {
         unliased = unliased['@id'];
       }
       if (Util.isKeyword(unliased)) {
-        return unliased;
+        key = unliased;
       }
     }
-    return key;
+
+    return disableCache ? key : (this.parsingContext.unaliasedKeywordCacheStack[depth] = key);
   }
 
   /**
@@ -379,19 +390,20 @@ export class Util {
    * @return {Promise<any>} A promise resolving to the parent key, or another key.
    */
   public async unaliasKeywordParent(keys: any[], depth: number): Promise<any> {
-    return await this.unaliasKeyword(depth > 0 && keys[depth - 1], keys.slice(0, -1));
+    return await this.unaliasKeyword(depth > 0 && keys[depth - 1], keys, depth - 1);
   }
 
   /**
    * Un-alias all keywords in the given hash.
    * @param {{[p: string]: any}} hash A hash object.
    * @param {string[]} keys The path of keys.
+   * @param {number} depth The depth.
    * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
    */
-  public async unaliasKeywords(hash: {[id: string]: any}, keys: string[]): Promise<{[id: string]: any}> {
+  public async unaliasKeywords(hash: {[id: string]: any}, keys: string[], depth: number): Promise<{[id: string]: any}> {
     const newHash: {[id: string]: any} = {};
     for (const key in hash) {
-      newHash[await this.unaliasKeyword(key, keys)] = hash[key];
+      newHash[await this.unaliasKeyword(key, keys, depth + 1, true)] = hash[key];
     }
     return newHash;
   }
@@ -422,7 +434,7 @@ export class Util {
    */
   public async getDepthOffsetGraph(depth: number, keys: any[]): Promise<number> {
     for (let i = depth - 1; i > 0; i--) {
-      if (await this.unaliasKeyword(keys[i], keys.slice(0, depth)) === '@graph') {
+      if (await this.unaliasKeyword(keys[i], keys, i) === '@graph') {
         return depth - i - 1;
       }
     }

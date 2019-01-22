@@ -14,7 +14,7 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
 
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
-    const key = await util.unaliasKeyword(keys[depth], keys);
+    const key = await util.unaliasKeyword(keys[depth], keys, depth);
     if (Util.isKeyword(key)) {
       // Don't emit anything inside free-floating lists
       if (!inProperty) {
