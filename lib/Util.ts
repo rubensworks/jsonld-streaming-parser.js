@@ -360,6 +360,11 @@ export class Util {
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
   public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean): Promise<any> {
+    // Numbers can not be an alias
+    if (Number.isInteger(key)) {
+      return key;
+    }
+
     // Try to grab from cache if it was already un-aliased before.
     if (!disableCache) {
       const cachedUnaliasedKeyword = this.parsingContext.unaliasedKeywordCacheStack[depth];
