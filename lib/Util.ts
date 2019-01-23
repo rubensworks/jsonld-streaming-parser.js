@@ -7,7 +7,6 @@ import {ParsingContext} from "./ParsingContext";
  */
 export class Util {
 
-  public static readonly IRI_REGEX: RegExp = /^([A-Za-z][A-Za-z0-9+-.]*|_):/;
   public static readonly XSD: string = 'http://www.w3.org/2001/XMLSchema#';
   public static readonly XSD_BOOLEAN: string = Util.XSD + 'boolean';
   public static readonly XSD_INTEGER: string = Util.XSD + 'integer';
@@ -120,7 +119,7 @@ export class Util {
    * @return {boolean} If the given IRI is valid.
    */
   public static isValidIri(iri: string): boolean {
-    return Util.IRI_REGEX.test(iri);
+    return ContextParser.isValidIri(iri);
   }
 
   /**
