@@ -295,6 +295,12 @@ describe('Util', () => {
             .rejects.toThrow(new Error('Unknown value entry \'@id\' in @value: {"@value":"abc","@id":"abc"}'));
         });
 
+        it('with a @value, @language and @type should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en', '@type': 'abc' }, 0))
+            .rejects.toThrow(new Error('Can not have both \'@language\' and \'@type\' in a value: ' +
+              '\'{"@value":"abc","@language":"en","@type":"abc"}\''));
+        });
+
         it('with a raw value and @language in the root context should return a language literal', async () => {
           context = { '@language': 'en-us' };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))

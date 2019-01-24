@@ -199,6 +199,9 @@ export class Util {
 
         // Validate @language
         if (valueLanguage) {
+          if (valueType) {
+            throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
+          }
           if (typeof valueLanguage !== 'string') {
             throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
           }
