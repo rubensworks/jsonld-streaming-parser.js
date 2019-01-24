@@ -269,6 +269,16 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('abc'));
         });
 
+        it('with a @value and boolean @language should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': true }, 0))
+            .rejects.toThrow(new Error('The value of an \'@language\' must be a string, got \'true\''));
+        });
+
+        it('with a @value and boolean @type should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0))
+            .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
+        });
+
         it('with a raw value and @language in the root context should return a language literal', async () => {
           context = { '@language': 'en-us' };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))

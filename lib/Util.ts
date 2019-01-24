@@ -167,11 +167,19 @@ export class Util {
         if (typeof val === 'object') {
           throw new Error(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`);
         }
-        if (value["@language"]) {
-          return this.dataFactory.literal(val, value["@language"]);
-        } else if (value["@type"]) {
+        const valueLanguage = value["@language"];
+        const valueType = value["@type"];
+        if (valueLanguage) {
+          if (typeof valueLanguage !== 'string') {
+            throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
+          }
+          return this.dataFactory.literal(val, valueLanguage);
+        } else if (valueType) {
+          if (typeof valueType !== 'string') {
+            throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
+          }
           return this.dataFactory.literal(val,
-            <RDF.NamedNode> this.createVocabOrBaseTerm(context, value["@type"]));
+            <RDF.NamedNode> this.createVocabOrBaseTerm(context, valueType));
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, val, depth, keys);
