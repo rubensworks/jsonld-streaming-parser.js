@@ -8,6 +8,13 @@ import {IEntryHandler} from "../IEntryHandler";
  */
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
+  private static readonly VALID_KEYWORDS: string[] = [
+    '@list',
+    '@set',
+    '@reverse',
+    '@value',
+  ];
+
   public isPropertyHandler(): boolean {
     return false;
   }
@@ -18,7 +25,7 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
     if (Util.isKeyword(key)) {
       // Don't emit anything inside free-floating lists
       if (!inProperty) {
-        if ((key === '@list' || key === '@list')) {
+        if (key === '@list') {
           return false;
         }
       }
@@ -35,7 +42,8 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
-    if (parsingContext.errorOnInvalidProperties) {
+    if (parsingContext.errorOnInvalidProperties
+      && EntryHandlerKeywordUnknownFallback.VALID_KEYWORDS.indexOf(key) < 0) {
       parsingContext.emitError(new Error(`Unknown keyword '${key}' with value '${value}'`));
     } else {
       parsingContext.emittedStack[depth] = false;

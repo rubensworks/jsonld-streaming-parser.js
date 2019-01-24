@@ -4750,5 +4750,16 @@ describe('JsonLdParser', () => {
 }`);
       return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
     });
+
+    it('should not error on an anonymous list', async () => {
+      const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo"}},
+  "foo": [{"@set": ["baz"]}]
+}`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        triple(blankNode(), namedNode('http://example.com/foo'), literal('baz')),
+      ]);
+    });
   });
 });
