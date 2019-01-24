@@ -214,8 +214,11 @@ export class Util {
           if (typeof valueType !== 'string') {
             throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
           }
-          return this.dataFactory.literal(val,
-            <RDF.NamedNode> this.createVocabOrBaseTerm(context, valueType));
+          const typeTerm = this.createVocabOrBaseTerm(context, valueType);
+          if (typeTerm.termType !== 'NamedNode') {
+            throw new Error(`Illegal value type (${typeTerm.termType}): ${valueType}`);
+          }
+          return this.dataFactory.literal(val, typeTerm);
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, val, depth, keys);

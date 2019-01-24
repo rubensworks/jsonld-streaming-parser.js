@@ -301,6 +301,11 @@ describe('Util', () => {
               '\'{"@value":"abc","@language":"en","@type":"abc"}\''));
         });
 
+        it('with a @value and blank node @type', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': '_:b' }, 0))
+            .rejects.toThrow(new Error('Illegal value type (BlankNode): _:b'));
+        });
+
         it('with a raw value and @language in the root context should return a language literal', async () => {
           context = { '@language': 'en-us' };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))
