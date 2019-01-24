@@ -4706,6 +4706,15 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
+      it('@reverse: true', async () => {
+        const stream = streamifyString(`
+{
+  "http://example/prop": {
+    "@reverse": true
+  }
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
     });
   });
 
@@ -4782,6 +4791,18 @@ describe('JsonLdParser', () => {
 }`);
       return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
         triple(blankNode(), namedNode('http://example.com/foo'), literal('baz')),
+      ]);
+    });
+
+    it('should not error on a reversed property', async () => {
+      const stream = streamifyString(`
+{
+  "@reverse": {
+    "http://ex.org/pred1": "http://ex.org/obj1"
+  }
+}`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode('')),
       ]);
     });
   });

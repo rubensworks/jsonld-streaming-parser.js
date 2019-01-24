@@ -8,12 +8,12 @@ import {IEntryHandler} from "../IEntryHandler";
  */
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
-  private static readonly VALID_KEYWORDS: string[] = [
-    '@list',
-    '@set',
-    '@reverse',
-    '@value',
-  ];
+  private static readonly VALID_KEYWORDS_TYPES: {[id: string]: string} = {
+    '@list': null,
+    '@reverse': 'object',
+    '@set': null,
+    '@value': null,
+  };
 
   public isPropertyHandler(): boolean {
     return false;
@@ -42,12 +42,15 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
-    if (parsingContext.errorOnInvalidProperties
-      && EntryHandlerKeywordUnknownFallback.VALID_KEYWORDS.indexOf(key) < 0) {
+    const keywordType = EntryHandlerKeywordUnknownFallback.VALID_KEYWORDS_TYPES[key];
+    if (keywordType !== undefined) {
+      if (keywordType && typeof value !== keywordType) {
+        parsingContext.emitError(new Error(`Invalid value type for '${key}' with value '${value}'`));
+      }
+    } else if (parsingContext.errorOnInvalidProperties) {
       parsingContext.emitError(new Error(`Unknown keyword '${key}' with value '${value}'`));
-    } else {
-      parsingContext.emittedStack[depth] = false;
     }
+    parsingContext.emittedStack[depth] = false;
   }
 
 }
