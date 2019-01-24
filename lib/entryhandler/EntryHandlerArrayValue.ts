@@ -29,21 +29,24 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     // Check if we have an anonymous list
     if (parentKey === '@list') {
       // Our value is part of an array
-      const parentParentKey = depth > 0 && keys[depth - 2];
-      const object = await util.valueToTerm(await parsingContext.getContext(keys), parentParentKey, value, depth, keys);
 
       // Determine the list root key
-      let listRootKey: string = null;
-      for (let i = depth - 2; i >= 0; i--) {
-        const keyOption = keys[depth - 2];
+      let listRootKey = null;
+      let listRootDepth;
+      for (let i = depth - 2; i > 0; i--) {
+        const keyOption = keys[i];
         if (typeof keyOption === 'string') {
+          listRootDepth = i;
           listRootKey = keyOption;
           break;
         }
       }
 
+      const object = await util.valueToTerm(await parsingContext.getContext(keys), listRootKey, value, depth, keys);
+
       if (listRootKey !== null) {
-        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -2), depth - 2, listRootKey);
+        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, listRootDepth), listRootDepth,
+          listRootKey);
       }
     } else if (parentKey === '@set') {
       // Our value is part of a set, so we just add it to the parent-parent

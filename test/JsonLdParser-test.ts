@@ -1897,6 +1897,25 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('a triple with an anonymous list array, in an array', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": [{ "@list": [ "a", "b", "c" ] }]
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+            triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+            triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+            triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+      });
+
       describe('a triple with a context-based list array', () => {
         it('without @id', async () => {
           const stream = streamifyString(`
