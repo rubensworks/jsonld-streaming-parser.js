@@ -4829,6 +4829,38 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Found illegal literal in subject position: Name'));
     });
 
+    it('should error on conflicting indexes in the root when validateValueIndexes is false', async () => {
+      const stream = streamifyString(`
+[
+  {
+    "@id": "http://example/foo",
+    "@index": "bar"
+  },
+  {
+    "@id": "http://example/foo",
+    "@index": "baz"
+  }
+]`);
+      parser = new JsonLdParser({ errorOnInvalidIris: true, validateValueIndexes: true });
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Conflicting @index value for http://example/foo'));
+    });
+
+    it('should not error on conflicting indexes in the root when validateValueIndexes is true', async () => {
+      const stream = streamifyString(`
+[
+  {
+    "@id": "http://example/foo",
+    "@index": "bar"
+  },
+  {
+    "@id": "http://example/foo",
+    "@index": "baz"
+  }
+]`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+    });
+
     it('should not error on a predicate that is mapped to null', async () => {
       const stream = streamifyString(`
 {

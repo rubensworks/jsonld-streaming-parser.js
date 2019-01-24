@@ -123,6 +123,31 @@ export class Util {
   }
 
   /**
+   * Make sure that @id-@index pairs are equal over all array values.
+   * Reject otherwise.
+   * @param {any[]} value An array value.
+   * @return {Promise<void>} A promise rejecting if conflicts are present.
+   */
+  public async validateValueIndexes(value: any[]): Promise<void> {
+    if (this.parsingContext.validateValueIndexes) {
+      const indexHashes: {[id: string]: any} = {};
+      for (const entry of value) {
+        if (entry && typeof entry === 'object') {
+          const id = entry['@id'];
+          const index = entry['@index'];
+          if (id && index) {
+            const existingIndexValue = indexHashes[id];
+            if (existingIndexValue && existingIndexValue !== index) {
+              throw new Error(`Conflicting @index value for ${id}`);
+            }
+            indexHashes[id] = index;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Convert a given JSON value to an RDF term.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The current JSON key.
@@ -148,6 +173,7 @@ export class Util {
         if (Util.getContextValueContainer(context, key) === '@list' && value.length === 0) {
           return this.rdfNil;
         }
+        await this.validateValueIndexes(value);
         return null;
       }
 
@@ -187,7 +213,7 @@ export class Util {
         }
 
         // Validate @index
-        if (valueIndex && typeof valueIndex !== 'string') {
+        if (this.parsingContext.validateValueIndexes && valueIndex && typeof valueIndex !== 'string') {
           throw new Error(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`);
         }
 

@@ -137,6 +137,11 @@ export class JsonLdParser extends Transform {
       preflush();
     }
 
+    // Validate value indexes on the root.
+    if (depth === 0 && Array.isArray(value)) {
+      await this.util.validateValueIndexes(value);
+    }
+
     // When we go up the stack, emit all unidentified values
     if (depth < this.lastDepth) {
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
@@ -399,4 +404,13 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   allowSubjectList?: boolean;
+  /**
+   * If @index inside array nodes should be validated.
+   * I.e., nodes inside the same array with the same @id,
+   * should have equal @index values.
+   * This is not applicable to this parser as we don't do explicit flattening,
+   * but it is required to be spec-compliant.
+   * Defaults to false.
+   */
+  validateValueIndexes?: boolean;
 }

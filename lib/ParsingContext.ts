@@ -15,6 +15,7 @@ export class ParsingContext {
   public readonly allowSubjectList: boolean;
   public readonly processingMode: string;
   public readonly errorOnInvalidProperties: boolean;
+  public readonly validateValueIndexes: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
 
   // Stack of indicating if a depth has been touched.
@@ -56,6 +57,7 @@ export class ParsingContext {
     this.allowSubjectList = options.allowSubjectList;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
     this.errorOnInvalidProperties = options.errorOnInvalidIris;
+    this.validateValueIndexes = options.validateValueIndexes;
 
     // Initialize stacks
     this.processingStack = [];

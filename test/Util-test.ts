@@ -285,9 +285,47 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
         });
 
-        it('with a @value and boolean @index should throw an error', async () => {
+        it('with a @value and boolean @index should not throw an error', async () => {
+          return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with a @value and boolean @index should throw an error when validateValueIndexes is true', async () => {
+          util.parsingContext.validateValueIndexes = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0))
             .rejects.toThrow(new Error('The value of an \'@index\' must be a string, got \'true\''));
+        });
+
+        it('with conflicting @index values should not throw an error', async () => {
+          const value = [
+            { '@id': 'abc', '@index': 'a' },
+            { '@id': 'abc', '@index': 'b' },
+            { '@id': 'abd', '@index': 'b' },
+          ];
+          return expect(await util.valueToTerm(context, 'key', value, 0))
+            .toBe(null);
+        });
+
+        it('with conflicting @index values should throw an error when validateValueIndexes is true', async () => {
+          util.parsingContext.validateValueIndexes = true;
+          const value = [
+            { '@id': 'abc', '@index': 'a' },
+            { '@id': 'abc', '@index': 'b' },
+            { '@id': 'abd', '@index': 'b' },
+          ];
+          return expect(util.valueToTerm(context, 'key', value, 0))
+            .rejects.toThrow(new Error('Conflicting @index value for abc'));
+        });
+
+        it('without conflicting @index values when validateValueIndexes is true', async () => {
+          util.parsingContext.validateValueIndexes = true;
+          const value = [
+            { '@id': 'abc', '@index': 'a' },
+            { '@id': 'abc', '@index': 'a' },
+            { '@id': 'abd', '@index': 'b' },
+          ];
+          return expect(await util.valueToTerm(context, 'key', value, 0))
+            .toBe(null);
         });
 
         it('with a @value and @id should throw an error', async () => {
