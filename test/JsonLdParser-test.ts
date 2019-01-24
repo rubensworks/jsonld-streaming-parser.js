@@ -1916,6 +1916,29 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('a triple with an anonymous list array, in an list container', () => {
+        it('without @id should emit an error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": { "p": {"@id": "http://ex.org/pred1", "@container": "@list" } },
+  "p": [{ "@list": [ "a", "b", "c" ] }]
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toEqual(new Error('Lists of lists are not supported: \'p\''));
+        });
+      });
+
+      describe('a triple with nested anonymous list arrays', () => {
+        it('without @id should emit an error', async () => {
+          const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [{"@list": ["baz"]}]}
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toEqual(new Error('Lists of lists are not supported: \'@list\''));
+        });
+      });
+
       describe('a triple with a context-based list array', () => {
         it('without @id', async () => {
           const stream = streamifyString(`

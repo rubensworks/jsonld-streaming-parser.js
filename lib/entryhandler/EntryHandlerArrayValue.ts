@@ -42,6 +42,14 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         }
       }
 
+      // Throw an error if we encounter a nested list
+      if (listRootKey === '@list' ||
+        (listRootDepth !== depth - 2 && typeof keys[depth - 2] === 'number'
+          && Util.getContextValueContainer(await parsingContext
+            .getContext(keys, listRootDepth - depth), listRootKey) === '@list')) {
+        throw new Error(`Lists of lists are not supported: '${listRootKey}'`);
+      }
+
       const object = await util.valueToTerm(await parsingContext.getContext(keys), listRootKey, value, depth, keys);
 
       if (listRootKey !== null) {
