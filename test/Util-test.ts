@@ -279,6 +279,11 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
         });
 
+        it('with a @value and boolean @index should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0))
+            .rejects.toThrow(new Error('The value of an \'@index\' must be a string, got \'true\''));
+        });
+
         it('with a raw value and @language in the root context should return a language literal', async () => {
           context = { '@language': 'en-us' };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))

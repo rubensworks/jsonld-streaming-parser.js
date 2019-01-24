@@ -169,6 +169,10 @@ export class Util {
         }
         const valueLanguage = value["@language"];
         const valueType = value["@type"];
+        const valueIndex = value["@index"]; // We don't use the index, but we need to check its type for spec-compliance
+        if (valueIndex && typeof valueIndex !== 'string') {
+          throw new Error(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`);
+        }
         if (valueLanguage) {
           if (typeof valueLanguage !== 'string') {
             throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
