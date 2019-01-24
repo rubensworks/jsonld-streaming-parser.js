@@ -10,7 +10,11 @@ import {IContainerHandler} from "./IContainerHandler";
 export class ContainerHandlerLanguage implements IContainerHandler {
 
   public async handle(parsingContext: ParsingContext, keys: string[], value: any, depth: number): Promise<void> {
-    value = { '@value': value, '@language': keys[depth] };
+    if (Array.isArray(value)) {
+      value = value.map((subValue) => ({ '@value': subValue, '@language': keys[depth] }));
+    } else {
+      value = { '@value': value, '@language': keys[depth] };
+    }
     await parsingContext.newOnValueJob(keys, value, depth - 1);
   }
 

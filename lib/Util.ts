@@ -161,8 +161,11 @@ export class Util {
         }
       } else if (value["@value"] !== undefined) {
         const val = value["@value"];
-        if (val === null || typeof val === 'object') {
+        if (val === null) {
           return null;
+        }
+        if (typeof val === 'object') {
+          throw new Error(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`);
         }
         if (value["@language"]) {
           return this.dataFactory.literal(val, value["@language"]);

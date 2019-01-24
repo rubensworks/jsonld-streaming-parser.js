@@ -245,6 +245,24 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('abc', 'nl-nl'));
         });
 
+        it('with a @value null should return null', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(await util.valueToTerm(context, 'key', { '@value': null }, 0))
+            .toBe(null);
+        });
+
+        it('with a @value object should throw an error', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(util.valueToTerm(context, 'key', { '@value': {} }, 0))
+            .rejects.toThrow(new Error('The value of an \'@value\' can not be an object, got \'{}\''));
+        });
+
+        it('with a @value array should throw an error', async () => {
+          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          return expect(util.valueToTerm(context, 'key', { '@value': [] }, 0))
+            .rejects.toThrow(new Error('The value of an \'@value\' can not be an object, got \'[]\''));
+        });
+
         it('with a @value without @language should reset the language', async () => {
           context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
