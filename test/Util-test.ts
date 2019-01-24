@@ -274,6 +274,12 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@language\' must be a string, got \'true\''));
         });
 
+        it('with a boolean @value and valid @language should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': true, '@language': 'en-us' }, 0))
+            .rejects.toThrow(
+              new Error('When an \'@language\' is set, the value of \'@value\' must be a string, got \'true\''));
+        });
+
         it('with a @value and boolean @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0))
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));

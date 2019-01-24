@@ -177,6 +177,10 @@ export class Util {
           if (typeof valueLanguage !== 'string') {
             throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
           }
+          if (typeof val !== 'string') {
+            throw new Error(
+              `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
+          }
           return this.dataFactory.literal(val, valueLanguage);
         } else if (valueType) {
           if (typeof valueType !== 'string') {
