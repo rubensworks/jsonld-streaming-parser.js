@@ -907,11 +907,11 @@ describe('JsonLdParser', () => {
           const stream = streamifyString(`
 {
   "@reverse": {
-    "http://ex.org/pred1": "http://ex.org/obj1"
+    "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
           ]);
         });
 
@@ -920,11 +920,11 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/myid",
   "@reverse": {
-    "http://ex.org/pred1": "http://ex.org/obj1"
+    "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -933,12 +933,12 @@ describe('JsonLdParser', () => {
 {
   "@graph": {
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
           ]);
         });
 
@@ -948,12 +948,12 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/g",
   "@graph": {
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
               namedNode('http://ex.org/g')),
           ]);
         });
@@ -963,13 +963,13 @@ describe('JsonLdParser', () => {
 {
   "@graph": {
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   },
   "@id": "http://ex.org/g"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
               namedNode('http://ex.org/g')),
           ]);
         });
@@ -980,12 +980,12 @@ describe('JsonLdParser', () => {
   "@graph": {
     "@id": "http://ex.org/myid",
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -997,12 +997,12 @@ describe('JsonLdParser', () => {
   "@graph": {
     "@id": "http://ex.org/myid",
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
@@ -1013,13 +1013,13 @@ describe('JsonLdParser', () => {
   "@graph": {
     "@id": "http://ex.org/myid",
     "@reverse": {
-      "http://ex.org/pred1": "http://ex.org/obj1"
+      "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
     }
   },
   "@id": "http://ex.org/g"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
@@ -1032,10 +1032,10 @@ describe('JsonLdParser', () => {
   "@context": {
     "p": { "@reverse": "http://ex.org/pred1" }
   },
-  "p": "http://ex.org/obj1"
+  "p": { "@id": "http://ex.org/obj1" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
           ]);
         });
 
@@ -1046,10 +1046,10 @@ describe('JsonLdParser', () => {
     "p": { "@reverse": "http://ex.org/pred1" }
   },
   "@id": "http://ex.org/myid",
-   "p": "http://ex.org/obj1"
+   "p": { "@id": "http://ex.org/obj1" }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
           ]);
         });
 
@@ -1060,11 +1060,11 @@ describe('JsonLdParser', () => {
     "p": { "@reverse": "http://ex.org/pred1" }
   },
   "@graph": {
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode()),
           ]);
         });
 
@@ -1076,11 +1076,11 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/g",
   "@graph": {
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
               namedNode('http://ex.org/g')),
           ]);
         });
@@ -1092,12 +1092,12 @@ describe('JsonLdParser', () => {
     "p": { "@reverse": "http://ex.org/pred1" }
   },
   "@graph": {
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   },
   "@id": "http://ex.org/g"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode(),
               namedNode('http://ex.org/g')),
           ]);
         });
@@ -1110,11 +1110,11 @@ describe('JsonLdParser', () => {
   },
   "@graph": {
     "@id": "http://ex.org/myid",
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -1128,11 +1128,11 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/g",
   "@graph": {
     "@id": "http://ex.org/myid",
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
@@ -1145,12 +1145,12 @@ describe('JsonLdParser', () => {
   },
   "@graph": {
     "@id": "http://ex.org/myid",
-    "p": "http://ex.org/obj1"
+    "p": { "@id": "http://ex.org/obj1" }
   },
   "@id": "http://ex.org/g"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            quad(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            quad(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid'), namedNode('http://ex.org/g')),
           ]);
         });
@@ -1163,11 +1163,11 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid",
   "@reverse": {
-     "p": "http://ex.org/obj1"
+     "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/obj1')),
           ]);
         });
 
@@ -1180,12 +1180,12 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid",
   "p1": {
-     "p2": "http://ex.org/obj1"
+     "p2": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
-            triple(blankNode('b'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj1')),
+            triple(blankNode('b'), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj1')),
           ]);
         });
 
@@ -1198,16 +1198,36 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid",
   "p1": [
-    { "p2": "http://ex.org/obj1" },
-    { "p2": "http://ex.org/obj2" }
+    { "p2": { "@id": "http://ex.org/obj1" } },
+    { "p2": { "@id": "http://ex.org/obj2" } }
   ]
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
-            triple(blankNode('b1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj1')),
+            triple(blankNode('b1'), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj1')),
 
             triple(blankNode('b2'), namedNode('http://ex.org/pred1'), namedNode('http://ex.org/myid')),
-            triple(blankNode('b2'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+            triple(blankNode('b2'), namedNode('http://ex.org/pred2'), namedNode('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with a list as @reverse value, with allowSubjectList true', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@reverse": "http://example/reverse"}
+  },
+  "@id": "http://example/foo",
+  "term": {"@list": ["http://example/bar"]}
+}`);
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, allowSubjectList: true });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://example/reverse'),
+              namedNode('http://example/foo')),
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
+              literal('http://example/bar')),
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil')),
           ]);
         });
       });
@@ -4609,11 +4629,11 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid",
   "rev": {
-    "http://ex.org/pred1": "http://ex.org/obj1"
+    "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
+            triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'),
               namedNode('http://ex.org/myid')),
           ]);
         });
@@ -4715,6 +4735,42 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
+      it('a list in a reversed property', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@reverse": "http://example/reverse"}
+  },
+  "@id": "http://example/foo",
+  "term": {"@list": ["http://example/bar"]}
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new Error('Found illegal list value in subject position at term'));
+      });
+      it('a singular list in a reversed property', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@reverse": "http://example/reverse"}
+  },
+  "@id": "http://example/foo",
+  "term": {"@list": "http://example/bar"}
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new Error('Found illegal list value in subject position at term'));
+      });
+      it('an empty list in a reversed property', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@reverse": "http://example/reverse"}
+  },
+  "@id": "http://example/foo",
+  "term": {"@list": []}
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new Error('Found illegal list value in subject position at term'));
+      });
     });
   });
 
@@ -4761,6 +4817,18 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid resource IRI: dummy'));
     });
 
+    it('should error on @reverse with literal values', async () => {
+      const stream = streamifyString(`
+{
+  "@id": "http://example.org/",
+  "@reverse": {
+    "http://xmlns.com/foaf/0.1/knows": "Name"
+  }
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Found illegal literal in subject position: Name'));
+    });
+
     it('should not error on a predicate that is mapped to null', async () => {
       const stream = streamifyString(`
 {
@@ -4798,11 +4866,11 @@ describe('JsonLdParser', () => {
       const stream = streamifyString(`
 {
   "@reverse": {
-    "http://ex.org/pred1": "http://ex.org/obj1"
+    "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
       return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-        triple(literal('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode('')),
+        triple(namedNode('http://ex.org/obj1'), namedNode('http://ex.org/pred1'), blankNode('')),
       ]);
     });
   });

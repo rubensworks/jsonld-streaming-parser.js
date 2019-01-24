@@ -394,4 +394,9 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   errorOnInvalidIris?: boolean;
+  /**
+   * If RDF lists can appear in the subject position.
+   * Defaults to false.
+   */
+  allowSubjectList?: boolean;
 }

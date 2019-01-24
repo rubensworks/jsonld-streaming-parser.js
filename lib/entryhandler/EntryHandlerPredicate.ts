@@ -34,18 +34,24 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       const objectContext = await parsingContext.getContext(keys, 0);
       let object = await util.valueToTerm(objectContext, key, value, depth, keys);
       if (object) {
+        const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
         // Special case if our term was defined as an @list, but does not occur in an array,
         // In that case we just emit it as an RDF list with a single element.
-        if ((Util.getContextValueContainer(context, key) === '@list'
-          || (value['@list'] && !Array.isArray(value['@list'])))
-          && object !== util.rdfNil) {
-          const listPointer: RDF.Term = util.dataFactory.blankNode();
-          parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfRest, util.rdfNil));
-          parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfFirst, object));
-          object = listPointer;
+        const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
+        if (listValueContainer || value['@list']) {
+          if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list']))) && object !== util.rdfNil) {
+            const listPointer: RDF.Term = util.dataFactory.blankNode();
+            parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfRest, util.rdfNil));
+            parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfFirst, object));
+            object = listPointer;
+          }
+
+          // Lists are not allowed in @reverse'd properties
+          if (reverse && !parsingContext.allowSubjectList) {
+            throw new Error(`Found illegal list value in subject position at ${key}`);
+          }
         }
 
-        const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
         const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
         const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
         const depthPropertiesGraph: number = depth - depthOffsetGraph;
@@ -61,6 +67,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
             if (graph) {
               // Emit our quad if graph @id is known
               if (reverse) {
+                util.validateReverseSubject(object);
                 parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
               } else {
                 parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
@@ -68,6 +75,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
             } else {
               // Buffer our triple if graph @id is not known yet.
               if (reverse) {
+                util.validateReverseSubject(object);
                 parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
                   {subject: object, predicate, object: subject});
               } else {
@@ -78,6 +86,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           } else {
             // Emit if no @graph was applicable
             if (reverse) {
+              util.validateReverseSubject(object);
               parsingContext.emitQuad(depth, util.dataFactory.triple(object, predicate, subject));
             } else {
               parsingContext.emitQuad(depth, util.dataFactory.triple(subject, predicate, object));
@@ -85,6 +94,9 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           }
         } else {
           // Buffer until our @id becomes known, or we go up the stack
+          if (reverse) {
+            util.validateReverseSubject(object);
+          }
           parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse});
         }
       } else {

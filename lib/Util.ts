@@ -460,4 +460,15 @@ export class Util {
     return -1;
   }
 
+  /**
+   * Check if the given subject is of a valid type.
+   * This should be called when applying @reverse'd properties.
+   * @param {Term} subject A subject.
+   */
+  public validateReverseSubject(subject: RDF.Term) {
+    if (subject.termType === 'Literal') {
+      throw new Error(`Found illegal literal in subject position: ${subject.value}`);
+    }
+  }
+
 }

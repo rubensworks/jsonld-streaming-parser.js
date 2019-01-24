@@ -54,7 +54,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
       if (listRootKey !== null) {
         await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, listRootDepth), listRootDepth,
-          listRootKey);
+          listRootKey, keys);
       }
     } else if (parentKey === '@set') {
       // Our value is part of a set, so we just add it to the parent-parent
@@ -67,7 +67,8 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       if (Util.getContextValueContainer(parentContext, parentKey) === '@list') {
         // Our value is part of an array
         const object = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
-        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1, parentKey);
+        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1,
+          parentKey, keys);
       } else {
         await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, () => {
           // Do this so that deeper values without @id can make use of this id when they are flushed
@@ -81,16 +82,24 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
   }
 
   protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term, depth: number,
-                                    listRootKeys: string[], listRootDepth: number, listRootKey: string) {
+                                    listRootKeys: string[], listRootDepth: number, listRootKey: string, keys: any[]) {
         // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer = parsingContext.listPointerStack[depth];
 
     if (value) {
       if (!listPointer || !listPointer.term) {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
-        const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootKeys), listRootKey);
+        const listRootContext = await parsingContext.getContext(listRootKeys);
+        const predicate = await util.predicateToTerm(listRootContext, listRootKey);
+        const reverse = Util.isPropertyReverse(listRootContext, listRootKey, keys[listRootDepth - 1]);
+
+        // Lists are not allowed in @reverse'd properties
+        if (reverse && !parsingContext.allowSubjectList) {
+          throw new Error(`Found illegal list value in subject position at ${listRootKey}`);
+        }
+
         parsingContext.getUnidentifiedValueBufferSafe(listRootDepth)
-          .push({ predicate, object: linkTerm, reverse: false });
+          .push({ predicate, object: linkTerm, reverse });
         listPointer = { term: linkTerm, initialPredicate: null, listRootDepth };
       } else {
         // rdf:rest links are always emitted before the next element,

@@ -12,6 +12,7 @@ export class ParsingContext {
   public readonly allowOutOfOrderContext: boolean;
   public readonly baseIRI: string;
   public readonly produceGeneralizedRdf: boolean;
+  public readonly allowSubjectList: boolean;
   public readonly processingMode: string;
   public readonly errorOnInvalidProperties: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
@@ -52,6 +53,7 @@ export class ParsingContext {
     this.allowOutOfOrderContext = options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = options.produceGeneralizedRdf;
+    this.allowSubjectList = options.allowSubjectList;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
     this.errorOnInvalidProperties = options.errorOnInvalidIris;
 
