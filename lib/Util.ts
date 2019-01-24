@@ -153,13 +153,7 @@ export class Util {
 
       // In all other cases, we have a hash
       value = await this.unaliasKeywords(value, keys, depth); // Un-alias potential keywords in this hash
-      if ("@id" in value && !("@value" in value)) {
-        if (value["@type"] === '@vocab') {
-          return this.createVocabOrBaseTerm(context, value["@id"]);
-        } else {
-          return this.resourceToTerm(context, value["@id"]);
-        }
-      } else if ("@value" in value) {
+      if ("@value" in value) {
         let val;
         let valueLanguage;
         let valueType;
@@ -222,10 +216,20 @@ export class Util {
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, val, depth, keys);
-      } else if (value["@set"]) {
+      } else if ('@set' in value) {
+        // No other entries are allow in this value
+        if (Object.keys(value).length > 1) {
+          throw new Error(`Found illegal neighbouring entries next to @set in value: ${JSON.stringify(value)}`);
+        }
+
         // No need to do anything here, this is handled at the deeper level.
         return null;
-      } else if (value["@list"]) {
+      } else if ('@list' in value) {
+        // No other entries are allow in this value
+        if (Object.keys(value).length > 1) {
+          throw new Error(`Found illegal neighbouring entries next to @set in value: ${JSON.stringify(value)}`);
+        }
+
         const listValue = value["@list"];
         // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
         // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
@@ -240,10 +244,16 @@ export class Util {
           return this.valueToTerm(await this.parsingContext.getContext(keys),
             key, listValue, depth - 1, keys.slice(0, -1));
         }
-      } else if (value["@reverse"]) {
+      } else if ('@reverse' in value) {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
         return null;
+      } else if ("@id" in value) {
+        if (value["@type"] === '@vocab') {
+          return this.createVocabOrBaseTerm(context, value["@id"]);
+        } else {
+          return this.resourceToTerm(context, value["@id"]);
+        }
       } else {
         // Only make a blank node if at least one triple was emitted at the value's level.
         if (this.parsingContext.emittedStack[depth + 1]) {

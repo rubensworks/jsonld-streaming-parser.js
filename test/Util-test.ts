@@ -480,6 +480,27 @@ describe('Util', () => {
           context = { key: { '@container': '@list' } };
           return expect(await util.valueToTerm(context, 'key', [null, null], 0)).toEqual(null);
         });
+
+        it('should error when other entries are present', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@list': [1, 2], 'a': 'b' }, 0, [])).rejects
+            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@list":[1,2],"a":"b"}'));
+        });
+
+        it('should error when @id is present', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@list': [1, 2], '@id': 'b' }, 0, [])).rejects
+            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@list":[1,2],"@id":"b"}'));
+        });
+      });
+
+      describe('for a set', () => {
+        it('should return null', async () => {
+          return expect(await util.valueToTerm(context, 'key', { '@set': [1, 2] }, 0)).toBeFalsy();
+        });
+
+        it('should error when other entries are present', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@set': [1, 2], 'a': 'b' }, 0, [])).rejects
+            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@set":[1,2],"a":"b"}'));
+        });
       });
 
       describe('for a reverse properties', () => {
