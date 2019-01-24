@@ -290,6 +290,11 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@index\' must be a string, got \'true\''));
         });
 
+        it('with a @value and @id should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@id': 'abc' }, 0))
+            .rejects.toThrow(new Error('Unknown value entry \'@id\' in @value: {"@value":"abc","@id":"abc"}'));
+        });
+
         it('with a raw value and @language in the root context should return a language literal', async () => {
           context = { '@language': 'en-us' };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))

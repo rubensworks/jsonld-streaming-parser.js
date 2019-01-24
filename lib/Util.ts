@@ -153,26 +153,51 @@ export class Util {
 
       // In all other cases, we have a hash
       value = await this.unaliasKeywords(value, keys, depth); // Un-alias potential keywords in this hash
-      if ("@id" in value) {
+      if ("@id" in value && !("@value" in value)) {
         if (value["@type"] === '@vocab') {
           return this.createVocabOrBaseTerm(context, value["@id"]);
         } else {
           return this.resourceToTerm(context, value["@id"]);
         }
-      } else if (value["@value"] !== undefined) {
-        const val = value["@value"];
+      } else if ("@value" in value) {
+        let val;
+        let valueLanguage;
+        let valueType;
+        let valueIndex; // We don't use the index, but we need to check its type for spec-compliance
+        for (key in value) {
+          const subValue = value[key];
+          switch (key) {
+          case '@value':
+            val = subValue;
+            break;
+          case '@language':
+            valueLanguage = subValue;
+            break;
+          case '@type':
+            valueType = subValue;
+            break;
+          case '@index':
+            valueIndex = subValue;
+            break;
+          default:
+            throw new Error(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`);
+          }
+        }
+
+        // Validate @value
         if (val === null) {
           return null;
         }
         if (typeof val === 'object') {
           throw new Error(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`);
         }
-        const valueLanguage = value["@language"];
-        const valueType = value["@type"];
-        const valueIndex = value["@index"]; // We don't use the index, but we need to check its type for spec-compliance
+
+        // Validate @index
         if (valueIndex && typeof valueIndex !== 'string') {
           throw new Error(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`);
         }
+
+        // Validate @language
         if (valueLanguage) {
           if (typeof valueLanguage !== 'string') {
             throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
@@ -182,7 +207,7 @@ export class Util {
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
           return this.dataFactory.literal(val, valueLanguage);
-        } else if (valueType) {
+        } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
             throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
           }
