@@ -1,6 +1,7 @@
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
+import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
 
 /**
  * Handles @graph entries.
@@ -26,12 +27,12 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // Handle multiple values if the value is an array
     if (Array.isArray(value)) {
       for (const element of value) {
-        parsingContext.getUnidentifiedValueBufferSafe(depth).push(
-          { predicate, object: util.createVocabOrBaseTerm(context, element), reverse });
+        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+          predicate, util.createVocabOrBaseTerm(context, element), reverse);
       }
     } else {
-      parsingContext.getUnidentifiedValueBufferSafe(depth).push(
-        { predicate, object: util.createVocabOrBaseTerm(context, value), reverse });
+      await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+        predicate, util.createVocabOrBaseTerm(context, value), reverse);
     }
   }
 

@@ -9,6 +9,70 @@ import {IEntryHandler} from "./IEntryHandler";
  */
 export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
+  /**
+   * Handle the given predicate-object by either emitting it,
+   * or by placing it in the appropriate stack for later emission when no @graph and/or @id has been defined.
+   * @param {ParsingContext} parsingContext A parsing context.
+   * @param {Util} util A utility instance.
+   * @param {any[]} keys A stack of keys.
+   * @param {number} depth The current depth.
+   * @param parentKey The parent key.
+   * @param {Term} predicate The predicate.
+   * @param {Term} object The object.
+   * @param {boolean} reverse If the property is reversed.
+   * @return {Promise<void>} A promise resolving when handling is done.
+   */
+  public static async handlePredicateObject(parsingContext: ParsingContext, util: Util, keys: any[], depth: number,
+                                            parentKey: any, predicate: RDF.Term, object: RDF.Term, reverse: boolean) {
+    const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
+    const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
+    const depthPropertiesGraph: number = depth - depthOffsetGraph;
+
+    if (parsingContext.idStack[depthProperties]) {
+      // Emit directly if the @id was already defined
+      const subject = parsingContext.idStack[depthProperties];
+
+      // Check if we're in a @graph context
+      const atGraph = depthOffsetGraph >= 0;
+      if (atGraph) {
+        const graph: RDF.Term = parsingContext.idStack[depthPropertiesGraph - 1];
+        if (graph) {
+          // Emit our quad if graph @id is known
+          if (reverse) {
+            util.validateReverseSubject(object);
+            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
+          } else {
+            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
+          }
+        } else {
+          // Buffer our triple if graph @id is not known yet.
+          if (reverse) {
+            util.validateReverseSubject(object);
+            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
+              {subject: object, predicate, object: subject});
+          } else {
+            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
+              .push({subject, predicate, object});
+          }
+        }
+      } else {
+        // Emit if no @graph was applicable
+        if (reverse) {
+          util.validateReverseSubject(object);
+          parsingContext.emitQuad(depth, util.dataFactory.triple(object, predicate, subject));
+        } else {
+          parsingContext.emitQuad(depth, util.dataFactory.triple(subject, predicate, object));
+        }
+      }
+    } else {
+      // Buffer until our @id becomes known, or we go up the stack
+      if (reverse) {
+        util.validateReverseSubject(object);
+      }
+      parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse});
+    }
+  }
+
   public isPropertyHandler(): boolean {
     return true;
   }
@@ -52,53 +116,8 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           }
         }
 
-        const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
-        const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
-        const depthPropertiesGraph: number = depth - depthOffsetGraph;
-
-        if (parsingContext.idStack[depthProperties]) {
-          // Emit directly if the @id was already defined
-          const subject = parsingContext.idStack[depthProperties];
-
-          // Check if we're in a @graph context
-          const atGraph = depthOffsetGraph >= 0;
-          if (atGraph) {
-            const graph: RDF.Term = parsingContext.idStack[depthPropertiesGraph - 1];
-            if (graph) {
-              // Emit our quad if graph @id is known
-              if (reverse) {
-                util.validateReverseSubject(object);
-                parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
-              } else {
-                parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
-              }
-            } else {
-              // Buffer our triple if graph @id is not known yet.
-              if (reverse) {
-                util.validateReverseSubject(object);
-                parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
-                  {subject: object, predicate, object: subject});
-              } else {
-                parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
-                  .push({subject, predicate, object});
-              }
-            }
-          } else {
-            // Emit if no @graph was applicable
-            if (reverse) {
-              util.validateReverseSubject(object);
-              parsingContext.emitQuad(depth, util.dataFactory.triple(object, predicate, subject));
-            } else {
-              parsingContext.emitQuad(depth, util.dataFactory.triple(subject, predicate, object));
-            }
-          }
-        } else {
-          // Buffer until our @id becomes known, or we go up the stack
-          if (reverse) {
-            util.validateReverseSubject(object);
-          }
-          parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse});
-        }
+        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+          predicate, object, reverse);
       } else {
         // An invalid value was encountered, so we ignore it higher in the stack.
         parsingContext.emittedStack[depth] = false;
