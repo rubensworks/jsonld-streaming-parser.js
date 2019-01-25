@@ -4906,4 +4906,258 @@ describe('JsonLdParser', () => {
       ]);
     });
   });
+
+  // The following tests check the parser via stateful .write() calls.
+  describe('for step-by-step streaming with default settings', () => {
+    describe('without context', () => {
+      let parser;
+
+      beforeAll(() => {
+        parser = new JsonLdParser({ dataFactory });
+      });
+
+      it('should emit nothing when nothing has been pushed', () => {
+        parser.write('');
+        expect(parser.read(1)).toBeFalsy();
+      });
+
+      it('should emit nothing after {', (done) => {
+        parser.write('{', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id', (done) => {
+        parser.write('"@id": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id value', (done) => {
+        parser.write('"http://example.org",', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after predicate', (done) => {
+        parser.write('"http://example.com/p": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit a quad after object', (done) => {
+        parser.write('"http://example.com/o",', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://example.org'), namedNode('http://example.com/p'),
+            literal('http://example.com/o')));
+          done();
+        });
+      });
+
+      it('should emit nothing after another predicate', (done) => {
+        parser.write('"http://example.com/p2": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit a quad after another object', (done) => {
+        parser.write('"http://example.com/o2"', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://example.org'), namedNode('http://example.com/p2'),
+            literal('http://example.com/o2')));
+          done();
+        });
+      });
+
+      it('should end after }', (done) => {
+        parser.write('}', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should be closed after finishing the stream', () => {
+        parser.end();
+        expect(parser.read(1)).toBeFalsy();
+        expect(parser.writable).toBeFalsy();
+      });
+    });
+
+    describe('with array values', () => {
+      let parser;
+
+      beforeAll(() => {
+        parser = new JsonLdParser({ dataFactory });
+      });
+
+      it('should emit nothing when nothing has been pushed', () => {
+        parser.write('');
+        expect(parser.read(1)).toBeFalsy();
+      });
+
+      it('should emit nothing after {', (done) => {
+        parser.write('{', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id', (done) => {
+        parser.write('"@id": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id value', (done) => {
+        parser.write('"http://example.org",', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after predicate', (done) => {
+        parser.write('"http://example.com/p": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after [', (done) => {
+        parser.write('[', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit a quad after object', (done) => {
+        parser.write('"http://example.com/o",', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://example.org'), namedNode('http://example.com/p'),
+            literal('http://example.com/o')));
+          done();
+        });
+      });
+
+      it('should emit a quad after another object', (done) => {
+        parser.write('"http://example.com/o2"', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://example.org'), namedNode('http://example.com/p'),
+            literal('http://example.com/o2')));
+          done();
+        });
+      });
+
+      it('should emit nothing after ]', (done) => {
+        parser.write(']', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should end after }', (done) => {
+        parser.write('}', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should be closed after finishing the stream', () => {
+        parser.end();
+        expect(parser.read(1)).toBeFalsy();
+        expect(parser.writable).toBeFalsy();
+      });
+    });
+
+    describe('with context', () => {
+      let parser;
+
+      beforeAll(() => {
+        parser = new JsonLdParser({ dataFactory });
+      });
+
+      it('should emit nothing when nothing has been pushed', () => {
+        parser.write('');
+        expect(parser.read(1)).toBeFalsy();
+      });
+
+      it('should emit nothing after {', (done) => {
+        parser.write('{', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after a context', (done) => {
+        parser.write('"@context": { "p": "http://example.org/p", "@base": "http://base.org/" },', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id', (done) => {
+        parser.write('"@id": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after @id value', (done) => {
+        parser.write('"id",', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit nothing after predicate', (done) => {
+        parser.write('"p": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit a quad after object', (done) => {
+        parser.write('"ooo",', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://base.org/id'), namedNode('http://example.org/p'),
+            literal('ooo')));
+          done();
+        });
+      });
+
+      it('should emit nothing after another predicate', (done) => {
+        parser.write('"http://example.com/p2": ', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should emit a quad after another object', (done) => {
+        parser.write('"http://example.com/o2"', () => {
+          expect(parser.read(1)).toEqualRdfQuad(quad(
+            namedNode('http://base.org/id'), namedNode('http://example.com/p2'),
+            literal('http://example.com/o2')));
+          done();
+        });
+      });
+
+      it('should end after }', (done) => {
+        parser.write('}', () => {
+          expect(parser.read(1)).toBeFalsy();
+          done();
+        });
+      });
+
+      it('should be closed after finishing the stream', () => {
+        parser.end();
+        expect(parser.read(1)).toBeFalsy();
+        expect(parser.writable).toBeFalsy();
+      });
+    });
+  });
 });

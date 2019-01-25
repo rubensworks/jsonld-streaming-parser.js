@@ -129,7 +129,7 @@ export class ParsingContext {
     if (depth === 1) {
       this.topLevelProperties = true;
     }
-    this.parser.emit('data', quad);
+    this.parser.push(quad);
   }
 
   /**
