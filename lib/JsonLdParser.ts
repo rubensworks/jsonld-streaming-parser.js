@@ -2,7 +2,7 @@ import * as RDF from "rdf-js";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
 import {IDocumentLoader, JsonLdContext} from "jsonld-context-parser";
-import {Transform, TransformCallback} from "stream";
+import {PassThrough, Transform, TransformCallback} from "stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 import {EntryHandlerInvalidFallback} from "./entryhandler/EntryHandlerInvalidFallback";
@@ -16,6 +16,7 @@ import {EntryHandlerKeywordUnknownFallback} from "./entryhandler/keyword/EntryHa
 import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywordValue";
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
+import EventEmitter = NodeJS.EventEmitter;
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -36,6 +37,7 @@ export class JsonLdParser extends Transform {
     new EntryHandlerInvalidFallback(),
   ];
 
+  private readonly options: IJsonLdParserOptions;
   private readonly parsingContext: ParsingContext;
   private readonly util: Util;
 
@@ -53,6 +55,7 @@ export class JsonLdParser extends Transform {
   constructor(options?: IJsonLdParserOptions) {
     super({ objectMode: true });
     options = options || {};
+    this.options = options;
     this.parsingContext = new ParsingContext({ parser: this, ...options });
     this.util = new Util({ dataFactory: options.dataFactory, parsingContext: this.parsingContext });
 
@@ -64,6 +67,20 @@ export class JsonLdParser extends Transform {
     this.lastOnValueJob = Promise.resolve();
 
     this.attachJsonParserListeners();
+  }
+
+  /**
+   * Parses the given text stream into a quad stream.
+   * @param {NodeJS.EventEmitter} stream A text stream.
+   * @return {NodeJS.EventEmitter} A quad stream.
+   */
+  public import(stream: EventEmitter): EventEmitter {
+    const output = new PassThrough({ objectMode: true });
+    stream.on('error', (error) => parsed.emit('error', error));
+    stream.on('data', (data) => output.write(data));
+    stream.on('end', () => output.emit('end'));
+    const parsed = output.pipe(new JsonLdParser(this.options));
+    return parsed;
   }
 
   public _transform(chunk: any, encoding: string, callback: TransformCallback): void {

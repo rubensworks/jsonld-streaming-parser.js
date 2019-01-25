@@ -5,6 +5,7 @@ import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
 import each from 'jest-each';
 import "jest-rdf";
+import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 
 describe('JsonLdParser', () => {
@@ -5158,6 +5159,59 @@ describe('JsonLdParser', () => {
         expect(parser.read(1)).toBeFalsy();
         expect(parser.writable).toBeFalsy();
       });
+    });
+  });
+
+  describe('#import', () => {
+    let parser;
+
+    beforeAll(() => {
+      parser = new JsonLdParser();
+    });
+
+    it('should parse a stream', async () => {
+      const stream = streamifyString(`
+{
+  "@id": "http://example.org/myGraph",
+  "@graph": {
+    "@id": "http://example.org/node",
+    "@type": "http://example.org/abc",
+    "http://example.org/p": "def"
+  }
+}`);
+      return expect(await arrayifyStream(parser.import(stream))).toBeRdfIsomorphic([
+        quad(namedNode('http://example.org/node'),
+          namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+          namedNode('http://example.org/abc'),
+          namedNode('http://example.org/myGraph')),
+        quad(namedNode('http://example.org/node'),
+          namedNode('http://example.org/p'),
+          literal('def'),
+          namedNode('http://example.org/myGraph')),
+      ]);
+    });
+
+    it('should parse another stream', async () => {
+      const stream = streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "@type": "http://example.org/abc",
+  "http://example.org/p": "def"
+}`);
+      return expect(await arrayifyStream(parser.import(stream))).toBeRdfIsomorphic([
+        quad(namedNode('http://example.org/node'),
+          namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+          namedNode('http://example.org/abc')),
+        quad(namedNode('http://example.org/node'),
+          namedNode('http://example.org/p'),
+          literal('def')),
+      ]);
+    });
+
+    it('should forward error events', async () => {
+      const stream = new PassThrough();
+      stream._read = () => stream.emit('error', new Error('my error'));
+      return expect(arrayifyStream(parser.import(stream))).rejects.toThrow(new Error('my error'));
     });
   });
 });
