@@ -371,6 +371,9 @@ export interface IJsonLdParserOptions {
    * When enabled, streaming results may not come as soon as possible,
    * and will be buffered until the end when no context is defined at all.
    * Defaults to false.
+   *
+   * Spec-compliance: to be fully spec-compliant,
+   * this must be explicitly set to true.
    */
   allowOutOfOrderContext?: boolean;
   /**
@@ -411,6 +414,9 @@ export interface IJsonLdParserOptions {
    * This is not applicable to this parser as we don't do explicit flattening,
    * but it is required to be spec-compliant.
    * Defaults to false.
+   *
+   * Spec-compliance: to be fully spec-compliant,
+   * this must be explicitly set to true.
    */
   validateValueIndexes?: boolean;
 }
