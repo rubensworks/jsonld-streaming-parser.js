@@ -309,8 +309,10 @@ describe('Util', () => {
         it('with conflicting @index values should throw an error when validateValueIndexes is true', async () => {
           util.parsingContext.validateValueIndexes = true;
           const value = [
+            { '@id': 'abc' },
             { '@id': 'abc', '@index': 'a' },
             { '@id': 'abc', '@index': 'b' },
+            "abc",
             { '@id': 'abd', '@index': 'b' },
           ];
           return expect(util.valueToTerm(context, 'key', value, 0))
@@ -320,8 +322,10 @@ describe('Util', () => {
         it('without conflicting @index values when validateValueIndexes is true', async () => {
           util.parsingContext.validateValueIndexes = true;
           const value = [
+            { '@id': 'abc' },
             { '@id': 'abc', '@index': 'a' },
             { '@id': 'abc', '@index': 'a' },
+            "abc",
             { '@id': 'abd', '@index': 'b' },
           ];
           return expect(await util.valueToTerm(context, 'key', value, 0))
