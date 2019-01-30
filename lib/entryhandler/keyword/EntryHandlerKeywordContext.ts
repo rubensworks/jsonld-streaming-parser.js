@@ -24,7 +24,8 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(keys.slice(0, -1));
 
     // Set the context for this scope
-    const context = parsingContext.contextParser.parse(value, parsingContext.baseIRI, await parentContext);
+    const context = parsingContext.contextParser.parse(value,
+      { baseIri: parsingContext.baseIRI, parentContext: await parentContext });
     parsingContext.contextTree.setContext(keys.slice(0, -1), context);
     await parsingContext.validateContext(await context);
   }

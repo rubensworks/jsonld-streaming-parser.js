@@ -74,7 +74,7 @@ export class ParsingContext {
 
     this.parser = options.parser;
     if (options.context) {
-      this.rootContext = this.contextParser.parse(options.context, options.baseIRI);
+      this.rootContext = this.contextParser.parse(options.context, { baseIri: options.baseIRI });
       this.rootContext.then((context) => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve(this.baseIRI ? { '@base': this.baseIRI } : {});
