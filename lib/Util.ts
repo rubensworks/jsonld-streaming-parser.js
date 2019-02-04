@@ -283,7 +283,8 @@ export class Util {
       } else {
         // Only make a blank node if at least one triple was emitted at the value's level.
         if (this.parsingContext.emittedStack[depth + 1]) {
-          return this.parsingContext.idStack[depth + 1] = this.dataFactory.blankNode();
+          return this.parsingContext.idStack[depth + 1]
+            || (this.parsingContext.idStack[depth + 1] = this.dataFactory.blankNode());
         } else {
           return null;
         }

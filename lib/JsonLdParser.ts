@@ -97,10 +97,28 @@ export class JsonLdParser extends Transform {
    * @param {any[]} keys The stack of keys.
    * @param value The value to parse.
    * @param {number} depth The depth to parse at.
-   * @param preflush An optional callback that will be executed before the buffer is flushed.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number, preflush?: () => void) {
+  public async newOnValueJob(keys: any[], value: any, depth: number) {
+    // When we go up the stack, emit all unidentified values
+    // We need to do this before the new job, because the new job may require determined values from the flushed jobs.
+    if (depth < this.lastDepth) {
+      // Check if we had any RDF lists that need to be terminated with an rdf:nil
+      const listPointer = this.parsingContext.listPointerStack[this.lastDepth];
+      if (listPointer) {
+        if (listPointer.term) {
+          this.emit('data', this.util.dataFactory.triple(listPointer.term, this.util.rdfRest, this.util.rdfNil));
+        } else {
+          this.parsingContext.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
+            .push({ predicate: listPointer.initialPredicate, object: this.util.rdfNil, reverse: false });
+        }
+        this.parsingContext.listPointerStack.splice(this.lastDepth, 1);
+      }
+
+      // Flush the buffer for lastDepth
+      await this.flushBuffer(this.lastDepth, keys);
+    }
+
     const key = await this.util.unaliasKeyword(keys[depth], keys, depth);
     const parentKey = await this.util.unaliasKeywordParent(keys, depth);
     this.parsingContext.emittedStack[depth] = true;
@@ -149,33 +167,13 @@ export class JsonLdParser extends Transform {
       this.parsingContext.processingStack[depth] = true;
     }
 
-    // Execute pre-flush callback if present
-    if (preflush) {
-      preflush();
-    }
-
     // Validate value indexes on the root.
     if (depth === 0 && Array.isArray(value)) {
       await this.util.validateValueIndexes(value);
     }
 
-    // When we go up the stack, emit all unidentified values
+    // When we go up the stack, flush the old stack
     if (depth < this.lastDepth) {
-      // Check if we had any RDF lists that need to be terminated with an rdf:nil
-      const listPointer = this.parsingContext.listPointerStack[this.lastDepth];
-      if (listPointer) {
-        if (listPointer.term) {
-          this.emit('data', this.util.dataFactory.triple(listPointer.term, this.util.rdfRest, this.util.rdfNil));
-        } else {
-          this.parsingContext.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
-            .push({ predicate: listPointer.initialPredicate, object: this.util.rdfNil, reverse: false });
-        }
-        this.parsingContext.listPointerStack.splice(this.lastDepth, 1);
-      }
-
-      // Flush the buffer for lastDepth
-      await this.flushBuffer(this.lastDepth, keys);
-
       // Reset our stack
       this.parsingContext.processingStack.splice(this.lastDepth, 1);
       this.parsingContext.emittedStack.splice(this.lastDepth, 1);
@@ -300,7 +298,7 @@ export class JsonLdParser extends Transform {
   protected async flushBuffer(depth: number, keys: any[]) {
     let subject: RDF.Term = this.parsingContext.idStack[depth];
     if (subject === undefined) {
-      subject = this.util.dataFactory.blankNode();
+      subject = this.parsingContext.idStack[depth] = this.util.dataFactory.blankNode();
     }
 
     // Flush values at this level
@@ -313,6 +311,7 @@ export class JsonLdParser extends Transform {
           ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : this.util.dataFactory.defaultGraph();
         if (graph) {
           // Flush values to stream if the graph @id is known
+          this.parsingContext.emittedStack[depth] = true;
           for (const bufferedValue of valueBuffer) {
             if (bufferedValue.reverse) {
               this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
@@ -357,6 +356,7 @@ export class JsonLdParser extends Transform {
         // others relate to blank nodes.
         const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
         && !this.parsingContext.topLevelProperties ? this.util.dataFactory.defaultGraph() : subject;
+        this.parsingContext.emittedStack[depth] = true;
         for (const bufferedValue of graphBuffer) {
           this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
             bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));

@@ -70,13 +70,14 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1,
           parentKey, keys);
       } else {
-        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, () => {
-          // Do this so that deeper values without @id can make use of this id when they are flushed
-          if (parsingContext.idStack[depth]) {
-            parsingContext.idStack[depth + 1] = parsingContext.idStack[depth];
-          }
-          parsingContext.emittedStack[depth] = false;
-        });
+        // Copy the id stack value up one level so that the next job can access the id.
+        if (parsingContext.idStack[depth + 1]) {
+          parsingContext.idStack[depth] = parsingContext.idStack[depth + 1];
+          parsingContext.emittedStack[depth] = true;
+        }
+
+        // Execute the job one level higher
+        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1);
       }
     }
   }

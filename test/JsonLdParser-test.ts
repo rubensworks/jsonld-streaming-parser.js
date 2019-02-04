@@ -2142,6 +2142,58 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('a nested array', () => {
+        it('a list-based inside a set-based array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p1": { "@id": "http://ex.org/pred1" },
+    "p2": { "@id": "http://ex.org/pred2", "@container": "@list" }
+  },
+  "@id": "http://ex.org/myid",
+  "p1": [
+    {
+      "p2": [
+        "abc"
+      ]
+    }
+  ],
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('abc')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+            triple(blankNode('b0'), namedNode('http://ex.org/pred2'), blankNode('l0')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('b0')),
+          ]);
+        });
+
+        it('a set-based array inside a list-based array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p1": { "@id": "http://ex.org/pred1", "@container": "@list" },
+    "p2": { "@id": "http://ex.org/pred2" }
+  },
+  "@id": "http://ex.org/myid",
+  "p1": [
+    {
+      "p2": [
+        "abc"
+      ]
+    }
+  ],
+}`);
+          const output = await arrayifyStream(stream.pipe(parser));
+          expect(output).toBeRdfIsomorphic([
+            triple(blankNode('l0'), namedNode(Util.RDF + 'first'), blankNode('b0')),
+            triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+            triple(blankNode('b0'), namedNode('http://ex.org/pred2'), literal('abc')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('l0')),
+          ]);
+        });
+      });
+
       describe('two nested triple', () => {
         it('without @id and without inner @id', async () => {
           const stream = streamifyString(`
@@ -2166,7 +2218,6 @@ describe('JsonLdParser', () => {
   }
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
-          expect(output[1].subject).toEqual(output[0].object);
           return expect(output).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('a')),
             triple(blankNode('a'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
@@ -2182,7 +2233,6 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid"
 }`);
           const output = await arrayifyStream(stream.pipe(parser));
-          expect(output[0].subject).toEqual(output[1].object);
           return expect(output).toBeRdfIsomorphic([
             triple(blankNode('a'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'), blankNode('a')),
