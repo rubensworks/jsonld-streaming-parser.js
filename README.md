@@ -155,17 +155,24 @@ Concretely, this parser implements the following [JSON-LD specifications](https:
 The following table shows some simple performance comparisons between JSON-LD Streaming Parser and [jsonld.js](https://www.npmjs.com/package/jsonld).
 
 These basic experiments show that even though streaming parsers are typically significantly slower than regular parsers,
-JSON-LD Streaming Parser still achieves similar performance as jsonld.js for most typical JSON-LD files.
+_JSON-LD Streaming Parser still achieves similar performance as jsonld.js_ for most typical JSON-LD files.
 However, for expanded JSON-LD documents, JSON-LD Streaming Parser is around 3~4 times slower.
 
 | File       | **JSON-LD Streaming Parser** | **jsonld.js** |
 | ---------- | ---------------------------- | ------------- |
 | [`toRdf-manifest.jsonld`](https://json-ld.org/test-suite/tests/toRdf-manifest.jsonld) (999 triples) | 683.964ms (38MB) | 708.975ms (40MB) |
-| [`sparql-init.json`](https://raw.githubusercontent.com/comunica/comunica/master/packages/actor-init-sparql/config/sets/sparql-init.json) (69 triples, many complex nested contexts) | 931.698ms (40MB) | 1088.607ms (47MB) |
+| [`sparql-init.json`](https://raw.githubusercontent.com/comunica/comunica/master/packages/actor-init-sparql/config/sets/sparql-init.json) (69 triples) | 931.698ms (40MB) | 1088.607ms (47MB) |
 | [`person.json`](https://json-ld.org/playground/) (5 triples) | 309.419ms (30MB) | 313.138ms (41MB) |
-| `dbpedia-10000-expanded.json` (First 10000 triples of DBpedia in expanded JSON-LD) | 785.557ms (70MB) | 202.363ms (62MB) |
+| `dbpedia-10000-expanded.json` (10,000 triples) | 785.557ms (70MB) | 202.363ms (62MB) |
 
-[Code for measurements](https://github.com/rubensworks/jsonld-streaming-parser.js/tree/master/perf).
+Tested files:
+
+* `toRdf-manifest.jsonld`: The JSON-LD toRdf test manifest. A typical JSON-LD file with a single context.
+* `sparql-init.json`: A [Comunica](https://github.com/comunica/comunica) configuration file. A JSON-LD file with a large number of complex, nested, and remote contexts.
+* `person.jsonld`: A very small JSON-LD example from the [JSON-LD playground](https://json-ld.org/playground/).
+* `dbpedia-10000-expanded.json` First 10000 triples of DBpedia in expanded JSON-LD.
+
+[Code for measurements](https://github.com/rubensworks/jsonld-streaming-parser.js/tree/master/perf)
 
 ## License
 This software is written by [Ruben Taelman](http://rubensworks.net/).
