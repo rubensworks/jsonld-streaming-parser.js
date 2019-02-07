@@ -41,6 +41,7 @@
   ],
   "devDependencies": {
     "@types/jest": "^24.0.0",
+    "@types/jest-each": "^0.3.3",
     "arrayify-stream": "^1.0.0",
     "coveralls": "^3.0.0",
     "jest": "^23.4.1",

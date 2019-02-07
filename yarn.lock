@@ -25,6 +25,11 @@
   dependencies:
     "@types/rdf-js" "^2.0.1"
 
+"@types/jest-each@^0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@types/jest-each/-/jest-each-0.3.3.tgz#ea76aea22f5dd7bfd487298dd717c71fda47fc78"
+  integrity sha512-7lo+h0JX4ttYx9pXg5Ed+repH7R2ISmeLgrVOK5xJ+H4+g1MdkuOUduxVZvsNuscvTWVMRMKrPTuafjYTBgHaA==
+
 "@types/jest@^24.0.0":
   version "24.0.0"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-24.0.0.tgz#848492026c327b3548d92be0352a545c36a21e8a"
