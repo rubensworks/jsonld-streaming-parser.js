@@ -126,7 +126,58 @@ new JsonLdParser({
 
 ## How it works
 
-TODO
+This parser does _not_ follow the [recommended procedure for transforming JSON-LD to RDF](https://www.w3.org/TR/json-ld/#serializing-deserializing-rdf),
+because this does not allow stream-based handling of JSON.
+Instead, this tool introduces an alternative _streaming_ algorithm that achieves spec-compliant JSON-LD parsing.
+
+This parser builds on top of the [jsonparse](https://www.npmjs.com/package/jsonparse) library,
+which is a sax-based streaming JSON parser.
+With this, several in-memory stacks are maintained.
+These stacks are needed to accumulate the required information to emit triples/quads.
+These stacks are deleted from the moment they are not needed anymore, to limit memory usage.
+
+The algorithm makes a couple of (soft) assumptions regarding the structure of the JSON-LD document,
+which is true for most typical JSON-LD documents.
+
+* If there is a `@context`, it is the first entry of an object.
+* If there is an `@id`, it comes right after `@context`, or is the first entry of an object.
+
+If these assumptions are met, (almost) each object entry corresponds to a triple/quad that can be emitted.
+For example, the following document allows a triple to be emitted after each object entry (except for first two lines):
+
+```
+{
+  "@context": "http://schema.org/",
+  "@id": "http://example.org/",
+  "@type": "Person",               // --> <http://example.org/> a schema:Person.
+  "name": "Jane Doe",              // --> <http://example.org/> schema:name "Jane Doe".
+  "jobTitle": "Professor",         // --> <http://example.org/> schema:jobTitle "Professor".
+  "telephone": "(425) 123-4567",   // --> <http://example.org/> schema:telephone "(425) 123-4567".
+  "url": "http://www.janedoe.com"  // --> <http://example.org/> schema:url <http://www.janedoe.com>.
+}
+```
+
+If not all of these assumptions are met, entries of an object are buffered until enough information becomes available, or if the object is closed.
+For example, if no `@id` was present, values will be buffered until an `@id` is read, or if the object closed.
+
+For example:
+
+```
+{
+  "@context": "http://schema.org/",
+  "@type": "Person",
+  "name": "Jane Doe",
+  "jobTitle": "Professor",
+  "@id": "http://example.org/",    // --> <http://example.org/> a schema:Person.
+                                   // --> <http://example.org/> schema:name "Jane Doe".
+                                   // --> <http://example.org/> schema:jobTitle "Professor".
+  "telephone": "(425) 123-4567",   // --> <http://example.org/> schema:telephone "(425) 123-4567".
+  "url": "http://www.janedoe.com"  // --> <http://example.org/> schema:url <http://www.janedoe.com>.
+}
+```
+
+As such, JSON-LD documents that meet these requirements will be parsed very efficiently.
+Other documents will still be parsed correctly as well, with a slightly lower efficiency.
 
 ## Specification Compliance
 
