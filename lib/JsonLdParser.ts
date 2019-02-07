@@ -107,7 +107,8 @@ export class JsonLdParser extends Transform {
       const listPointer = this.parsingContext.listPointerStack[this.lastDepth];
       if (listPointer) {
         if (listPointer.term) {
-          this.emit('data', this.util.dataFactory.triple(listPointer.term, this.util.rdfRest, this.util.rdfNil));
+          this.emit('data', this.util.dataFactory.quad(listPointer.term, this.util.rdfRest, this.util.rdfNil,
+            this.util.getDefaultGraph()));
         } else {
           this.parsingContext.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
             .push({ predicate: listPointer.initialPredicate, object: this.util.rdfNil, reverse: false });
@@ -308,7 +309,7 @@ export class JsonLdParser extends Transform {
       if (subject) {
         const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
         const graph: RDF.Term = this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0
-          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : this.util.dataFactory.defaultGraph();
+          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : this.util.getDefaultGraph();
         if (graph) {
           // Flush values to stream if the graph @id is known
           this.parsingContext.emittedStack[depth] = true;
@@ -355,7 +356,7 @@ export class JsonLdParser extends Transform {
         // unless there are top-level properties,
         // others relate to blank nodes.
         const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
-        && !this.parsingContext.topLevelProperties ? this.util.dataFactory.defaultGraph() : subject;
+        && !this.parsingContext.topLevelProperties ? this.util.getDefaultGraph() : subject;
         this.parsingContext.emittedStack[depth] = true;
         for (const bufferedValue of graphBuffer) {
           this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
@@ -436,4 +437,9 @@ export interface IJsonLdParserOptions {
    * this must be explicitly set to true.
    */
   validateValueIndexes?: boolean;
+  /**
+   * The graph to use as default graph when no explicit @graph is set.
+   * Defaults to dataFactory.defaultGraph().
+   */
+  defaultGraph?: RDF.Term;
 }

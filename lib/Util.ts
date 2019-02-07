@@ -543,4 +543,12 @@ export class Util {
     }
   }
 
+  /**
+   * Get the default graph.
+   * @return {Term} An RDF term.
+   */
+  public getDefaultGraph(): RDF.Term {
+    return this.parsingContext.defaultGraph || this.dataFactory.defaultGraph();
+  }
+
 }

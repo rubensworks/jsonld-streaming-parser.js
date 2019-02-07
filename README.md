@@ -108,6 +108,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `errorOnInvalidIris`: By default, JSON-LD requires that all properties (or @id's) that are not URIs, are unknown keywords, and do not occur in the context should be silently dropped. When setting this value to true, an error will be thrown when such properties occur. This is useful for debugging JSON-LD documents. _(Default: `false`)_
 * `allowSubjectList`: If RDF lists can appear in the subject position. _(Default: `false`)_
 * `validateValueIndexes`: If @index inside array nodes should be validated. I.e., nodes inside the same array with the same @id, should have equal @index values. This is not applicable to this parser as we don't do explicit flattening, but it is required to be spec-compliant. _(Default: `false`)_
+* `defaultGraph`: The default graph for constructing [quads](http://rdf.js.org/#dom-datafactory-quad). _(Default: `defaultGraph()`)_
 
 ```javascript
 new JsonLdParser({
@@ -121,6 +122,7 @@ new JsonLdParser({
   errorOnInvalidIris: false,
   allowSubjectList: false,
   validateValueIndexes: false,
+  defaultGraph: namedNode('http://example.org/graph'),
 });
 ```
 

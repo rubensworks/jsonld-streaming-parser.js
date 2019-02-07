@@ -42,6 +42,29 @@ describe('JsonLdParser', () => {
     });
   });
 
+  describe('when instantiated with a custom default graph', () => {
+    let parser;
+
+    beforeEach(() => {
+      parser = new JsonLdParser({ defaultGraph: namedNode('http://ex.org/g') });
+    });
+
+    it('should expose the overridden default graph', () => {
+      expect(parser.util.getDefaultGraph()).toEqualRdfTerm(namedNode('http://ex.org/g'));
+    });
+
+    it('should parse triples into the given graph', async () => {
+      const stream = streamifyString(`
+{
+  "http://ex.org/pred1": "http://ex.org/obj1"
+}`);
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        quad(blankNode(), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1'),
+          namedNode('http://ex.org/g')),
+      ]);
+    });
+  });
+
   each ([
     false,
     true,

@@ -107,14 +107,16 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         // as the blank node identifier is only created at that point.
         // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
         const newLinkTerm: RDF.Term = util.dataFactory.blankNode();
-        parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer.term, util.rdfRest, newLinkTerm));
+        parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.term, util.rdfRest, newLinkTerm,
+          util.getDefaultGraph()));
 
         // Update the list pointer for the next element
         listPointer.term = newLinkTerm;
       }
 
       // Emit a list element for the current value
-      parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer.term, util.rdfFirst, value));
+      parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.term, util.rdfFirst, value,
+        util.getDefaultGraph()));
     } else {
       // A falsy list element if found.
       // Just enable the list flag for this depth if it has not been set before.

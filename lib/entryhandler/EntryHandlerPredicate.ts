@@ -59,9 +59,9 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
         // Emit if no @graph was applicable
         if (reverse) {
           util.validateReverseSubject(object);
-          parsingContext.emitQuad(depth, util.dataFactory.triple(object, predicate, subject));
+          parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, util.getDefaultGraph()));
         } else {
-          parsingContext.emitQuad(depth, util.dataFactory.triple(subject, predicate, object));
+          parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, util.getDefaultGraph()));
         }
       }
     } else {
@@ -105,8 +105,10 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
         if (listValueContainer || value['@list']) {
           if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list']))) && object !== util.rdfNil) {
             const listPointer: RDF.Term = util.dataFactory.blankNode();
-            parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfRest, util.rdfNil));
-            parsingContext.emitQuad(depth, util.dataFactory.triple(listPointer, util.rdfFirst, object));
+            parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
+              util.getDefaultGraph()));
+            parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
+              util.getDefaultGraph()));
             object = listPointer;
           }
 
