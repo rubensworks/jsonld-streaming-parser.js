@@ -1,0 +1,20 @@
+{
+  "applicationBugsUrl": "https://github.com/rubensworks/jsonld-streaming-parser.js/issues",
+  "applicationDescription": "Streaming JSON-LD parser",
+  "applicationHomepageUrl": "https://github.com/rubensworks/jsonld-streaming-parser.js#readme",
+  "applicationNameFull": "jsonld-streaming-parser",
+  "applicationNameNpm": "jsonld-streaming-parser",
+  "applicationUri": "https://www.npmjs.com/package/jsonld-streaming-parser/",
+  "authors": [
+    {
+      "homepage": "https://www.rubensworks.net/",
+      "name": "Ruben Taelman <rubensworks@gmail.com>",
+      "uri": "https://www.rubensworks.net/#me"
+    }
+  ],
+  "licenseUri": "http://opensource.org/licenses/MIT",
+  "reportUri": null,
+  "specificationUris": [
+    "https://www.w3.org/TR/json-ld/"
+  ]
+}
