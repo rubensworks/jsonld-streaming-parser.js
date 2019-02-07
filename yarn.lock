@@ -2326,12 +2326,13 @@ jsonify@~0.0.0:
   resolved "https://registry.yarnpkg.com/jsonify/-/jsonify-0.0.0.tgz#2c74b6ee41d93ca51b7b5aaee8f503631d252a73"
   integrity sha1-LHS27kHZPKUbe1qu6PUDYx0lKnM=
 
-jsonld-context-parser@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-1.0.1.tgz#c055a0f0d34a5812907308b67e0634dc047ec6a8"
-  integrity sha512-jOFJ3E0/Ugd84KrXnxka2qSVJYo/9xWDnS1HK8MRu/yd6/IvkAaDi8RC44W/anRArMzl7b7DVm+ZFf12vkD9yg==
+jsonld-context-parser@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-1.1.1.tgz#c30aa8b9e07beac01720e29ff993b4e7a608cfda"
+  integrity sha512-weYIHCl0XQaFszMhwz6kmOnAIb7+Fcw46AbmizfBH9XhCuOcDBZu5YgXox9Xk8TGf/TM6iDgzGLYfTJ3z9y0JQ==
   dependencies:
     isomorphic-fetch "^2.2.1"
+    relative-to-absolute-iri "^1.0.2"
 
 jsonparse@^1.3.1:
   version "1.3.1"
@@ -3225,6 +3226,11 @@ regex-not@^1.0.0, regex-not@^1.0.2:
   dependencies:
     extend-shallow "^3.0.2"
     safe-regex "^1.1.0"
+
+relative-to-absolute-iri@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/relative-to-absolute-iri/-/relative-to-absolute-iri-1.0.2.tgz#5ad2fa26569f46523ab8428cb7d5247005c51544"
+  integrity sha512-2tAsyCpb/ozT6w8BSaz//u7iRIW621FsMbC8el4VqzvtuntevEFfWNM/Wr9ubodzGa9OwBNwOHERRKqw9toKOA==
 
 remove-trailing-separator@^1.0.1:
   version "1.1.0"
