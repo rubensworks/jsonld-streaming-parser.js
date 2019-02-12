@@ -42,7 +42,7 @@
   "devDependencies": {
     "@types/jest": "^23.3.14",
     "@types/jest-each": "^0.3.3",
-    "@types/node": "^10.12.21",
+    "@types/node": "^11.9.0",
     "arrayify-stream": "^1.0.0",
     "coveralls": "^3.0.0",
     "jest": "^23.6.0",
