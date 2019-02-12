@@ -35,10 +35,10 @@
   resolved "https://registry.yarnpkg.com/@types/jest-each/-/jest-each-0.3.3.tgz#ea76aea22f5dd7bfd487298dd717c71fda47fc78"
   integrity sha512-7lo+h0JX4ttYx9pXg5Ed+repH7R2ISmeLgrVOK5xJ+H4+g1MdkuOUduxVZvsNuscvTWVMRMKrPTuafjYTBgHaA==
 
-"@types/jest@^23.3.14":
-  version "23.3.14"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.14.tgz#37daaf78069e7948520474c87b80092ea912520a"
-  integrity sha512-Q5hTcfdudEL2yOmluA1zaSyPbzWPmJ3XfSWeP3RyoYvS9hnje1ZyagrZOuQ6+1nQC1Gw+7gap3pLNL3xL6UBug==
+"@types/jest@^24.0.1":
+  version "24.0.1"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-24.0.1.tgz#8945411140e7cdfd5ea76380e5f5fa7bf17646ea"
+  integrity sha512-4KNToPz5SAVa0GZrYAL3Q43p5MY/QBmYclYAmqPeqAmbgQ4lXkgKK0mYtr9S+N2Az0JvFaYJECztHZuFGhG3zw==
 
 "@types/node@*":
   version "10.5.2"
