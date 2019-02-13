@@ -2285,10 +2285,10 @@ jsonld-context-parser@^1.1.0, jsonld-context-parser@^1.1.1:
     isomorphic-fetch "^2.2.1"
     relative-to-absolute-iri "^1.0.2"
 
-jsonld-context-parser@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-1.1.2.tgz#cd5ad2201a02ac7d68664e0aba8fc80ee737574c"
-  integrity sha512-NAEUO76j0DmqPiOnt6FhSFStY1BPnh3ND4uK1bSXqcip/30tmHDGrs3ZP/CSpGU+7W/VLDXnZ7hbv0eYwn+rXw==
+jsonld-context-parser@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-1.1.3.tgz#af30aa1b51c6cdc9c4b60ef3a40ed1f6e2bbcd35"
+  integrity sha512-/OWdhhJZPBoeUa6HlfkI2VpkpdvbTRvcyJwAu9fWuvZtGW00uDmGiNrzAWVfPH9mHAj0Dn9DN5ZjrD59CbU7Aw==
   dependencies:
     isomorphic-fetch "^2.2.1"
     relative-to-absolute-iri "^1.0.2"
@@ -3272,10 +3272,10 @@ rdf-terms@^1.4.0:
     "@rdfjs/data-model" "^1.1.1"
     lodash.uniqwith "^4.5.0"
 
-rdf-test-suite@^1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.5.0.tgz#f0bbe692c48e7c64c96f75c28acba51aedbb2283"
-  integrity sha512-Jom3VLM84WffElylTqv8MTyqdYmwEXAWEPN1Y/Rwn7V6oRXVGGckDb1+PxrUbV1KdwHPQESS6vtYunhpGF6y3w==
+rdf-test-suite@^1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.5.2.tgz#91a90d4b6fc845233e43be28f1a7a1c4475acc38"
+  integrity sha512-+agRQU3ZkirWFs+mu+yYfPxH7CPKN9A2nVh/S8CtGApMIP5SXxoDsF1wifMIjMZs/bL7xwJt4ZVEraLD6lgDmQ==
   dependencies:
     "@rdfjs/data-model" "^1.1.1"
     arrayify-stream "^1.0.0"
@@ -3292,7 +3292,7 @@ rdf-test-suite@^1.5.0:
     rdf-terms "^1.4.0"
     rdfxml-streaming-parser "^1.1.0"
     sparqljson-parse "^1.5.0"
-    sparqlxml-parse "^1.2.0"
+    sparqlxml-parse "^1.2.1"
     stream-to-string "^1.1.0"
     streamify-string "^1.0.1"
 
@@ -3711,10 +3711,10 @@ sparqljson-parse@^1.5.0:
     "@rdfjs/data-model" "^1.1.1"
     JSONStream "^1.3.3"
 
-sparqlxml-parse@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/sparqlxml-parse/-/sparqlxml-parse-1.2.0.tgz#5965bd83561e7da7571a78aa28ff0dffe363c16b"
-  integrity sha512-yRDYaRH5Fv6fHywWu8lG+WK2NLeg+p15DTjD5qkNq7njxJseKh2Eq1E1L9XvUEcwhR6aK5L8h07AO4lYA0BFFQ==
+sparqlxml-parse@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/sparqlxml-parse/-/sparqlxml-parse-1.2.1.tgz#6426a829a431e2dd5b5a9bffbd0ea2b96219a150"
+  integrity sha512-GepnauJojSSxrbpU9b44m/TF5B2VU2KUu4ZE+PGaJw25gXuEGSZt8mrnIXnMiQRL7KFaUybba+IdpXUmci2IrA==
   dependencies:
     "@rdfjs/data-model" "^1.1.1"
     sax-stream "^1.2.3"
