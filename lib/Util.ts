@@ -235,6 +235,9 @@ export class Util {
             throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
           }
           const typeTerm = this.createVocabOrBaseTerm(context, valueType);
+          if (!typeTerm) {
+            return null;
+          }
           if (typeTerm.termType !== 'NamedNode') {
             throw new Error(`Illegal value type (${typeTerm.termType}): ${valueType}`);
           }
@@ -343,7 +346,7 @@ export class Util {
    * based on @base.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
-   * @return {RDF.NamedNode} An RDF named node.
+   * @return {RDF.NamedNode} An RDF named node or null.
    */
   public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
     if (key.startsWith('_:')) {
@@ -366,7 +369,7 @@ export class Util {
    * and fallback to @base.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
-   * @return {RDF.NamedNode} An RDF named node.
+   * @return {RDF.NamedNode} An RDF named node or null.
    */
   public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
     if (key.startsWith('_:')) {
@@ -375,6 +378,13 @@ export class Util {
     let expanded = ContextParser.expandTerm(key, context, true);
     if (expanded === key) {
       expanded = ContextParser.expandTerm(key, context, false);
+    }
+    if (!Util.isValidIri(expanded)) {
+      if (expanded && this.parsingContext.errorOnInvalidProperties) {
+        this.parsingContext.emitError(new Error(`Invalid term IRI: ${expanded}`));
+      } else {
+        return null;
+      }
     }
     return this.dataFactory.namedNode(expanded);
   }
@@ -408,7 +418,7 @@ export class Util {
    * @param {string} key The current JSON key.
    * @param {string} value A JSON value.
    * @param {NamedNode} defaultDatatype The default datatype for the given value.
-   * @return {RDF.Term} An RDF term.
+   * @return {RDF.Term} An RDF term or null.
    */
   public stringValueToTerm(context: IJsonLdContextNormalized, key: string, value: string | number,
                            defaultDatatype: RDF.NamedNode): RDF.Term {

@@ -27,12 +27,18 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // Handle multiple values if the value is an array
     if (Array.isArray(value)) {
       for (const element of value) {
-        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
-          predicate, util.createVocabOrBaseTerm(context, element), reverse);
+        const type = util.createVocabOrBaseTerm(context, element);
+        if (type) {
+          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+            predicate, type, reverse);
+        }
       }
     } else {
-      await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
-        predicate, util.createVocabOrBaseTerm(context, value), reverse);
+      const type = util.createVocabOrBaseTerm(context, value);
+      if (type) {
+        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+          predicate, type, reverse);
+      }
     }
   }
 

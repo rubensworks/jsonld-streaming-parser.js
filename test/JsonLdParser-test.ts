@@ -244,6 +244,18 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and an invalid typed literal', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@type": "http://ex.org/ mytype"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with @id and a prefixed, typed literal', async () => {
           const stream = streamifyString(`
 {
@@ -2477,6 +2489,18 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id with inner subject @id and an invalid @type', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/myid",
+  "@graph": {
+    "@id": "http://ex.org/myinnerid",
+    "@type": "http://ex.org/ obj1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
         it('with out-of-order @id with inner subject @id', async () => {
           const stream = streamifyString(`
 {
@@ -3162,6 +3186,23 @@ describe('JsonLdParser', () => {
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://ex.org/mytype1'),
               namedNode('http://ex.org/mygraph')),
+            quad(namedNode('http://ex.org/myid'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/mytype2'),
+              namedNode('http://ex.org/mygraph')),
+          ]);
+        });
+
+        it('with an in-order @graph id in an array with @type array with an invalid IRI', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/mygraph",
+  "@graph": [{
+    "@id": "http://ex.org/myid",
+    "@type": [ "http://ex.org/ mytype1", "http://ex.org/mytype2" ]
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             quad(namedNode('http://ex.org/myid'),
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://ex.org/mytype2'),
@@ -4889,6 +4930,15 @@ describe('JsonLdParser', () => {
 }`);
       return expect(arrayifyStream(stream.pipe(parser))).rejects
         .toEqual(new Error('Invalid resource IRI: dummy'));
+    });
+
+    it('should error on an @type that is not an IRI', async () => {
+      const stream = streamifyString(`
+{
+  "@type": "http://ex.org/ abc"
+}`);
+      return expect(arrayifyStream(stream.pipe(parser))).rejects
+        .toEqual(new Error('Invalid term IRI: http://ex.org/ abc'));
     });
 
     it('should error on @reverse with literal values', async () => {
