@@ -2277,7 +2277,7 @@ json5@^0.5.1:
   resolved "https://registry.yarnpkg.com/json5/-/json5-0.5.1.tgz#1eade7acc012034ad84e2396767ead9fa5495821"
   integrity sha1-Hq3nrMASA0rYTiOWdn6tn6VJWCE=
 
-jsonld-context-parser@^1.1.0, jsonld-context-parser@^1.1.1:
+jsonld-context-parser@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-1.1.1.tgz#c30aa8b9e07beac01720e29ff993b4e7a608cfda"
   integrity sha512-weYIHCl0XQaFszMhwz6kmOnAIb7+Fcw46AbmizfBH9XhCuOcDBZu5YgXox9Xk8TGf/TM6iDgzGLYfTJ3z9y0JQ==
@@ -2293,14 +2293,14 @@ jsonld-context-parser@^1.1.3:
     isomorphic-fetch "^2.2.1"
     relative-to-absolute-iri "^1.0.2"
 
-jsonld-streaming-parser@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/jsonld-streaming-parser/-/jsonld-streaming-parser-1.0.0.tgz#ff92f7c948548f3be35e86bec6e3337ce0161eaf"
-  integrity sha512-IYCJzIk0zgKyDHEQ8juYOY0yDqAbIdtgd4AISSjPT21jxOJwvfqS8U6nC5cNPLEhhJRiErdzFPT00R/NthxPIA==
+jsonld-streaming-parser@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/jsonld-streaming-parser/-/jsonld-streaming-parser-1.0.1.tgz#4cea02bd9418cd0f41a41aa0317c9872b333e920"
+  integrity sha512-6e6W5uesAN+LpycMceljfpsWU/pL3lddooLldnjcSdqyneJUej4xqnt8jBCZGVAb01ep5wLxEAKNPW7bn6DfYQ==
   dependencies:
     "@rdfjs/data-model" "^1.1.1"
     "@types/rdf-js" "^2.0.1"
-    jsonld-context-parser "^1.1.1"
+    jsonld-context-parser "^1.1.3"
     jsonparse "^1.3.1"
 
 jsonparse@^1.2.0, jsonparse@^1.3.1:
@@ -3272,15 +3272,15 @@ rdf-terms@^1.4.0:
     "@rdfjs/data-model" "^1.1.1"
     lodash.uniqwith "^4.5.0"
 
-rdf-test-suite@^1.5.2:
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.5.2.tgz#91a90d4b6fc845233e43be28f1a7a1c4475acc38"
-  integrity sha512-+agRQU3ZkirWFs+mu+yYfPxH7CPKN9A2nVh/S8CtGApMIP5SXxoDsF1wifMIjMZs/bL7xwJt4ZVEraLD6lgDmQ==
+rdf-test-suite@^1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.5.3.tgz#f4432620c8c4b94f470d3aaa5030e981e3b91bac"
+  integrity sha512-i/k8k0+jFHRtZym+NX874WImMFaJrdofp9EatiC/Q9BQkIgEqQPDrCAS+5XscDcmbuN3EwxC5OdjcASc5jz8/A==
   dependencies:
     "@rdfjs/data-model" "^1.1.1"
     arrayify-stream "^1.0.0"
     isomorphic-fetch "^2.2.1"
-    jsonld-streaming-parser "^1.0.0"
+    jsonld-streaming-parser "^1.0.1"
     log-symbols "^2.2.0"
     minimist "^1.2.0"
     n3 "^1.0.0"
