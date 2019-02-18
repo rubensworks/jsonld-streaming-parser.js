@@ -52,7 +52,7 @@
     "pre-commit": "^1.2.2",
     "rdf-test-suite": "^1.5.3",
     "streamify-string": "^1.0.1",
-    "ts-jest": "^23.10.5",
+    "ts-jest": "^24.0.0",
     "tslint": "^5.8.0",
     "tslint-eslint-rules": "^5.3.1",
     "typescript": "^3.3.1"
