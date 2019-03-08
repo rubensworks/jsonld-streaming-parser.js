@@ -65,10 +65,10 @@ describe('JsonLdParser', () => {
     });
   });
 
-  each ([
+  (<any> each ([
     [false],
     [true],
-  ]).describe('when instantiated with a data factory and allowOutOfOrderContext %s', (allowOutOfOrderContext) => {
+  ])).describe('when instantiated with a data factory and allowOutOfOrderContext %s', (allowOutOfOrderContext) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
   /*describe('when instantiated with a data factory and allowOutOfOrderContext %s', () => {
     const allowOutOfOrderContext = false;*/
