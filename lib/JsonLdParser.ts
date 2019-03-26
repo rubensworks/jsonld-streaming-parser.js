@@ -23,7 +23,7 @@ import EventEmitter = NodeJS.EventEmitter;
  */
 export class JsonLdParser extends Transform {
 
-  public static readonly DEFAULT_PROCESSING_MODE: string = '1.0';
+  public static readonly DEFAULT_PROCESSING_MODE: string = '1.1';
   public static readonly ENTRY_HANDLERS: IEntryHandler<any>[] = [
     new EntryHandlerArrayValue(),
     new EntryHandlerKeywordContext(),

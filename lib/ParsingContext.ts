@@ -92,8 +92,8 @@ export class ParsingContext {
    * @param {IJsonLdContextNormalized} context A context.
    */
   public validateContext(context: IJsonLdContextNormalized) {
-    const activeVersion: string = <string> <any> context['@version'];
-    if (activeVersion && parseFloat(activeVersion) > parseFloat(this.processingMode)) {
+    const activeVersion: number = <number> <any> context['@version'];
+    if (activeVersion && activeVersion > parseFloat(this.processingMode)) {
       throw new Error(`Unsupported JSON-LD processing mode: ${activeVersion}`);
     }
   }

@@ -85,13 +85,13 @@ describe('JsonLdParser', () => {
       });
 
       it('an empty document with a valid processing mode', async () => {
-        const stream = streamifyString(`{ "@context": { "@version": "1.0" } }`);
+        const stream = streamifyString(`{ "@context": { "@version": 1.0 } }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
       it('an empty document with a non-default processing mode when configured as such', async () => {
         parser = new JsonLdParser({ processingMode: '1.1' });
-        const stream = streamifyString(`{ "@context": { "@version": "1.1" } }`);
+        const stream = streamifyString(`{ "@context": { "@version": 1.1 } }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
@@ -4904,10 +4904,11 @@ describe('JsonLdParser', () => {
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
       it('a document with an invalid processing mode', async () => {
+        parser = new JsonLdParser({ processingMode: '1.0' });
         const stream = streamifyString(`
 {
   "@context": {
-    "@version": "1.1"
+    "@version": 1.1
   },
   "@id": "http://ex.org/myid1"
 }`);
