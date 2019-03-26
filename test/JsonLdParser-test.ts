@@ -3799,6 +3799,27 @@ describe('JsonLdParser', () => {
         });
       });
 
+      it('with @base and @vocab with @vocab="" should reuse the base IRI', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.1,
+    "@base": "http://example/document",
+    "@vocab": ""
+  },
+  "@id": "http://example.org/places#BrewEats",
+  "@type": "#Restaurant",
+  "#name": "Brew Eats"
+}`);
+        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          triple(namedNode('http://example.org/places#BrewEats'),
+            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            namedNode('http://example/document#Restaurant')),
+          triple(namedNode('http://example.org/places#BrewEats'), namedNode('http://example/document#name'),
+            literal('Brew Eats')),
+        ]);
+      });
+
       it('with a null inner context', async () => {
         const stream = streamifyString(`
 {
