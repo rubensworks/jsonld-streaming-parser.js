@@ -1,4 +1,4 @@
-import {ContextParser, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {ContextParser, IExpandOptions, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
@@ -8,6 +8,15 @@ import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
  * Data holder for parsing information.
  */
 export class ParsingContext {
+
+  public static EXPAND_OPTIONS: {[version: number]: IExpandOptions} = {
+    1.0: {
+      emptyVocabToBase: false,
+    },
+    1.1: {
+      emptyVocabToBase: true,
+    },
+  };
 
   public readonly contextParser: ContextParser;
   public readonly allowOutOfOrderContext: boolean;
@@ -47,6 +56,8 @@ export class ParsingContext {
 
   // If there are top-level properties
   public topLevelProperties: boolean;
+  // The processing mode that was defined in the document's context
+  public activeProcessingMode: number;
 
   private readonly parser: JsonLdParser;
 
@@ -84,6 +95,7 @@ export class ParsingContext {
     }
 
     this.topLevelProperties = false;
+    this.activeProcessingMode = parseFloat(this.processingMode);
   }
 
   /**
@@ -95,6 +107,8 @@ export class ParsingContext {
     const activeVersion: number = <number> <any> context['@version'];
     if (activeVersion && activeVersion > parseFloat(this.processingMode)) {
       throw new Error(`Unsupported JSON-LD processing mode: ${activeVersion}`);
+    } else {
+      this.activeProcessingMode = activeVersion;
     }
   }
 
@@ -178,6 +192,13 @@ export class ParsingContext {
       this.unidentifiedGraphsBuffer[depth] = buffer;
     }
     return buffer;
+  }
+
+  /**
+   * @return IExpandOptions The expand options for the active processing mode.
+   */
+  public getExpandOptions(): IExpandOptions {
+    return ParsingContext.EXPAND_OPTIONS[this.activeProcessingMode];
   }
 
 }

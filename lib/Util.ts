@@ -323,7 +323,7 @@ export class Util {
    * @return {RDF.NamedNode} An RDF named node.
    */
   public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
-    const expanded: string = ContextParser.expandTerm(key, context, true);
+    const expanded: string = ContextParser.expandTerm(key, context, true, this.parsingContext.getExpandOptions());
 
     // Immediately return if the predicate was disabled in the context
     if (!expanded) {
@@ -362,7 +362,7 @@ export class Util {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
-    const iri = ContextParser.expandTerm(key, context, false);
+    const iri = ContextParser.expandTerm(key, context, false, this.parsingContext.getExpandOptions());
     if (!Util.isValidIri(iri)) {
       if (iri && this.parsingContext.errorOnInvalidProperties) {
         this.parsingContext.emitError(new Error(`Invalid resource IRI: ${iri}`));
@@ -385,9 +385,10 @@ export class Util {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
-    let expanded = ContextParser.expandTerm(key, context, true);
+    const expandOptions = this.parsingContext.getExpandOptions();
+    let expanded = ContextParser.expandTerm(key, context, true, expandOptions);
     if (expanded === key) {
-      expanded = ContextParser.expandTerm(key, context, false);
+      expanded = ContextParser.expandTerm(key, context, false, expandOptions);
     }
     if (!Util.isValidIri(expanded)) {
       if (expanded && this.parsingContext.errorOnInvalidProperties) {
