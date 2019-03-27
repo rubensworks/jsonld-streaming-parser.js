@@ -11,10 +11,10 @@ export class ParsingContext {
 
   public static EXPAND_OPTIONS: {[version: number]: IExpandOptions} = {
     1.0: {
-      emptyVocabToBase: false,
+      allowVocabRelativeToBase: false,
     },
     1.1: {
-      emptyVocabToBase: true,
+      allowVocabRelativeToBase: true,
     },
   };
 

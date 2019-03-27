@@ -3804,11 +3804,11 @@ describe('JsonLdParser', () => {
 {
   "@context": {
     "@base": "http://example/document",
-    "@vocab": ""
+    "@vocab": "#"
   },
   "@id": "http://example.org/places#BrewEats",
-  "@type": "#Restaurant",
-  "#name": "Brew Eats"
+  "@type": "Restaurant",
+  "name": "Brew Eats"
 }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
           triple(namedNode('http://example.org/places#BrewEats'),
@@ -3825,11 +3825,11 @@ describe('JsonLdParser', () => {
   "@context": {
     "@version": 1.1,
     "@base": "http://example/document",
-    "@vocab": ""
+    "@vocab": "#"
   },
   "@id": "http://example.org/places#BrewEats",
-  "@type": "#Restaurant",
-  "#name": "Brew Eats"
+  "@type": "Restaurant",
+  "name": "Brew Eats"
 }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
           triple(namedNode('http://example.org/places#BrewEats'),
@@ -3846,17 +3846,13 @@ describe('JsonLdParser', () => {
   "@context": {
     "@version": 1.0,
     "@base": "http://example/document",
-    "@vocab": ""
+    "@vocab": "#"
   },
   "@id": "http://example.org/places#BrewEats",
-  "@type": "#Restaurant",
-  "#name": "Brew Eats"
+  "@type": "Restaurant",
+  "name": "Brew Eats"
 }`);
-        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-          triple(namedNode('http://example.org/places#BrewEats'),
-            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            namedNode('http://example/document#Restaurant')),
-        ]);
+        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
       it('with a null inner context', async () => {
