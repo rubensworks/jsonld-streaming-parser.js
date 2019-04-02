@@ -1,6 +1,6 @@
 {
   "name": "jsonld-streaming-parser",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A fast and lightweight streaming JSON-LD parser",
   "keywords": [
     "json",
@@ -63,7 +63,9 @@
         "tsConfig": "test/tsconfig.json"
       }
     },
-    "setupFilesAfterEnv": [ "jest-rdf" ],
+    "setupFilesAfterEnv": [
+      "jest-rdf"
+    ],
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
