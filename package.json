@@ -63,7 +63,7 @@
         "tsConfig": "test/tsconfig.json"
       }
     },
-    "setupTestFrameworkScriptFile": "jest-rdf",
+    "setupFilesAfterEnv": [ "jest-rdf" ],
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
