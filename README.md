@@ -94,6 +94,23 @@ myParser.import(myTextStream)
   .on('end', () => console.log('All triples were parsed!'));
 ```
 
+### Capture detected contexts
+
+Using a `context` event listener,
+you can collect all detected contexts.
+
+```javascript
+const myParser = new JsonLdParser();
+
+const myTextStream = fs.createReadStream('myfile.jsonld');
+
+myParser.import(myTextStream)
+  .on('context', console.log)
+  .on('data', console.error)
+  .on('error', console.error)
+  .on('end', () => console.log('All triples were parsed!'));
+```
+
 ## Configuration
 
 Optionally, the following parameters can be set in the `JsonLdParser` constructor:

@@ -27,6 +27,7 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     const context = parsingContext.contextParser.parse(value,
       { baseIri: parsingContext.baseIRI, parentContext: await parentContext });
     parsingContext.contextTree.setContext(keys.slice(0, -1), context);
+    parsingContext.emitContext(value);
     await parsingContext.validateContext(await context);
   }
 

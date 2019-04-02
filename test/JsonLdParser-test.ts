@@ -5031,6 +5031,61 @@ describe('JsonLdParser', () => {
     });
   });
 
+  describe('with a context event listener', () => {
+    let parser;
+    let contextListener;
+
+    beforeEach(() => {
+      parser = new JsonLdParser({errorOnInvalidIris: true});
+      contextListener = jest.fn();
+      parser.on('context', contextListener);
+    });
+
+    it('should not call the listener for an empty document', async () => {
+      const stream = streamifyString(`
+{
+}`);
+      await arrayifyStream(stream.pipe(parser));
+      return expect(contextListener).not.toHaveBeenCalled();
+    });
+
+    it('should call the listener with a root context', async () => {
+      const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@id": "http://example/id"}
+  }
+}`);
+      await arrayifyStream(stream.pipe(parser));
+      expect(contextListener).toHaveBeenCalledTimes(1);
+      return expect(contextListener).toHaveBeenCalledWith({
+        term: { "@id": "http://example/id" },
+      });
+    });
+
+    it('should call the listener with a root and inner contexts', async () => {
+      const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@id": "http://example/id"}
+  },
+  "term": {
+    "@context": {
+      "term2": {"@id": "http://example/id2"}
+    },
+  }
+}`);
+      await arrayifyStream(stream.pipe(parser));
+      expect(contextListener).toHaveBeenCalledTimes(2);
+      expect(contextListener).toHaveBeenCalledWith({
+        term: { "@id": "http://example/id" },
+      });
+      expect(contextListener).toHaveBeenCalledWith({
+        term2: { "@id": "http://example/id2" },
+      });
+    });
+  });
+
   // The following tests check the parser via stateful .write() calls.
   describe('for step-by-step streaming with default settings', () => {
     describe('without context', () => {

@@ -2,6 +2,7 @@ import {ContextParser, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
+import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
 
 /**
  * Data holder for parsing information.
@@ -139,6 +140,14 @@ export class ParsingContext {
    */
   public emitError(error: Error) {
     this.parser.emit('error', error);
+  }
+
+  /**
+   * Emit the given context into the output stream under the 'context' event.
+   * @param {JsonLdContext} context A context to emit.
+   */
+  public emitContext(context: JsonLdContext) {
+    this.parser.emit('context', context);
   }
 
   /**
