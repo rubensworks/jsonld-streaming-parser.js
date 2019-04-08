@@ -3799,8 +3799,9 @@ describe('JsonLdParser', () => {
         });
       });
 
-      it('with @base and @vocab with @vocab="" should reuse the base IRI', async () => {
-        const stream = streamifyString(`
+      describe('for @vocab=""', () => {
+        it('with @base and @vocab should reuse the base IRI', async () => {
+          const stream = streamifyString(`
 {
   "@context": {
     "@base": "http://example/document",
@@ -3810,17 +3811,17 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-          triple(namedNode('http://example.org/places#BrewEats'),
-            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            namedNode('http://example/document#Restaurant')),
-          triple(namedNode('http://example.org/places#BrewEats'), namedNode('http://example/document#name'),
-            literal('Brew Eats')),
-        ]);
-      });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/places#BrewEats'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example/document#Restaurant')),
+            triple(namedNode('http://example.org/places#BrewEats'), namedNode('http://example/document#name'),
+              literal('Brew Eats')),
+          ]);
+        });
 
-      it('with @base and @vocab with @vocab="" should reuse the base IRI in 1.1', async () => {
-        const stream = streamifyString(`
+        it('with @base and @vocab should reuse the base IRI in 1.1', async () => {
+          const stream = streamifyString(`
 {
   "@context": {
     "@version": 1.1,
@@ -3831,17 +3832,17 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-          triple(namedNode('http://example.org/places#BrewEats'),
-            namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            namedNode('http://example/document#Restaurant')),
-          triple(namedNode('http://example.org/places#BrewEats'), namedNode('http://example/document#name'),
-            literal('Brew Eats')),
-        ]);
-      });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/places#BrewEats'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example/document#Restaurant')),
+            triple(namedNode('http://example.org/places#BrewEats'), namedNode('http://example/document#name'),
+              literal('Brew Eats')),
+          ]);
+        });
 
-      it('with @base and @vocab with @vocab="" should not reuse the base IRI in 1.0', async () => {
-        const stream = streamifyString(`
+        it('with @base and @vocab should not reuse the base IRI in 1.0', async () => {
+          const stream = streamifyString(`
 {
   "@context": {
     "@version": 1.0,
@@ -3852,7 +3853,8 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
       });
 
       it('with a null inner context', async () => {
