@@ -1,8 +1,8 @@
 import {ContextParser, IExpandOptions, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
 import * as RDF from "rdf-js";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
-import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
 
 /**
  * Data holder for parsing information.
@@ -11,9 +11,11 @@ export class ParsingContext {
 
   public static EXPAND_OPTIONS: {[version: number]: IExpandOptions} = {
     1.0: {
+      allowNonGenDelimsIfPrefix: false,
       allowVocabRelativeToBase: false,
     },
     1.1: {
+      allowNonGenDelimsIfPrefix: true,
       allowVocabRelativeToBase: true,
     },
   };

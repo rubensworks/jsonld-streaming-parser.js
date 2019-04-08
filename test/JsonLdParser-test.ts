@@ -3857,6 +3857,66 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('for prefixes', () => {
+        it('with @prefix ending on non-gen-delim char should not error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.1,
+    "abc": { "@id": "http://ex.org/compact-", "@prefix": true }
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('http://ex.org/compact-def'),
+              literal('Brew Eats')),
+          ]);
+        });
+
+        it('without @prefix ending on non-gen-delim char should error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.1,
+    "abc": { "@id": "http://ex.org/compact-" }
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
+            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
+            'found: \'abc\': \'{"@id":"http://ex.org/compact-"}\''));
+        });
+
+        it('without @prefix in 1.0 ending on non-gen-delim char should error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.0,
+    "abc": { "@id": "http://ex.org/compact-" }
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
+            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
+            'found: \'abc\': \'{"@id":"http://ex.org/compact-"}\''));
+        });
+
+        it('with @prefix in 1.0 ending on non-gen-delim char should error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.0,
+    "abc": { "@id": "http://ex.org/compact-", "@prefix": true }
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
+            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
+            'found: \'abc\': \'{"@id":"http://ex.org/compact-","@prefix":true}\''));
+        });
+      });
+
       it('with a null inner context', async () => {
         const stream = streamifyString(`
 {
