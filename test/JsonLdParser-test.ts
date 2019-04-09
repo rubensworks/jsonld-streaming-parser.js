@@ -3874,7 +3874,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @prefix ending on non-gen-delim char should error', async () => {
+        it('without @prefix ending on non-gen-delim char should be ignored', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3883,12 +3883,10 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
-            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
-            'found: \'abc\': \'{"@id":"http://ex.org/compact-"}\''));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
-        it('without @prefix in 1.0 ending on non-gen-delim char should error', async () => {
+        it('without @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3897,12 +3895,10 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
-            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
-            'found: \'abc\': \'{"@id":"http://ex.org/compact-"}\''));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
-        it('with @prefix in 1.0 ending on non-gen-delim char should error', async () => {
+        it('with @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3911,9 +3907,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error(
-            'Compact IRIs must end with a gen-delim character unless @prefix is set to true, ' +
-            'found: \'abc\': \'{"@id":"http://ex.org/compact-","@prefix":true}\''));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
       });
 
