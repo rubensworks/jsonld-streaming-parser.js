@@ -3256,6 +3256,68 @@ describe('JsonLdParser', () => {
               literal('my value', namedNode('http://ex.org/mytype'))),
           ]);
         });
+
+        it('with separate inner contexts should not modify each other', async () => {
+          const stream = streamifyString(`
+{
+  "@context": { "@vocab": "http://vocab0.org/" },
+  "@graph": [
+    {
+      "@id": "http://ex.org/myid0",
+      "pred0": "abc0"
+    },
+    {
+      "@context": { "@vocab": "http://vocab1.org/" },
+      "@id": "http://ex.org/myid1",
+      "pred1": "abc1"
+    },
+    {
+      "@context": { "@vocab": "http://vocab2.org/" },
+      "@id": "http://ex.org/myid2",
+      "pred2": "abc2"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid0'), namedNode('http://vocab0.org/pred0'),
+              literal('abc0')),
+            quad(namedNode('http://ex.org/myid1'), namedNode('http://vocab1.org/pred1'),
+              literal('abc1')),
+            quad(namedNode('http://ex.org/myid2'), namedNode('http://vocab2.org/pred2'),
+              literal('abc2')),
+          ]);
+        });
+
+        it('with separate inner contexts should not modify each other (2)', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [
+    {
+      "@context": { "@vocab": "http://vocab0.org/" },
+      "@id": "http://ex.org/myid0",
+      "pred0": "abc0"
+    },
+    {
+      "@context": { "@vocab": "http://vocab1.org/" },
+      "@id": "http://ex.org/myid1",
+      "pred1": "abc1"
+    },
+    {
+      "@context": { "@vocab": "http://vocab2.org/" },
+      "@id": "http://ex.org/myid2",
+      "pred2": "abc2"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid0'), namedNode('http://vocab0.org/pred0'),
+              literal('abc0')),
+            quad(namedNode('http://ex.org/myid1'), namedNode('http://vocab1.org/pred1'),
+              literal('abc1')),
+            quad(namedNode('http://ex.org/myid2'), namedNode('http://vocab2.org/pred2'),
+              literal('abc2')),
+          ]);
+        });
       });
 
       describe('a top-level context', () => {
