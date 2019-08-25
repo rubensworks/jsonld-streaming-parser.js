@@ -426,9 +426,13 @@ export class Util {
     const contextType = Util.getContextValueType(context, key);
     if (contextType) {
       if (contextType === '@id') {
-        return this.resourceToTerm(context, this.intToString(value, defaultDatatype));
+        if (!defaultDatatype) {
+          return this.resourceToTerm(context, this.intToString(value, defaultDatatype));
+        }
       } else if (contextType === '@vocab') {
-        return this.createVocabOrBaseTerm(context, this.intToString(value, defaultDatatype));
+        if (!defaultDatatype) {
+          return this.createVocabOrBaseTerm(context, this.intToString(value, defaultDatatype));
+        }
       } else {
         defaultDatatype = this.dataFactory.namedNode(contextType);
       }

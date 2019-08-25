@@ -4278,7 +4278,23 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should not use context terms for @type: @vocab', async () => {
+        it('should handle @type: @vocab with native value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@vocab" }
+  },
+  "p": true
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              literal('true', namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
+          ]);
+        });
+
+        it('should not use context terms for @type: @id', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4292,6 +4308,52 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode(), namedNode('http://ex.org/predicate'),
               namedNode('http://base.org/abc')),
+          ]);
+        });
+
+        it('should handle @type: @id with native value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "@vocab": "http://vocab.org/",
+    "p": { "@id": "http://ex.org/predicate", "@type": "@id" }
+  },
+  "p": true
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              literal('true', namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
+          ]);
+        });
+
+        it('on a native value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/predicate", "@type": "@id" },
+  },
+  "p": true
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://ex.org/predicate'),
+              literal('true', namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
+          ]);
+        });
+
+        it('on native values', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/predicate", "@type": "@id" },
+  },
+  "p": [ true, 1 ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b'), namedNode('http://ex.org/predicate'),
+              literal('true', namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
+            triple(blankNode('b'), namedNode('http://ex.org/predicate'),
+              literal('1', namedNode('http://www.w3.org/2001/XMLSchema#integer'))),
           ]);
         });
       });

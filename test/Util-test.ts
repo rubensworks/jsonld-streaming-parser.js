@@ -397,16 +397,16 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('false', namedNode(Util.XSD_BOOLEAN)));
         });
 
-        it('with an @type: @id with baseIRI should return a named node', async () => {
+        it('with an @type: @id with baseIRI should return a boolean literal node', async () => {
           context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
           return expect(await util.valueToTerm(context, 'key', false, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/false'));
+            .toEqualRdfTerm(literal('false', namedNode(Util.XSD_BOOLEAN)));
         });
 
-        it('with an @type: @id should return null', async () => {
+        it('with an @type: @id should a boolean literal node', async () => {
           context = { key: { '@type': '@id' } };
           return expect(await util.valueToTerm(context, 'key', false, 0))
-            .toBe(null);
+            .toEqualRdfTerm(literal('false', namedNode(Util.XSD_BOOLEAN)));
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
@@ -433,16 +433,16 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('2.2E0', namedNode(Util.XSD_DOUBLE)));
         });
 
-        it('with an @type: @id with baseIRI should return a named node', async () => {
+        it('with an @type: @id with baseIRI should return a double literal node', async () => {
           context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
           return expect(await util.valueToTerm(context, 'key', 2.2, 0))
-            .toEqualRdfTerm(namedNode('http://ex.org/2.2E0'));
+            .toEqualRdfTerm(literal('2.2E0', namedNode(Util.XSD_DOUBLE)));
         });
 
-        it('with an @type: @id should return null', async () => {
+        it('with an @type: @id should return a double literal node', async () => {
           context = { key: { '@type': '@id' } };
           return expect(await util.valueToTerm(context, 'key', 2.2, 0))
-            .toBe(null);
+            .toEqualRdfTerm(literal('2.2E0', namedNode(Util.XSD_DOUBLE)));
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
