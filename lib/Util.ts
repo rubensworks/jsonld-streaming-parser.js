@@ -177,9 +177,15 @@ export class Util {
         return null;
       }
 
+      // Handle local context in the value
+      if ('@context' in value) {
+        context = await this.parsingContext.contextParser.parse(value['@context'],
+          { baseIri: this.parsingContext.baseIRI, parentContext: context });
+      }
+
       // In all other cases, we have a hash
       value = await this.unaliasKeywords(value, keys, depth); // Un-alias potential keywords in this hash
-      if ("@value" in value) {
+      if ('@value' in value) {
         let val;
         let valueLanguage;
         let valueType;

@@ -32,4 +32,8 @@ export class ContextTree {
     }
   }
 
+  public removeContext(path: string[]) {
+    this.setContext(path, null);
+  }
+
 }

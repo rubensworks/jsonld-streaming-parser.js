@@ -78,6 +78,9 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
         // Execute the job one level higher
         await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1);
+
+        // Remove any defined contexts at this level to avoid it to propagate to the next array element.
+        parsingContext.contextTree.removeContext(keys.slice(0, -1));
       }
     }
   }

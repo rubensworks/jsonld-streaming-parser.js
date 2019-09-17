@@ -3318,6 +3318,44 @@ describe('JsonLdParser', () => {
               literal('abc2')),
           ]);
         });
+
+        it('with separate inner contexts should not modify each other (3)', async () => {
+          const stream = streamifyString(`
+{
+  "@context": { "@vocab": "http://vocab.org/" },
+  "@graph": [
+    {
+      "@context": { "@vocab": "http://vocab0.org/" },
+      "@id": "http://ex.org/myid0",
+      "pred0": "abc0"
+    },
+    {
+      "@context": { "@vocab": "http://vocab1.org/" },
+      "@id": "http://ex.org/myid1",
+      "pred1": "abc1"
+    },
+    {
+      "@context": { "@vocab": "http://vocab2.org/" },
+      "@id": "http://ex.org/myid2",
+      "pred2": "abc2"
+    },
+    {
+      "@id": "http://ex.org/myid3",
+      "pred3": "abc3"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid0'), namedNode('http://vocab0.org/pred0'),
+              literal('abc0')),
+            quad(namedNode('http://ex.org/myid1'), namedNode('http://vocab1.org/pred1'),
+              literal('abc1')),
+            quad(namedNode('http://ex.org/myid2'), namedNode('http://vocab2.org/pred2'),
+              literal('abc2')),
+            quad(namedNode('http://ex.org/myid3'), namedNode('http://vocab.org/pred3'),
+              literal('abc3')),
+          ]);
+        });
       });
 
       describe('a top-level context', () => {
@@ -3580,6 +3618,38 @@ describe('JsonLdParser', () => {
               triple(namedNode('https://json-ld.org/test-suite/document-relative'),
                 namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 namedNode('https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld#document-relative')),
+            ]);
+          });
+
+          it('with complex overriding of @base (2)', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/test/"
+  },
+  "@id": "http://example.org/s",
+  "http://example.org/p": [
+    {
+      "@context": null,
+      "@id": "../document-relative"
+    },
+    {
+      "@context": {
+        "@base": null
+      },
+      "@id": "../ignore-me"
+    }
+  ]
+}`);
+            parser = new JsonLdParser({
+              allowOutOfOrderContext,
+              baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
+              dataFactory,
+            });
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://example.org/s'),
+                namedNode('http://example.org/p'),
+                namedNode('https://json-ld.org/test-suite/document-relative')),
             ]);
           });
         });

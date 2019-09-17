@@ -224,6 +224,24 @@ describe('Util', () => {
             .toEqualRdfTerm(namedNode('http://vocab.org/'));
         });
 
+        it('with a relative @id and empty local @context with @base in parent context', async () => {
+          context = { '@base': 'http://ex.org/' };
+          return expect(await util.valueToTerm(context, 'key', { '@context': {}, '@id': 'abc' }, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
+        });
+
+        it('with a relative @id and @base in local @context', async () => {
+          const value = { '@context': { '@base': 'http://ex.org/' }, '@id': 'abc' };
+          return expect(await util.valueToTerm({}, 'key', value, 0))
+            .toEqualRdfTerm(namedNode('http://ex.org/abc'));
+        });
+
+        it('with a relative @id and null local @context with @base in parent context', async () => {
+          context = { '@base': 'http://ex.org/' };
+          return expect(await util.valueToTerm(context, 'key', { '@context': null, '@id': 'abc' }, 0))
+            .toBe(null);
+        });
+
         it('with an @value should return a literal', async () => {
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc' }, 0))
             .toEqualRdfTerm(literal('abc'));

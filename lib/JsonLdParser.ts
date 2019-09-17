@@ -281,6 +281,9 @@ export class JsonLdParser extends Transform {
       }
     }
 
+    // Clear the keyword cache.
+    this.parsingContext.unaliasedKeywordCacheStack.splice(0);
+
     // Handle non-context jobs
     for (const job of this.contextAwaitingJobs) {
       await job();
