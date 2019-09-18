@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v1.1.1"></a>
+## [v1.1.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v1.1.0...v1.1.1) - 2019-09-18
+
+### Fixed
+* [Bump to jsonld-context-parser to fix spec failures](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/2ddcf7122f6ac806050c1fc07fc5ea066eae3d9b)
+* [Fix @id and @type on terms incorrectly converting native values to URIs](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/6a086253882d557fc232e8383a25d7979357a545)
+
 <a name="v1.1.0"></a>
 ## [v1.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v1.0.1...v1.1.0) - 2019-04-02
 
