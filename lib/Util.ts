@@ -12,6 +12,7 @@ export class Util {
   public static readonly XSD_INTEGER: string = Util.XSD + 'integer';
   public static readonly XSD_DOUBLE: string = Util.XSD + 'double';
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+  public static readonly REGEX_LANGUAGE_TAG: RegExp = /^[a-zA-Z]+(-[a-zA-Z0-9]+)*$/;
 
   public readonly dataFactory: RDF.DataFactory;
   public readonly rdfFirst: RDF.NamedNode;
@@ -239,6 +240,14 @@ export class Util {
           // Language tags are always normalized to lowercase.
           valueLanguage = valueLanguage.toLowerCase();
 
+          if (!Util.REGEX_LANGUAGE_TAG.test(valueLanguage)) {
+            if (this.parsingContext.strictRanges) {
+              throw new Error(`The value of an '@language' must be a valid language tag, got '${
+                JSON.stringify(valueLanguage)}'`);
+            } else {
+              return null;
+            }
+          }
           return this.dataFactory.literal(val, valueLanguage);
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {

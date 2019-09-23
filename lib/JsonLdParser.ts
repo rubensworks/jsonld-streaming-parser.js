@@ -441,6 +441,14 @@ export interface IJsonLdParserOptions {
    */
   validateValueIndexes?: boolean;
   /**
+   * If values should be strictly checked.
+   * If true, an error will be thrown on invalid value ranged.
+   * if false, the resulting triple/quad will be omitted.
+   *
+   * Defaults to false.
+   */
+  strictRanges?: boolean;
+  /**
    * The graph to use as default graph when no explicit @graph is set.
    * Defaults to dataFactory.defaultGraph().
    */

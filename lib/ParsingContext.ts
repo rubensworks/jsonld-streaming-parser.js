@@ -28,6 +28,7 @@ export class ParsingContext {
   public readonly processingMode: string;
   public readonly errorOnInvalidProperties: boolean;
   public readonly validateValueIndexes: boolean;
+  public readonly strictRanges: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.Term;
 
@@ -73,6 +74,7 @@ export class ParsingContext {
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
     this.errorOnInvalidProperties = options.errorOnInvalidIris;
     this.validateValueIndexes = options.validateValueIndexes;
+    this.strictRanges = options.strictRanges;
     this.defaultGraph = options.defaultGraph;
 
     // Initialize stacks

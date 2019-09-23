@@ -303,6 +303,17 @@ describe('Util', () => {
               new Error('When an \'@language\' is set, the value of \'@value\' must be a string, got \'true\''));
         });
 
+        it('with a @value and invalid @language should return null', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en us' }, 0))
+            .resolves.toBeNull();
+        });
+
+        it('with a @value and invalid @language should throw an error when strictRanges is true', async () => {
+          util.parsingContext.strictRanges = true;
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en us' }, 0))
+            .rejects.toThrow(new Error('The value of an \'@language\' must be a valid language tag, got \'"en us"\''));
+        });
+
         it('with a @value and boolean @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0))
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
