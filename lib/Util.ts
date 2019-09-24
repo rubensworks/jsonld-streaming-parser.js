@@ -318,7 +318,7 @@ export class Util {
         this.dataFactory.namedNode(Util.XSD_BOOLEAN));
     case 'number':
       return this.stringValueToTerm(context, key, value, this.dataFactory.namedNode(
-        value % 1 === 0 ? Util.XSD_INTEGER : Util.XSD_DOUBLE));
+        value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE));
     default:
       this.parsingContext.emitError(new Error(`Could not determine the RDF type of a ${type}`));
     }

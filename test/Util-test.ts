@@ -501,6 +501,21 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('-INF', namedNode(Util.XSD_DOUBLE)));
         });
 
+        it('for 1e20 should return a 1.0E20 as an integer', async () => {
+          return expect(await util.valueToTerm(context, 'key', 1e20, 0))
+            .toEqualRdfTerm(literal('100000000000000000000', namedNode(Util.XSD_INTEGER)));
+        });
+
+        it('for 1e21 should return a 1.0E21 as a double', async () => {
+          return expect(await util.valueToTerm(context, 'key', 1e21, 0))
+            .toEqualRdfTerm(literal('1.0E21', namedNode(Util.XSD_DOUBLE)));
+        });
+
+        it('for 1e22 should return a 1.0E22 as a double', async () => {
+          return expect(await util.valueToTerm(context, 'key', 1e22, 0))
+            .toEqualRdfTerm(literal('1.0E22', namedNode(Util.XSD_DOUBLE)));
+        });
+
         it('for 1 with double context type should return 1.0E0', async () => {
           context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#double' } };
           return expect(await util.valueToTerm(context, 'key', 1, 0))
