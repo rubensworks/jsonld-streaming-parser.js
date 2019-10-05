@@ -229,6 +229,10 @@ export class Util {
             throw new Error(
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
+
+          // Language tags are always normalized to lowercase.
+          valueLanguage = valueLanguage.toLowerCase();
+
           return this.dataFactory.literal(val, valueLanguage);
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
