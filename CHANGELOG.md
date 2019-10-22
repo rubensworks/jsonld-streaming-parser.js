@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v1.1.2"></a>
+## [v1.1.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v1.1.1...v1.1.2) - 2019-10-22
+
+### Changed
+* [Ensure lowercased language tags](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/1214db9e0f4f3614d54bc7e5bd15f797fddd4202)
+
+### Fixed
+* [Fix inner contexts sometimes overriding each other, Closes #33](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/c4716bef5583dec880e20439260548bbdc563b25)
+
 <a name="v1.1.1"></a>
 ## [v1.1.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v1.1.0...v1.1.1) - 2019-09-18
 
