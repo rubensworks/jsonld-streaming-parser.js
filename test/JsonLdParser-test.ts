@@ -4840,6 +4840,50 @@ describe('JsonLdParser', () => {
           ]);
         });
       });
+
+      describe('quads with nested contexts', () => {
+        it('with an inner context in an object', async () => {
+          const stream = streamifyString(`
+{
+  "@context": "https://cdn.happy-dev.fr/owl/hdcontext.jsonld",
+  "@id": "https://api.coopstarter.happy-dev.fr/resources/",
+  "ldp:contains": {
+    "@context": {
+      "preview_image": "foaf:depiction"
+    },
+    "@id": "https://api.coopstarter.happy-dev.fr/resources/1/"
+  }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('https://api.coopstarter.happy-dev.fr/resources/'),
+              namedNode('http://www.w3.org/ns/ldp#contains'),
+              namedNode('https://api.coopstarter.happy-dev.fr/resources/1/')),
+          ]);
+        });
+
+        it('with an inner context in an array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": "https://cdn.happy-dev.fr/owl/hdcontext.jsonld",
+  "@id": "https://api.coopstarter.happy-dev.fr/resources/",
+  "ldp:contains": [
+    {
+      "@context": {
+        "preview_image": "foaf:depiction"
+      },
+      "@id": "https://api.coopstarter.happy-dev.fr/resources/1/"
+    }
+  ]
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('https://api.coopstarter.happy-dev.fr/resources/'),
+              namedNode('http://www.w3.org/ns/ldp#contains'),
+              namedNode('https://api.coopstarter.happy-dev.fr/resources/1/')),
+          ]);
+        });
+      });
     });
 
     describe('should not parse', () => {
