@@ -252,10 +252,19 @@ describe('Util', () => {
             .toEqualRdfTerm(literal('abc', 'en-us'));
         });
 
-        it('with an @value and @language should return a lowercased language-tagged string literal', async () => {
-          return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-US' }, 0))
-            .toEqualRdfTerm(literal('abc', 'en-us'));
-        });
+        it('with an @value and @language should return a lowercased language-tagged string literal in 1.0',
+          async () => {
+            util.parsingContext.activeProcessingMode = 1.0;
+            return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-US' }, 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
+
+        it('with an @value and @language should return a non-lowercased language-tagged string literal in 1.1',
+          async () => {
+            util.parsingContext.activeProcessingMode = 1.1;
+            return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-US' }, 0))
+              .toEqualRdfTerm(literal('abc', 'en-US'));
+          });
 
         it('with an @value and @type should return a typed literal', async () => {
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0))

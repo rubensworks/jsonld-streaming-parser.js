@@ -237,8 +237,10 @@ export class Util {
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
 
-          // Language tags are always normalized to lowercase.
-          valueLanguage = valueLanguage.toLowerCase();
+          // Language tags are always normalized to lowercase in 1.0.
+          if (this.parsingContext.activeProcessingMode === 1.0) {
+            valueLanguage = valueLanguage.toLowerCase();
+          }
 
           if (!Util.REGEX_LANGUAGE_TAG.test(valueLanguage)) {
             if (this.parsingContext.strictRanges) {
