@@ -3841,7 +3841,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab should not reuse the base IRI in 1.0', async () => {
+        it('with @base and relative @vocab should throw in 1.0', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3853,7 +3853,8 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            new Error('Relative vocab expansion for term \'Restaurant\' with vocab \'#\' is not allowed.'));
         });
       });
 
@@ -4957,7 +4958,10 @@ describe('JsonLdParser', () => {
         it('with an inner context in an object', async () => {
           const stream = streamifyString(`
 {
-  "@context": "https://cdn.happy-dev.fr/owl/hdcontext.jsonld",
+  "@context": {
+    "ldp": "http://www.w3.org/ns/ldp#",
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
   "@id": "https://api.coopstarter.happy-dev.fr/resources/",
   "ldp:contains": {
     "@context": {
@@ -4977,7 +4981,10 @@ describe('JsonLdParser', () => {
         it('with an inner context in an array', async () => {
           const stream = streamifyString(`
 {
-  "@context": "https://cdn.happy-dev.fr/owl/hdcontext.jsonld",
+  "@context": {
+    "ldp": "http://www.w3.org/ns/ldp#",
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
   "@id": "https://api.coopstarter.happy-dev.fr/resources/",
   "ldp:contains": [
     {
