@@ -1,4 +1,5 @@
 import {ContextParser, IExpandOptions, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
 import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
 import * as RDF from "rdf-js";
 import {ContextTree} from "./ContextTree";
@@ -109,10 +110,17 @@ export class ParsingContext {
    */
   public validateContext(context: IJsonLdContextNormalized) {
     const activeVersion: number = <number> <any> context['@version'];
-    if (activeVersion && activeVersion > parseFloat(this.processingMode)) {
-      throw new Error(`Unsupported JSON-LD processing mode: ${activeVersion}`);
-    } else {
-      this.activeProcessingMode = activeVersion;
+    if (activeVersion) {
+      if (this.activeProcessingMode && activeVersion > this.activeProcessingMode) {
+        throw new ErrorCoded(`Unsupported JSON-LD version '${activeVersion}' under active processing mode ${
+          this.activeProcessingMode}.`, ERROR_CODES.PROCESSING_MODE_CONFLICT);
+      } else {
+        if (this.activeProcessingMode && activeVersion < this.activeProcessingMode) {
+          throw new ErrorCoded(`Invalid JSON-LD version ${activeVersion} under active processing mode ${
+            this.activeProcessingMode}.`, ERROR_CODES.INVALID_VERSION_VALUE);
+        }
+        this.activeProcessingMode = activeVersion;
+      }
     }
   }
 

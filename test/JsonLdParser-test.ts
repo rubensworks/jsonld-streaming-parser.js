@@ -85,13 +85,13 @@ describe('JsonLdParser', () => {
       });
 
       it('an empty document with a valid processing mode', async () => {
-        const stream = streamifyString(`{ "@context": { "@version": 1.0 } }`);
+        const stream = streamifyString(`{ "@context": { "@version": 1.1 } }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
       it('an empty document with a non-default processing mode when configured as such', async () => {
-        parser = new JsonLdParser({ processingMode: '1.1' });
-        const stream = streamifyString(`{ "@context": { "@version": 1.1 } }`);
+        parser = new JsonLdParser({ processingMode: '1.0' });
+        const stream = streamifyString(`{ "@context": { "@version": 1.0 } }`);
         return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
       });
 
@@ -3821,10 +3821,10 @@ describe('JsonLdParser', () => {
         });
 
         it('with @base and @vocab should reuse the base IRI in 1.1', async () => {
+          parser = new JsonLdParser({ processingMode: '1.1' });
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.1,
     "@base": "http://example/document",
     "@vocab": "#"
   },
@@ -3842,10 +3842,10 @@ describe('JsonLdParser', () => {
         });
 
         it('with @base and relative @vocab should throw in 1.0', async () => {
+          parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.0,
     "@base": "http://example/document",
     "@vocab": "#"
   },
@@ -3863,7 +3863,6 @@ describe('JsonLdParser', () => {
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.1,
     "abc": { "@id": "http://ex.org/compact-", "@prefix": true }
   },
   "abc:def": "Brew Eats"
@@ -3879,7 +3878,6 @@ describe('JsonLdParser', () => {
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.1,
     "abc": { "@id": "http://ex.org/compact-" }
   },
   "abc:def": "Brew Eats"
@@ -3888,10 +3886,10 @@ describe('JsonLdParser', () => {
         });
 
         it('without @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
+          parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.0,
     "abc": { "@id": "http://ex.org/compact-" }
   },
   "abc:def": "Brew Eats"
@@ -3900,10 +3898,10 @@ describe('JsonLdParser', () => {
         });
 
         it('with @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
+          parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
   "@context": {
-    "@version": 1.0,
     "abc": { "@id": "http://ex.org/compact-", "@prefix": true }
   },
   "abc:def": "Brew Eats"
@@ -5022,12 +5020,22 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('a document with an invalid processing mode', async () => {
+      it('a document with an invalid version for the given processing mode', async () => {
         parser = new JsonLdParser({ processingMode: '1.0' });
         const stream = streamifyString(`
 {
   "@context": {
     "@version": 1.1
+  },
+  "@id": "http://ex.org/myid1"
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+      });
+      it('a document with @version set to 1.0 under default processing mode', async () => {
+        const stream = streamifyString(`
+{
+  "@context": {
+    "@version": 1.0
   },
   "@id": "http://ex.org/myid1"
 }`);
