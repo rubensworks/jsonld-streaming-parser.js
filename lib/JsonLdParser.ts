@@ -459,4 +459,10 @@ export interface IJsonLdParserOptions {
    * * 'compound-literal': reified values using rdf:value, rdf:direction and rdf:language.
    */
   rdfDirection?: 'i18n-datatype' | 'compound-literal';
+  /**
+   * If language tags should be normalized to lowercase.
+   * This is always true for JSON-LD 1.0,
+   * but false by default for all following versions.
+   */
+  normalizeLanguageTags?: boolean;
 }

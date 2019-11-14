@@ -33,6 +33,7 @@ export class ParsingContext {
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.Term;
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
+  public readonly normalizeLanguageTags?: boolean;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -79,6 +80,7 @@ export class ParsingContext {
     this.strictRanges = options.strictRanges;
     this.defaultGraph = options.defaultGraph;
     this.rdfDirection = options.rdfDirection;
+    this.normalizeLanguageTags = options.normalizeLanguageTags;
 
     // Initialize stacks
     this.processingStack = [];
@@ -95,7 +97,10 @@ export class ParsingContext {
 
     this.parser = options.parser;
     if (options.context) {
-      this.rootContext = this.contextParser.parse(options.context, { baseIri: options.baseIRI });
+      this.rootContext = this.contextParser.parse(options.context, {
+        baseIri: options.baseIRI,
+        normalizeLanguageTags: this.normalizeLanguageTags,
+      });
       this.rootContext.then((context) => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve(this.baseIRI ? { '@base': this.baseIRI } : {});

@@ -286,6 +286,14 @@ describe('Util', () => {
               .toEqualRdfTerm(literal('abc', 'en-US'));
           });
 
+        it('with an @value and @language should return a lowercased language-tagged string literal' +
+          'if normalizeLanguageTags',
+          async () => {
+            util.parsingContext.normalizeLanguageTags = true;
+            return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-US' }, 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
+
         it('with an @value and @type should return a typed literal', async () => {
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0))
             .toEqualRdfTerm(literal('abc', namedNode('http://type.com')));

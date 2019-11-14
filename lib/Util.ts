@@ -247,6 +247,11 @@ export class Util {
           if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictRanges)) {
             return null;
           }
+
+          // Language tags are always normalized to lowercase in 1.0.
+          if (this.parsingContext.normalizeLanguageTags || this.parsingContext.activeProcessingMode === 1.0) {
+            valueLanguage = valueLanguage.toLowerCase();
+          }
         }
         if (valueDirection) {
           if (typeof val !== 'string') {
@@ -270,11 +275,6 @@ export class Util {
         } else if (valueLanguage) { // Check @language
           if (valueType) {
             throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
-          }
-
-          // Language tags are always normalized to lowercase in 1.0.
-          if (this.parsingContext.activeProcessingMode === 1.0) {
-            valueLanguage = valueLanguage.toLowerCase();
           }
 
           return this.dataFactory.literal(val, valueLanguage);

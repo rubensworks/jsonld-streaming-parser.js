@@ -365,6 +365,39 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and a mixed-case context-language literal', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@language": "en-US" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'en-US')),
+          ]);
+        });
+
+        it('with @id and a mixed-case context-language literal when normalizeLanguageTags is true', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@language": "en-US" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, normalizeLanguageTags: true });
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('my value', 'en-us')),
+          ]);
+        });
+
         it('with @id and literal with default language', async () => {
           const stream = streamifyString(`
 {
