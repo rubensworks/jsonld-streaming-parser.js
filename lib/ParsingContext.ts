@@ -98,7 +98,7 @@ export class ParsingContext {
     this.parser = options.parser;
     if (options.context) {
       this.rootContext = this.contextParser.parse(options.context, {
-        baseIri: options.baseIRI,
+        baseIRI: options.baseIRI,
         normalizeLanguageTags: this.normalizeLanguageTags,
       });
       this.rootContext.then((context) => this.validateContext(context));

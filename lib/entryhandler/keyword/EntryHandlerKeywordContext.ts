@@ -25,7 +25,7 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
 
     // Set the context for this scope
     const context = parsingContext.contextParser.parse(value, {
-      baseIri: parsingContext.baseIRI,
+      baseIRI: parsingContext.baseIRI,
       normalizeLanguageTags: parsingContext.normalizeLanguageTags,
       parentContext: await parentContext,
     });
