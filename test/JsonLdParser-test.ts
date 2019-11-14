@@ -416,6 +416,315 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        describe('for @direction in context', () => {
+
+          describe('rdfDirection: undefined', () => {
+            it('with @id and a context-direction literal', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "rtl" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+            it('with @id and literal with default direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+            it('with @id and literal with default direction but overridden direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "ltr" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+            it('with @id and literal with default direction but unset direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+          });
+
+          describe('rdfDirection: i18n-datatype', () => {
+
+            beforeEach(() => {
+              parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, rdfDirection: 'i18n-datatype' });
+            });
+
+            it('with @id and a context-direction literal', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "rtl" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#_rtl'))),
+              ]);
+            });
+
+            it('with @id and a context-direction literal and language', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "rtl" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))),
+              ]);
+            });
+
+            it('with @id and literal with default direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#_rtl'))),
+              ]);
+            });
+
+            it('with @id and literal with default direction but overridden direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "ltr" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#_ltr'))),
+              ]);
+            });
+
+            it('with @id and literal with default direction but unset direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+            it('with @id and literal with default direction and language but unset direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', 'en-us')),
+              ]);
+            });
+          });
+
+          describe('rdfDirection: compound-literal', () => {
+
+            beforeEach(() => {
+              parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, rdfDirection: 'compound-literal' });
+            });
+
+            it('with @id and a context-direction literal', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "rtl" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  blankNode('b1')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                  literal('my value')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                  literal('rtl')),
+              ]);
+            });
+
+            it('with @id and a context-direction literal and language', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "rtl" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  blankNode('b1')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                  literal('my value')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'language'),
+                  literal('en-us')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                  literal('rtl')),
+              ]);
+            });
+
+            it('with @id and literal with default direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  blankNode('b1')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                  literal('my value')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                  literal('rtl')),
+              ]);
+            });
+
+            it('with @id and literal with default direction but overridden direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": "ltr" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  blankNode('b1')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                  literal('my value')),
+                triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                  literal('ltr')),
+              ]);
+            });
+
+            it('with @id and literal with default direction but unset direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+            it('with @id and literal with default direction and language but unset direction', async () => {
+              const stream = streamifyString(`
+{
+  "@context": {
+    "@direction": "rtl",
+    "@language": "en-us",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@direction": null }
+  },
+  "@id": "http://ex.org/myid",
+  "p": "my value"
+}`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', 'en-us')),
+              ]);
+            });
+          });
+
+        });
+
         it('with @id and language map', async () => {
           const stream = streamifyString(`
 {
@@ -1470,6 +1779,133 @@ describe('JsonLdParser', () => {
   }
 }]`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        describe('for @direction in @value', () => {
+
+          describe('rdfDirection: undefined', () => {
+
+            it('with @id and a language+direction literal', async () => {
+              const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@language": "en-us",
+    "@direction": "rtl"
+  }
+}]`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', 'en-us')),
+              ]);
+            });
+
+            it('with @id and a direction literal', async () => {
+              const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@direction": "rtl"
+  }
+}]`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value')),
+              ]);
+            });
+
+          });
+
+          describe('rdfDirection: i18n-datatype', () => {
+
+            beforeEach(() => {
+              parser = new JsonLdParser({dataFactory, allowOutOfOrderContext, rdfDirection: 'i18n-datatype'});
+            });
+
+            it('with @id and a language+direction literal', async () => {
+              const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@language": "en-us",
+    "@direction": "rtl"
+  }
+}]`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))),
+              ]);
+            });
+
+            it('with @id and a direction literal', async () => {
+              const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@direction": "rtl"
+  }
+}]`);
+              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+                triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                  literal('my value', namedNode('https://www.w3.org/ns/i18n#_rtl'))),
+              ]);
+            });
+
+          });
+
+        });
+
+        describe('rdfDirection: compound-literal', () => {
+
+          beforeEach(() => {
+            parser = new JsonLdParser({dataFactory, allowOutOfOrderContext, rdfDirection: 'compound-literal'});
+          });
+
+          it('with @id and a language+direction literal', async () => {
+            const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@language": "en-us",
+    "@direction": "rtl"
+  }
+}]`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                literal('my value')),
+              triple(blankNode('b1'), namedNode(Util.RDF + 'language'),
+                literal('en-us')),
+              triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                literal('rtl')),
+            ]);
+          });
+
+          it('with @id and a direction literal', async () => {
+            const stream = streamifyString(`
+[{
+  "@id": "http://ex.org/myid",
+  "http://ex.org/pred1": {
+    "@value": "my value",
+    "@direction": "rtl"
+  }
+}]`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              triple(blankNode('b1'), namedNode(Util.RDF + 'value'),
+                literal('my value')),
+              triple(blankNode('b1'), namedNode(Util.RDF + 'direction'),
+                literal('rtl')),
+            ]);
+          });
+
         });
 
         it('with out-of-order @id', async () => {

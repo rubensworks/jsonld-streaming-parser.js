@@ -32,6 +32,7 @@ export class ParsingContext {
   public readonly strictRanges: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.Term;
+  public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -77,6 +78,7 @@ export class ParsingContext {
     this.validateValueIndexes = options.validateValueIndexes;
     this.strictRanges = options.strictRanges;
     this.defaultGraph = options.defaultGraph;
+    this.rdfDirection = options.rdfDirection;
 
     // Initialize stacks
     this.processingStack = [];

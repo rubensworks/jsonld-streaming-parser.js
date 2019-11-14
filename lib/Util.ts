@@ -12,7 +12,6 @@ export class Util {
   public static readonly XSD_INTEGER: string = Util.XSD + 'integer';
   public static readonly XSD_DOUBLE: string = Util.XSD + 'double';
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-  public static readonly REGEX_LANGUAGE_TAG: RegExp = /^[a-zA-Z]+(-[a-zA-Z0-9]+)*$/;
 
   public readonly dataFactory: RDF.DataFactory;
   public readonly rdfFirst: RDF.NamedNode;
@@ -64,7 +63,7 @@ export class Util {
   }
 
   /**
-   * Get the node type of the given key in the context.
+   * Get the value type of the given key in the context.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The node type.
@@ -74,13 +73,23 @@ export class Util {
   }
 
   /**
-   * Get the node type of the given key in the context.
+   * Get the language of the given key in the context.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
   public static getContextValueLanguage(context: IJsonLdContextNormalized, key: string): string {
     return Util.getContextValue(context, '@language', key, context['@language'] || null);
+  }
+
+  /**
+   * Get the direction of the given key in the context.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The node type.
+   */
+  public static getContextValueDirection(context: IJsonLdContextNormalized, key: string): string {
+    return Util.getContextValue(context, '@direction', key, context['@direction'] || null);
   }
 
   /**
@@ -189,6 +198,7 @@ export class Util {
       if ('@value' in value) {
         let val;
         let valueLanguage;
+        let valueDirection;
         let valueType;
         let valueIndex; // We don't use the index, but we need to check its type for spec-compliance
         for (key in value) {
@@ -199,6 +209,9 @@ export class Util {
             break;
           case '@language':
             valueLanguage = subValue;
+            break;
+          case '@direction':
+            valueDirection = subValue;
             break;
           case '@type':
             valueType = subValue;
@@ -224,17 +237,39 @@ export class Util {
           throw new Error(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`);
         }
 
-        // Validate @language
+        // Validate @language and @direction
         if (valueLanguage) {
-          if (valueType) {
-            throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
-          }
-          if (typeof valueLanguage !== 'string') {
-            throw new Error(`The value of an '@language' must be a string, got '${JSON.stringify(valueLanguage)}'`);
-          }
           if (typeof val !== 'string') {
             throw new Error(
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
+          }
+
+          if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictRanges)) {
+            return null;
+          }
+        }
+        if (valueDirection) {
+          if (typeof val !== 'string') {
+            throw new Error(
+              `When an '@direction' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
+          }
+
+          if (!ContextParser.validateDirection(valueDirection, this.parsingContext.strictRanges)) {
+            return null;
+          }
+        }
+
+        // Check @language and @direction
+        if (valueLanguage && valueDirection && this.parsingContext.rdfDirection) {
+          if (valueType) {
+            throw new Error(`Can not have '@language', '@direction' and '@type' in a value: '
+            ${JSON.stringify(value)}'`);
+          }
+
+          return this.createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection);
+        } else if (valueLanguage) { // Check @language
+          if (valueType) {
+            throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
           }
 
           // Language tags are always normalized to lowercase in 1.0.
@@ -242,15 +277,13 @@ export class Util {
             valueLanguage = valueLanguage.toLowerCase();
           }
 
-          if (!Util.REGEX_LANGUAGE_TAG.test(valueLanguage)) {
-            if (this.parsingContext.strictRanges) {
-              throw new Error(`The value of an '@language' must be a valid language tag, got '${
-                JSON.stringify(valueLanguage)}'`);
-            } else {
-              return null;
-            }
-          }
           return this.dataFactory.literal(val, valueLanguage);
+        } else if (valueDirection && this.parsingContext.rdfDirection) { // Check @direction
+          if (valueType) {
+            throw new Error(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`);
+          }
+
+          return this.createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection);
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
             throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
@@ -314,12 +347,12 @@ export class Util {
         }
       }
     case 'string':
-      return this.stringValueToTerm(context, key, value, null);
+      return this.stringValueToTerm(depth, context, key, value, null);
     case 'boolean':
-      return this.stringValueToTerm(context, key, Boolean(value).toString(),
+      return this.stringValueToTerm(depth, context, key, Boolean(value).toString(),
         this.dataFactory.namedNode(Util.XSD_BOOLEAN));
     case 'number':
-      return this.stringValueToTerm(context, key, value, this.dataFactory.namedNode(
+      return this.stringValueToTerm(depth, context, key, value, this.dataFactory.namedNode(
         value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE));
     default:
       this.parsingContext.emitError(new Error(`Could not determine the RDF type of a ${type}`));
@@ -436,13 +469,14 @@ export class Util {
 
   /**
    * Convert a given JSON string value to an RDF term.
+   * @param {number} depth The current stack depth.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The current JSON key.
    * @param {string} value A JSON value.
    * @param {NamedNode} defaultDatatype The default datatype for the given value.
    * @return {RDF.Term} An RDF term or null.
    */
-  public stringValueToTerm(context: IJsonLdContextNormalized, key: string, value: string | number,
+  public stringValueToTerm(depth: number, context: IJsonLdContextNormalized, key: string, value: string | number,
                            defaultDatatype: RDF.NamedNode): RDF.Term {
     // Check the datatype from the context
     const contextType = Util.getContextValueType(context, key);
@@ -463,13 +497,50 @@ export class Util {
     // If we don't find such a datatype, check the language from the context
     if (!defaultDatatype) {
       const contextLanguage = Util.getContextValueLanguage(context, key);
-      if (contextLanguage) {
+      const contextDirection = Util.getContextValueDirection(context, key);
+      if (contextDirection && this.parsingContext.rdfDirection) {
+        return this.createLanguageDirectionLiteral(depth, this.intToString(value, defaultDatatype),
+          contextLanguage, contextDirection);
+      } else {
         return this.dataFactory.literal(this.intToString(value, defaultDatatype), contextLanguage);
       }
     }
 
     // If all else fails, make a literal based on the default content type
     return this.dataFactory.literal(this.intToString(value, defaultDatatype), defaultDatatype);
+  }
+
+  /**
+   * Create a literal for the given value with the given language and direction.
+   * Auxiliary quads may be emitted.
+   * @param {number} depth The current stack depth.
+   * @param {string} value A string value.
+   * @param {string} language A language tag.
+   * @param {string} direction A direction.
+   * @return {Term} An RDF term.
+   */
+  public createLanguageDirectionLiteral(depth: number, value: string, language: string, direction: string): RDF.Term {
+    if (this.parsingContext.rdfDirection === 'i18n-datatype') {
+      // Create a datatyped literal, by encoding the language and direction into https://www.w3.org/ns/i18n#.
+      if (!language) {
+        language = '';
+      }
+      return this.dataFactory.literal(value,
+        this.dataFactory.namedNode(`https://www.w3.org/ns/i18n#${language}_${direction}`));
+    } else {
+      // Reify the literal.
+      const valueNode = this.dataFactory.blankNode();
+      const graph = this.getDefaultGraph();
+      this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode,
+        this.dataFactory.namedNode(Util.RDF + 'value'), this.dataFactory.literal(value), graph));
+      if (language) {
+        this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode,
+          this.dataFactory.namedNode(Util.RDF + 'language'), this.dataFactory.literal(language), graph));
+      }
+      this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode,
+        this.dataFactory.namedNode(Util.RDF + 'direction'), this.dataFactory.literal(direction), graph));
+      return valueNode;
+    }
   }
 
   /**

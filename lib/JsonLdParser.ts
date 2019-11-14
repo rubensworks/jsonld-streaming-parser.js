@@ -453,4 +453,10 @@ export interface IJsonLdParserOptions {
    * Defaults to dataFactory.defaultGraph().
    */
   defaultGraph?: RDF.Term;
+  /**
+   * The mode by which the values with a certain base direction should be transformed into RDF.
+   * * 'i18n-datatype': objects have a https://www.w3.org/ns/i18n# datatype.
+   * * 'compound-literal': reified values using rdf:value, rdf:direction and rdf:language.
+   */
+  rdfDirection?: 'i18n-datatype' | 'compound-literal';
 }

@@ -62,6 +62,26 @@ describe('Util', () => {
     });
   });
 
+  describe('#getContextValueDirection', () => {
+    it('should return null as default', async () => {
+      expect(Util.getContextValueDirection({}, 'abc')).toBe(null);
+    });
+
+    it('should return @direction on root as default if available', async () => {
+      expect(Util.getContextValueDirection({ '@direction': 'rtl' }, 'abc')).toBe('rtl');
+    });
+
+    it('should return the entry direction', async () => {
+      expect(Util.getContextValueDirection({ abc: { '@direction': 'ltr' } }, 'abc'))
+        .toEqual('ltr');
+    });
+
+    it('should return the null entry direction even if a root @direction is present', async () => {
+      expect(Util.getContextValueDirection({ 'abc': { '@direction': null }, '@direction': 'ltr'  }, 'abc'))
+        .toEqual(null);
+    });
+  });
+
   describe('#isContextValueReverse', () => {
     it('should return false as default', async () => {
       expect(Util.isContextValueReverse({}, 'abc')).toBe(false);
@@ -323,6 +343,40 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@language\' must be a valid language tag, got \'"en us"\''));
         });
 
+        it('with a @value and non-string @direction should throw', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 3 }, 0))
+            .rejects.toThrow(new Error('The value of an \'@direction\' must be a string, got \'3\''));
+        });
+
+        it('with a non-string @value and valid @direction should throw', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 3, '@direction': 'rtl' }, 0))
+            .rejects.toThrow(new Error(
+              'When an \'@direction\' is set, the value of \'@value\' must be a string, got \'3\''));
+        });
+
+        it('with a @value and invalid @direction should return null', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'r tl' }, 0))
+            .resolves.toBeNull();
+        });
+
+        it('with a @value and invalid @direction should throw an error when strictRanges is true', async () => {
+          util.parsingContext.strictRanges = true;
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'r tl' }, 0))
+            .rejects.toThrow(new Error('The value of an \'@direction\' must be \'ltr\' or \'rtl\', got \'"r tl"\''));
+        });
+
+        it('with a @value and valid @direction rtl should return a plain literal', async () => {
+          util.parsingContext.strictRanges = true;
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl' }, 0))
+            .resolves.toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with a @value and valid @direction ltr should return a plain literal', async () => {
+          util.parsingContext.strictRanges = true;
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'ltr' }, 0))
+            .resolves.toEqualRdfTerm(literal('abc'));
+        });
+
         it('with a @value and boolean @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0))
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
@@ -386,6 +440,21 @@ describe('Util', () => {
               '\'{"@value":"abc","@language":"en","@type":"abc"}\''));
         });
 
+        it('with a @value, @direction and @type should throw an error', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl', '@type': 'abc' }, 0))
+            .rejects.toThrow(new Error('Can not have both \'@direction\' and \'@type\' in a value: ' +
+              '\'{"@value":"abc","@direction":"rtl","@type":"abc"}\''));
+        });
+
+        it('with a @value, @language, @direction and @type should throw an error', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          return expect(util.valueToTerm(context, 'key',
+            { '@value': 'abc', '@language': 'en', '@direction': 'rtl', '@type': 'abc' }, 0))
+            .rejects.toThrow(new Error('Can not have \'@language\', \'@direction\' and \'@type\' in a value: \'\n' +
+              '            {"@value":"abc","@language":"en","@direction":"rtl","@type":"abc"}\''));
+        });
+
         it('with a @value and blank node @type', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': '_:b' }, 0))
             .rejects.toThrow(new Error('Illegal value type (BlankNode): _:b'));
@@ -409,6 +478,98 @@ describe('Util', () => {
             return expect(await util.valueToTerm(context, 'key', 'abc', 0))
               .toEqualRdfTerm(literal('abc'));
           });
+
+        it('with a raw value and @direction in the root context should return a plain literal', async () => {
+          context = { '@direction': 'rtl' };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with a raw value and @direction+@language in the root context should return a language literal',
+          async () => {
+            context = { '@direction': 'rtl', '@language': 'en-us' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
+
+        it('with a raw value and @direction in the root context for rdfDirection i18n-datatype ' +
+          'should return a plain literal', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          context = { '@direction': 'rtl' };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl')));
+        });
+
+        it('with a raw value and @direction+@language in the root context for rdfDirection i18n-datatype ' +
+          'should return a language literal',
+          async () => {
+            util.parsingContext.rdfDirection = 'i18n-datatype';
+            context = { '@direction': 'rtl', '@language': 'en-us' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl')));
+          });
+
+        it('with a raw value and @direction in the context entry should return a plain literal', async () => {
+          context = { 'key': { '@direction': 'rtl' }, '@direction': 'ltr' };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with a raw value and null @direction in the context entry should return a plain literal',
+          async () => {
+            context = { 'key': { '@direction': null }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc'));
+          });
+
+        it('with a raw value and @direction+@language in the context entry should return a language literal',
+          async () => {
+            context = { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
+
+        it('with a raw value and null @direction+@language in the context entry should return a language literal',
+          async () => {
+            context = { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
+
+        it('with a raw value and @direction in the context entry should return a datatyped literal ' +
+          'for rdfDirection i18n-datatype', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          context = { 'key': { '@direction': 'rtl' }, '@direction': 'ltr' };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl')));
+        });
+
+        it('with a raw value and null @direction in the context entry should return a plain literal ' +
+          'for rdfDirection i18n-datatype',
+          async () => {
+            util.parsingContext.rdfDirection = 'i18n-datatype';
+            context = { 'key': { '@direction': null }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc'));
+          });
+
+        it('with a raw value and @direction+@language in the context entry should return a datatyped literal ' +
+          'for rdfDirection i18n-datatype',
+          async () => {
+            util.parsingContext.rdfDirection = 'i18n-datatype';
+            context = { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl')));
+          });
+
+        it('with a raw value and null @direction+@language in the context entry should return a language literal ' +
+          'for rdfDirection i18n-datatype',
+          async () => {
+            util.parsingContext.rdfDirection = 'i18n-datatype';
+            context = { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' };
+            return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+              .toEqualRdfTerm(literal('abc', 'en-us'));
+          });
       });
 
       describe('for a string', () => {
@@ -426,6 +587,44 @@ describe('Util', () => {
           context = { key: { '@type': 'http://ex.org/' } };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0))
             .toEqualRdfTerm(literal('abc', namedNode('http://ex.org/')));
+        });
+
+        it('with an @language: en-us should return a literal with that language', async () => {
+          context = { key: { '@language': 'en-us' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with an @direction: rtl should return a plain literal', async () => {
+          context = { key: { '@language': 'en-us' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with an @direction: rtl and rdfDirection undefined should return a plain literal', async () => {
+          context = { key: { '@direction': 'rtl' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc'));
+        });
+
+        it('with an @direction: rtl, language and rdfDirection undefined should return a plain literal', async () => {
+          context = { key: { '@direction': 'rtl', '@language': 'en-us' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', 'en-us'));
+        });
+
+        it('with an @direction: rtl and rdfDirection i18n-datatype should return a plain literal', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          context = { key: { '@direction': 'rtl' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl')));
+        });
+
+        it('with an @direction: rtl, language and rdfDirection i18n-datatype should return a literal', async () => {
+          util.parsingContext.rdfDirection = 'i18n-datatype';
+          context = { key: { '@direction': 'rtl', '@language': 'en-us' } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0))
+            .toEqualRdfTerm(literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl')));
         });
       });
 
