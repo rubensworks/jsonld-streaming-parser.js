@@ -1,7 +1,7 @@
 import * as RDF from "rdf-js";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
-import {IDocumentLoader, JsonLdContext} from "jsonld-context-parser";
+import {ContextParser, IDocumentLoader, JsonLdContext} from "jsonld-context-parser";
 import {PassThrough, Transform, TransformCallback} from "stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
@@ -126,7 +126,7 @@ export class JsonLdParser extends Transform {
     let handleKey = true;
 
     // Keywords inside @reverse is not allowed
-    if (Util.isKeyword(key) && parentKey === '@reverse') {
+    if (ContextParser.isValidKeyword(key) && parentKey === '@reverse') {
       this.emit('error', new Error(`Found the @id '${value}' inside an @reverse property`));
     }
 

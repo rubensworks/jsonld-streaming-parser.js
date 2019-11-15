@@ -1,7 +1,6 @@
-import {ContextParser, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {ContextParser, ERROR_CODES, ErrorCoded, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ParsingContext} from "./ParsingContext";
-import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
 
 /**
  * Utility functions and methods.
@@ -113,15 +112,6 @@ export class Util {
   public static isPropertyReverse(context: IJsonLdContextNormalized, key: string, parentKey: string): boolean {
     // '!==' is needed because reversed properties in a @reverse container should cancel each other out.
     return parentKey === '@reverse' !== Util.isContextValueReverse(context, key);
-  }
-
-  /**
-   * Check if the given key is a keyword.
-   * @param {string} key A key, can be falsy.
-   * @return {boolean} If the given key starts with an @.
-   */
-  public static isKeyword(key: any): boolean {
-    return typeof key === 'string' && key[0] === '@';
   }
 
   /**
@@ -568,13 +558,13 @@ export class Util {
       }
     }
 
-    if (!Util.isKeyword(key)) {
+    if (!ContextParser.isPotentialKeyword(key)) {
       const context = await this.parsingContext.getContext(keys);
       let unliased = context[key];
       if (unliased && typeof unliased === 'object') {
         unliased = unliased['@id'];
       }
-      if (Util.isKeyword(unliased)) {
+      if (ContextParser.isValidKeyword(unliased)) {
         key = unliased;
       }
     }
