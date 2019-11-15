@@ -1,6 +1,7 @@
 import {ContextParser, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ParsingContext} from "./ParsingContext";
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
 
 /**
  * Utility functions and methods.
@@ -388,7 +389,8 @@ export class Util {
       return this.dataFactory.namedNode(expanded);
     } else {
       if (expanded && this.parsingContext.errorOnInvalidProperties) {
-        this.parsingContext.emitError(new Error(`Invalid predicate IRI: ${expanded}`));
+        this.parsingContext.emitError(new ErrorCoded(`Invalid predicate IRI: ${expanded}`,
+          ERROR_CODES.INVALID_IRI_MAPPING));
       } else {
         return null;
       }
