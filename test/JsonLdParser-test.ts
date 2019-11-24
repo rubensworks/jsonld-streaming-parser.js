@@ -108,6 +108,89 @@ describe('JsonLdParser', () => {
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
+
+        it('should be ignored when mapped via the context', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ignoreMe": "@ignoreMe"
+  },
+  "@type": "http://example.com/IgnoreTest",
+  "ignoreMe": "should not be here"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+          ]);
+        });
+
+        it('should fallback to @vocab when mapped via the context', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignoreMe": "@ignoreMe"
+  },
+  "@type": "http://example.com/IgnoreTest",
+  "ignoreMe": "should be here"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+            triple(blankNode(), namedNode('http://example.org/ignoreMe'),
+              literal('should be here')),
+          ]);
+        });
+
+        it('should error when mapped via the context via @reverse', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ignoreMe": {"@reverse": "@ignoreMe"}
+  },
+  "@type": "http://example.com/IgnoreTest",
+  "ignoreMe": "should not be here"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+          ]);
+        });
+
+        it('should error when mapped via the context via @reverse and a sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ignoreMe": {"@reverse": "@ignoreMe"}
+  },
+  "@type": "http://example.com/IgnoreTest",
+  "ignoreMe": {"http://example.org/text": "should not be here"}
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+          ]);
+        });
+
+        it('should error when mapped via the context via @reverse and a sub-property and @vocab', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "ignoreMe": {"@reverse": "@ignoreMe"}
+  },
+  "@type": "http://example.com/IgnoreTest",
+  "ignoreMe": {"text": "should be here"}
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+            triple(blankNode('b1'), namedNode('http://example.org/ignoreMe'),
+              blankNode('b2')),
+            triple(blankNode('b2'), namedNode('http://example.org/text'),
+              literal('should be here')),
+          ]);
+        });
       });
 
       describe('a single triple', () => {
