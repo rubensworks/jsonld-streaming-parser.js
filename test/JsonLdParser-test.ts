@@ -135,9 +135,9 @@ describe('JsonLdParser', () => {
   "ignoreMe": "should be here"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://example.com/IgnoreTest')),
-            triple(blankNode(), namedNode('http://example.org/ignoreMe'),
+            triple(blankNode('b1'), namedNode('http://example.org/ignoreMe'),
               literal('should be here')),
           ]);
         });
@@ -185,8 +185,8 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://example.com/IgnoreTest')),
-            triple(blankNode('b1'), namedNode('http://example.org/ignoreMe'),
-              blankNode('b2')),
+            triple(blankNode('b2'), namedNode('http://example.org/ignoreMe'),
+              blankNode('b1')),
             triple(blankNode('b2'), namedNode('http://example.org/text'),
               literal('should be here')),
           ]);
@@ -1689,6 +1689,60 @@ describe('JsonLdParser', () => {
               literal('http://example/bar')),
             triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil')),
+          ]);
+        });
+      });
+
+      describe('two triples', () => {
+        it('without @id', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": "http://ex.org/obj1",
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(blankNode('b1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/sub1",
+  "http://ex.org/pred1": "http://ex.org/obj1",
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/sub1'), namedNode('http://ex.org/pred1'), literal('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/sub1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with @type, without @id', async () => {
+          const stream = streamifyString(`
+{
+  "@type": "http://ex.org/obj1",
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/obj1')),
+            triple(blankNode('b1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
+          ]);
+        });
+
+        it('with @type, with @id', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/sub1",
+  "@type": "http://ex.org/obj1",
+  "http://ex.org/pred2": "http://ex.org/obj2"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/sub1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), namedNode('http://ex.org/obj1')),
+            triple(namedNode('http://ex.org/sub1'), namedNode('http://ex.org/pred2'), literal('http://ex.org/obj2')),
           ]);
         });
       });
