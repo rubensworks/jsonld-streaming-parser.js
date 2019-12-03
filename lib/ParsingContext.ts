@@ -82,6 +82,9 @@ export class ParsingContext {
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;
 
+    this.topLevelProperties = false;
+    this.activeProcessingMode = parseFloat(this.processingMode);
+
     // Initialize stacks
     this.processingStack = [];
     this.emittedStack = [];
@@ -97,17 +100,27 @@ export class ParsingContext {
 
     this.parser = options.parser;
     if (options.context) {
-      this.rootContext = this.contextParser.parse(options.context, {
-        baseIRI: options.baseIRI,
-        normalizeLanguageTags: this.normalizeLanguageTags,
-      });
+      this.rootContext = this.parseContext(options.context);
       this.rootContext.then((context) => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve(this.baseIRI ? { '@base': this.baseIRI } : {});
     }
+  }
 
-    this.topLevelProperties = false;
-    this.activeProcessingMode = parseFloat(this.processingMode);
+  /**
+   * Parse the given context with the configured options.
+   * @param {JsonLdContext} context A context to parse.
+   * @param {IJsonLdContextNormalized} parentContext An optional parent context.
+   * @return {Promise<IJsonLdContextNormalized>} A promise resolving to the parsed context.
+   */
+  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalized)
+    : Promise<IJsonLdContextNormalized> {
+    return this.contextParser.parse(context, {
+      baseIRI: this.baseIRI,
+      normalizeLanguageTags: this.normalizeLanguageTags,
+      parentContext,
+      processingMode: this.activeProcessingMode,
+    });
   }
 
   /**

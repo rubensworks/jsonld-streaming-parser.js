@@ -180,8 +180,7 @@ export class Util {
 
       // Handle local context in the value
       if ('@context' in value) {
-        context = await this.parsingContext.contextParser.parse(value['@context'],
-          { baseIRI: this.parsingContext.baseIRI, parentContext: context });
+        context = await this.parsingContext.parseContext(value['@context'], context);
       }
 
       // In all other cases, we have a hash
