@@ -5,6 +5,7 @@ import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
 import each from 'jest-each';
 import "jest-rdf";
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 
@@ -5604,6 +5605,136 @@ describe('JsonLdParser', () => {
             quad(namedNode('https://api.coopstarter.happy-dev.fr/resources/'),
               namedNode('http://www.w3.org/ns/ldp#contains'),
               namedNode('https://api.coopstarter.happy-dev.fr/resources/1/')),
+          ]);
+        });
+      });
+
+      describe('JSON literals', () => {
+        it('should error in 1.0', async () => {
+          parser = new JsonLdParser({ processingMode: '1.0' });
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": true
+}
+`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toThrow(new ErrorCoded(`A context @type must be an absolute IRI, found: 'e': '@json'`,
+            ERROR_CODES.INVALID_TYPE_MAPPING));
+        });
+
+        it('with a single literal value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": true
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('true', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a single null value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": null
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('null', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a JSON object', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "a": true }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('{"a":true}', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a JSON object that contains an entry looking like a valid URI', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "http://example.org/predicate": true }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('{"http://example.org/predicate":true}',
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a JSON object that should be canonicalized', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "zzz": "z", "b": 3, "a": true }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('{"a":true,"b":3,"zzz":"z"}', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a JSON array', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": [ "a", true ]
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('["a",true]', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with nested JSON', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "a": [ "a", true ] }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''),
+              namedNode('http://example.com/vocab/json'),
+              literal('{"a":["a",true]}', namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
           ]);
         });
       });

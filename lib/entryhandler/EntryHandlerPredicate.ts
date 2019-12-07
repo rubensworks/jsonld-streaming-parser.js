@@ -79,7 +79,18 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
-    return keys[depth] && !!await util.predicateToTerm(await parsingContext.getContext(keys), keys[depth]);
+    const key = keys[depth];
+    if (key) {
+      const context = await parsingContext.getContext(keys);
+      if (await util.predicateToTerm(context, keys[depth])) {
+        // If this valid predicate is of type @json, mark it so in the stack so that no deeper handling of nodes occurs.
+        if (Util.getContextValueType(context, key) === '@json') {
+          parsingContext.jsonLiteralStack[depth + 1] = true;
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
@@ -99,22 +110,25 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       let object = await util.valueToTerm(objectContext, key, value, depth, keys);
       if (object) {
         const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
-        // Special case if our term was defined as an @list, but does not occur in an array,
-        // In that case we just emit it as an RDF list with a single element.
-        const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
-        if (listValueContainer || value['@list']) {
-          if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list']))) && object !== util.rdfNil) {
-            const listPointer: RDF.Term = util.dataFactory.blankNode();
-            parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
-              util.getDefaultGraph()));
-            parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
-              util.getDefaultGraph()));
-            object = listPointer;
-          }
 
-          // Lists are not allowed in @reverse'd properties
-          if (reverse && !parsingContext.allowSubjectList) {
-            throw new Error(`Found illegal list value in subject position at ${key}`);
+        if (value) {
+          // Special case if our term was defined as an @list, but does not occur in an array,
+          // In that case we just emit it as an RDF list with a single element.
+          const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
+          if (listValueContainer || value['@list']) {
+            if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list']))) && object !== util.rdfNil) {
+              const listPointer: RDF.Term = util.dataFactory.blankNode();
+              parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
+                util.getDefaultGraph()));
+              parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
+                util.getDefaultGraph()));
+              object = listPointer;
+            }
+
+            // Lists are not allowed in @reverse'd properties
+            if (reverse && !parsingContext.allowSubjectList) {
+              throw new Error(`Found illegal list value in subject position at ${key}`);
+            }
           }
         }
 

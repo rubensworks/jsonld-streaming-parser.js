@@ -53,6 +53,8 @@ export class ParsingContext {
   public readonly validationStack: { valid: boolean, property: boolean }[];
   // Stack with cached unaliased keywords.
   public readonly unaliasedKeywordCacheStack: any[];
+  // Stack of flags indicating if the node is a JSON literal
+  public readonly jsonLiteralStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
   public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[][];
@@ -95,6 +97,7 @@ export class ParsingContext {
     this.literalStack = [];
     this.validationStack = [];
     this.unaliasedKeywordCacheStack = [];
+    this.jsonLiteralStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
 

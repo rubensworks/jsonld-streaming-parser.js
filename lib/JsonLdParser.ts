@@ -180,8 +180,9 @@ export class JsonLdParser extends Transform {
       this.parsingContext.emittedStack.splice(this.lastDepth, 1);
       this.parsingContext.idStack.splice(this.lastDepth, 1);
       this.parsingContext.graphStack.splice(this.lastDepth + 1, 1);
-      this.parsingContext.literalStack.splice(this.lastDepth, 1);
+      this.parsingContext.jsonLiteralStack.splice(this.lastDepth, 1);
       this.parsingContext.validationStack.splice(this.lastDepth - 1, 2);
+      this.parsingContext.literalStack.splice(this.lastDepth, 1);
     }
     this.lastDepth = depth;
 
@@ -348,6 +349,7 @@ export class JsonLdParser extends Transform {
       }
       this.parsingContext.unidentifiedValuesBuffer.splice(depth, 1);
       this.parsingContext.literalStack.splice(depth, 1);
+      this.parsingContext.jsonLiteralStack.splice(depth, 1);
     }
 
     // Flush graphs at this level

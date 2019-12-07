@@ -2,6 +2,9 @@ import {ContextParser, ERROR_CODES, ErrorCoded, IJsonLdContextNormalized} from "
 import * as RDF from "rdf-js";
 import {ParsingContext} from "./ParsingContext";
 
+// tslint:disable-next-line:no-var-requires
+const canonicalizeJson = require('canonicalize');
+
 /**
  * Utility functions and methods.
  */
@@ -18,6 +21,7 @@ export class Util {
   public readonly rdfRest: RDF.NamedNode;
   public readonly rdfNil: RDF.NamedNode;
   public readonly rdfType: RDF.NamedNode;
+  public readonly rdfJson: RDF.NamedNode;
 
   private readonly parsingContext: ParsingContext;
 
@@ -29,6 +33,7 @@ export class Util {
     this.rdfRest = this.dataFactory.namedNode(Util.RDF + 'rest');
     this.rdfNil = this.dataFactory.namedNode(Util.RDF + 'nil');
     this.rdfType = this.dataFactory.namedNode(Util.RDF + 'type');
+    this.rdfJson = this.dataFactory.namedNode(Util.RDF + 'JSON');
   }
 
   /**
@@ -159,6 +164,11 @@ export class Util {
    */
   public async valueToTerm(context: IJsonLdContextNormalized, key: string,
                            value: any, depth: number, keys: string[]): Promise<RDF.Term> {
+    // Skip further processing if we have an @type: @json
+    if (Util.getContextValueType(context, key) === '@json') {
+      return this.dataFactory.literal(this.valueToJsonString(value), this.rdfJson);
+    }
+
     const type: string = typeof value;
     switch (type) {
     case 'object':
@@ -535,6 +545,15 @@ export class Util {
   }
 
   /**
+   * Stringify the given JSON object to a canonical JSON string.
+   * @param value Any valid JSON value.
+   * @return {string} A canonical JSON string.
+   */
+  public valueToJsonString(value: any): string {
+    return canonicalizeJson(value);
+  }
+
+  /**
    * If the key is not a keyword, try to check if it is an alias for a keyword,
    * and if so, un-alias it.
    * @param {string} key A key, can be falsy.
@@ -598,7 +617,7 @@ export class Util {
   }
 
   /**
-   * Check if we are processing a literal at the given depth.
+   * Check if we are processing a literal (including JSON literals) at the given depth.
    * This will also check higher levels,
    * because if a parent is a literal,
    * then the deeper levels are definitely a literal as well.
@@ -607,7 +626,7 @@ export class Util {
    */
   public isLiteral(depth: number): boolean {
     for (let i = depth; i >= 0; i--) {
-      if (this.parsingContext.literalStack[i]) {
+      if (this.parsingContext.literalStack[i] || this.parsingContext.jsonLiteralStack[i]) {
         return true;
       }
     }
