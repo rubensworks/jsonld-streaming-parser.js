@@ -91,7 +91,7 @@
     "version": "manual-git-changelog onversion",
     "spec": "npm run spec-tordf",
     "spec-earl": "npm run spec-earl-tordf",
-    "spec-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/",
+    "spec-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -e",
     "spec-earl-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-tordf.ttl",
     "spec-clean": "rm -r .rdf-test-suite-cache/"
   }
