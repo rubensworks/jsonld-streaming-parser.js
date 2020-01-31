@@ -885,6 +885,31 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and language map should not interpret language as predicates', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.org/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@language" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": "Ninja",
+    "cs": "Nindža"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('忍者', 'ja')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Ninja', 'en')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              literal('Nindža', 'cs')),
+          ]);
+        });
+
         it('with @id and index map', async () => {
           const stream = streamifyString(`
 {
