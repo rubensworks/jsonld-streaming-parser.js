@@ -32,7 +32,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
       // Determine the list root key
       let listRootKey = null;
-      let listRootDepth;
+      let listRootDepth = 0;
       for (let i = depth - 2; i > 0; i--) {
         const keyOption = keys[i];
         if (typeof keyOption === 'string') {
@@ -44,21 +44,30 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
       // Throw an error if we encounter a nested list
       if (listRootKey === '@list' ||
-        (listRootDepth !== depth - 2 && typeof keys[depth - 2] === 'number'
+        (listRootKey !== null && listRootDepth !== depth - 2 && typeof keys[depth - 2] === 'number'
           && Util.getContextValueContainer(await parsingContext
             .getContext(keys, listRootDepth - depth), listRootKey) === '@list')) {
         throw new Error(`Lists of lists are not supported: '${listRootKey}'`);
       }
 
-      const object = await util.valueToTerm(await parsingContext.getContext(keys), listRootKey, value, depth, keys);
-
       if (listRootKey !== null) {
-        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, listRootDepth), listRootDepth,
-          listRootKey, keys);
+        // Emit the given objects as list elements
+        const values = await util.valueToTerm(await parsingContext.getContext(keys),
+          listRootKey, value, depth, keys);
+        for (const object of values) {
+          await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, listRootDepth), listRootDepth,
+            listRootKey, keys);
+        }
+
+        // If no values were found, emit a falsy list element to force an empty RDF list to be emitted.
+        if (values.length === 0) {
+          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, listRootDepth), listRootDepth,
+            listRootKey, keys);
+        }
       }
     } else if (parentKey === '@set') {
       // Our value is part of a set, so we just add it to the parent-parent
-      await parsingContext.newOnValueJob(keys.slice(0, -2), value, depth - 2);
+      await parsingContext.newOnValueJob(keys.slice(0, -2), value, depth - 2, false);
     } else if (parentKey !== undefined && parentKey !== '@type') {
       // Buffer our value using the parent key as predicate
 
@@ -66,18 +75,24 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       const parentContext = await parsingContext.getContext(keys.slice(0, -1));
       if (Util.getContextValueContainer(parentContext, parentKey) === '@list') {
         // Our value is part of an array
-        const object = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
-        await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1,
-          parentKey, keys);
-      } else {
-        // Copy the id stack value up one level so that the next job can access the id.
-        if (parsingContext.idStack[depth + 1]) {
-          parsingContext.idStack[depth] = parsingContext.idStack[depth + 1];
-          parsingContext.emittedStack[depth] = true;
+        // Emit the given objects as list elements
+        const values = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
+        for (const object of values) {
+          await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1,
+            parentKey, keys);
         }
 
+        // If no values were found, emit a falsy list element to force an empty RDF list to be emitted.
+        if (values.length === 0) {
+          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, -1), depth - 1,
+            parentKey, keys);
+        }
+      } else {
+        // Copy the stack values up one level so that the next job can access them.
+        parsingContext.shiftStack(depth, 1);
+
         // Execute the job one level higher
-        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1);
+        await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, false);
 
         // Remove any defined contexts at this level to avoid it to propagate to the next array element.
         parsingContext.contextTree.removeContext(keys.slice(0, -1));
@@ -85,13 +100,13 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     }
   }
 
-  protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term, depth: number,
+  protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term | null, depth: number,
                                     listRootKeys: string[], listRootDepth: number, listRootKey: string, keys: any[]) {
         // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer = parsingContext.listPointerStack[depth];
 
     if (value) {
-      if (!listPointer || !listPointer.term) {
+      if (!listPointer || !('term' in listPointer)) {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
         const listRootContext = await parsingContext.getContext(listRootKeys);
         const predicate = await util.predicateToTerm(listRootContext, listRootKey);
@@ -102,9 +117,11 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
           throw new Error(`Found illegal list value in subject position at ${listRootKey}`);
         }
 
-        parsingContext.getUnidentifiedValueBufferSafe(listRootDepth)
-          .push({ predicate, object: linkTerm, reverse });
-        listPointer = { term: linkTerm, initialPredicate: null, listRootDepth };
+        if (predicate) {
+          parsingContext.getUnidentifiedValueBufferSafe(listRootDepth)
+            .push({predicate, object: linkTerm, reverse});
+        }
+        listPointer = { term: linkTerm, listRootDepth };
       } else {
         // rdf:rest links are always emitted before the next element,
         // as the blank node identifier is only created at that point.
@@ -118,14 +135,15 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       }
 
       // Emit a list element for the current value
-      parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.term, util.rdfFirst, value,
+      parsingContext.emitQuad(depth, util.dataFactory.quad(<RDF.Term> listPointer.term, util.rdfFirst, value,
         util.getDefaultGraph()));
     } else {
       // A falsy list element if found.
       // Just enable the list flag for this depth if it has not been set before.
       if (!listPointer) {
         const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootKeys), listRootKey);
-        listPointer = { term: null, initialPredicate: predicate, listRootDepth };
+        // Predicate won't be falsy because otherwise listPointer would be falsy as well.
+        listPointer = { initialPredicate: <RDF.Term> predicate, listRootDepth };
       }
     }
 

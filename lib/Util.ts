@@ -47,8 +47,8 @@ export class Util {
    * @return {string} The value of the given contextKey in the entry behind key in the given context,
    *                  or the given fallback value.
    */
-  public static getContextValue(context: IJsonLdContextNormalized, contextKey: string,
-                                key: string, fallback: string): string {
+  public static getContextValue<FB>(context: IJsonLdContextNormalized, contextKey: string,
+                                    key: string, fallback: FB): string | FB {
     const entry = context[key];
     if (!entry) {
       return fallback;
@@ -73,7 +73,7 @@ export class Util {
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
-  public static getContextValueType(context: IJsonLdContextNormalized, key: string): string {
+  public static getContextValueType(context: IJsonLdContextNormalized, key: string): string | null {
     return Util.getContextValue(context, '@type', key, null);
   }
 
@@ -83,7 +83,7 @@ export class Util {
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
-  public static getContextValueLanguage(context: IJsonLdContextNormalized, key: string): string {
+  public static getContextValueLanguage(context: IJsonLdContextNormalized, key: string): string | null {
     return Util.getContextValue(context, '@language', key, context['@language'] || null);
   }
 
@@ -124,8 +124,8 @@ export class Util {
    * @param {string} iri A potential IRI.
    * @return {boolean} If the given IRI is valid.
    */
-  public static isValidIri(iri: string): boolean {
-    return ContextParser.isValidIri(iri);
+  public static isValidIri(iri: string | null): boolean {
+    return iri !== null && ContextParser.isValidIri(iri);
   }
 
   /**
@@ -160,13 +160,13 @@ export class Util {
    * @param value A JSON value.
    * @param {number} depth The depth the value is at.
    * @param {string[]} keys The path of keys.
-   * @return {RDF.Term} An RDF term.
+   * @return {Promise<RDF.Term[]>} An RDF term array.
    */
   public async valueToTerm(context: IJsonLdContextNormalized, key: string,
-                           value: any, depth: number, keys: string[]): Promise<RDF.Term> {
+                           value: any, depth: number, keys: string[]): Promise<RDF.Term[]> {
     // Skip further processing if we have an @type: @json
     if (Util.getContextValueType(context, key) === '@json') {
-      return this.dataFactory.literal(this.valueToJsonString(value), this.rdfJson);
+      return [ this.dataFactory.literal(this.valueToJsonString(value), this.rdfJson) ];
     }
 
     const type: string = typeof value;
@@ -174,7 +174,7 @@ export class Util {
     case 'object':
       // Skip if we have a null or undefined object
       if (value === null || value === undefined) {
-        return null;
+        return [];
       }
 
       // Special case for arrays
@@ -182,10 +182,10 @@ export class Util {
         // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
         // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
         if (Util.getContextValueContainer(context, key) === '@list' && value.length === 0) {
-          return this.rdfNil;
+          return [ this.rdfNil ];
         }
         await this.validateValueIndexes(value);
-        return null;
+        return [];
       }
 
       // Handle local context in the value
@@ -226,7 +226,7 @@ export class Util {
 
         // Validate @value
         if (val === null) {
-          return null;
+          return [];
         }
         if (typeof val === 'object') {
           throw new Error(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`);
@@ -245,7 +245,7 @@ export class Util {
           }
 
           if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictRanges)) {
-            return null;
+            return [];
           }
 
           // Language tags are always normalized to lowercase in 1.0.
@@ -260,7 +260,7 @@ export class Util {
           }
 
           if (!ContextParser.validateDirection(valueDirection, this.parsingContext.strictRanges)) {
-            return null;
+            return [];
           }
         }
 
@@ -271,31 +271,33 @@ export class Util {
             ${JSON.stringify(value)}'`);
           }
 
-          return this.createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection);
+          return this.nullableTermToArray(this
+            .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
         } else if (valueLanguage) { // Check @language
           if (valueType) {
             throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
           }
 
-          return this.dataFactory.literal(val, valueLanguage);
+          return [ this.dataFactory.literal(val, valueLanguage) ];
         } else if (valueDirection && this.parsingContext.rdfDirection) { // Check @direction
           if (valueType) {
             throw new Error(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`);
           }
 
-          return this.createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection);
+          return this.nullableTermToArray(this
+            .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
             throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
           }
           const typeTerm = this.createVocabOrBaseTerm(context, valueType);
           if (!typeTerm) {
-            return null;
+            return [];
           }
           if (typeTerm.termType !== 'NamedNode') {
             throw new Error(`Illegal value type (${typeTerm.termType}): ${valueType}`);
           }
-          return this.dataFactory.literal(val, typeTerm);
+          return [ this.dataFactory.literal(val, typeTerm) ];
         }
         // We don't pass the context, because context-based things like @language should be ignored
         return await this.valueToTerm({}, key, val, depth, keys);
@@ -306,7 +308,7 @@ export class Util {
         }
 
         // No need to do anything here, this is handled at the deeper level.
-        return null;
+        return [];
       } else if ('@list' in value) {
         // No other entries are allow in this value
         if (Object.keys(value).length > 1) {
@@ -318,45 +320,54 @@ export class Util {
         // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
         if (Array.isArray(listValue)) {
           if (listValue.length === 0) {
-            return this.rdfNil;
+            return [ this.rdfNil ];
           } else {
-            return null;
+            return [];
           }
         } else {
           // We only have a single list element here, so emit this directly as single element
-          return this.valueToTerm(await this.parsingContext.getContext(keys),
+          return await this.valueToTerm(await this.parsingContext.getContext(keys),
             key, listValue, depth - 1, keys.slice(0, -1));
         }
       } else if ('@reverse' in value) {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
-        return null;
+        return [];
       } else if ("@id" in value) {
         if (value["@type"] === '@vocab') {
-          return this.createVocabOrBaseTerm(context, value["@id"]);
+          return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
         } else {
-          return this.resourceToTerm(context, value["@id"]);
+          return this.nullableTermToArray(this.resourceToTerm(context, value["@id"]));
         }
       } else {
         // Only make a blank node if at least one triple was emitted at the value's level.
         if (this.parsingContext.emittedStack[depth + 1]) {
-          return this.parsingContext.idStack[depth + 1]
-            || (this.parsingContext.idStack[depth + 1] = this.dataFactory.blankNode());
+          return (this.parsingContext.idStack[depth + 1]
+            || (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
         } else {
-          return null;
+          return [];
         }
       }
     case 'string':
-      return this.stringValueToTerm(depth, context, key, value, null);
+      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, value, null));
     case 'boolean':
-      return this.stringValueToTerm(depth, context, key, Boolean(value).toString(),
-        this.dataFactory.namedNode(Util.XSD_BOOLEAN));
+      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, Boolean(value).toString(),
+        this.dataFactory.namedNode(Util.XSD_BOOLEAN)));
     case 'number':
-      return this.stringValueToTerm(depth, context, key, value, this.dataFactory.namedNode(
-        value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE));
+      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, value, this.dataFactory.namedNode(
+        value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE)));
     default:
       this.parsingContext.emitError(new Error(`Could not determine the RDF type of a ${type}`));
+      return [];
     }
+  }
+
+  /**
+   * If the given term is null, return an empty array, otherwise return an array with the single given term.
+   * @param term A term.
+   */
+  public nullableTermToArray(term: RDF.Term | null): RDF.Term[] {
+    return term ? [ term ] : [];
   }
 
   /**
@@ -366,8 +377,9 @@ export class Util {
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
-    const expanded: string = ContextParser.expandTerm(key, context, true, this.parsingContext.getExpandOptions());
+  public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
+    const expanded: string | null = ContextParser.expandTerm(key, context, true,
+      this.parsingContext.getExpandOptions());
 
     // Immediately return if the predicate was disabled in the context
     if (!expanded) {
@@ -394,6 +406,8 @@ export class Util {
         return null;
       }
     }
+
+    return null;
   }
 
   /**
@@ -403,7 +417,7 @@ export class Util {
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node or null.
    */
-  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
+  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
@@ -415,7 +429,7 @@ export class Util {
         return null;
       }
     }
-    return this.dataFactory.namedNode(iri);
+    return this.dataFactory.namedNode(<string> iri);
   }
 
   /**
@@ -426,7 +440,7 @@ export class Util {
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node or null.
    */
-  public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.Term {
+  public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
@@ -442,7 +456,7 @@ export class Util {
         return null;
       }
     }
-    return this.dataFactory.namedNode(expanded);
+    return this.dataFactory.namedNode(<string> expanded);
   }
 
   /**
@@ -451,11 +465,11 @@ export class Util {
    * @param {NamedNode} datatype The intended datatype.
    * @return {string} The returned string.
    */
-  public intToString(value: string | number, datatype: RDF.NamedNode): string {
+  public intToString(value: string | number, datatype: RDF.NamedNode | null): string {
     if (typeof value === 'number') {
       if (Number.isFinite(value)) {
         const isInteger = value % 1 === 0;
-        if (isInteger && datatype.value !== Util.XSD_DOUBLE) {
+        if (isInteger && (!datatype || datatype.value !== Util.XSD_DOUBLE)) {
           return Number(value).toString();
         } else {
           return value.toExponential(15).replace(/(\d)0*e\+?/, '$1E');
@@ -478,7 +492,7 @@ export class Util {
    * @return {RDF.Term} An RDF term or null.
    */
   public stringValueToTerm(depth: number, context: IJsonLdContextNormalized, key: string, value: string | number,
-                           defaultDatatype: RDF.NamedNode): RDF.Term {
+                           defaultDatatype: RDF.NamedNode | null): RDF.Term | null {
     // Check the datatype from the context
     const contextType = Util.getContextValueType(context, key);
     if (contextType) {
@@ -503,7 +517,8 @@ export class Util {
         return this.createLanguageDirectionLiteral(depth, this.intToString(value, defaultDatatype),
           contextLanguage, contextDirection);
       } else {
-        return this.dataFactory.literal(this.intToString(value, defaultDatatype), contextLanguage);
+        return this.dataFactory.literal(this.intToString(value, defaultDatatype),
+          <string | RDF.NamedNode> contextLanguage);
       }
     }
 
@@ -520,7 +535,8 @@ export class Util {
    * @param {string} direction A direction.
    * @return {Term} An RDF term.
    */
-  public createLanguageDirectionLiteral(depth: number, value: string, language: string, direction: string): RDF.Term {
+  public createLanguageDirectionLiteral(depth: number, value: string, language: string | null, direction: string)
+    : RDF.Term {
     if (this.parsingContext.rdfDirection === 'i18n-datatype') {
       // Create a datatyped literal, by encoding the language and direction into https://www.w3.org/ns/i18n#.
       if (!language) {

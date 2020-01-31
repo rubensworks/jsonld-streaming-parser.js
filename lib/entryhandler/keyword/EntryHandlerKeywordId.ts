@@ -16,11 +16,12 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
     // Error if an @id for this node already existed.
     if (parsingContext.idStack[depth] !== undefined) {
       parsingContext.emitError(new Error(`Found duplicate @ids '${parsingContext
-        .idStack[depth].value}' and '${value}'`));
+        .idStack[depth][0].value}' and '${value}'`));
     }
 
     // Save our @id on the stack
-    parsingContext.idStack[depth] = await util.resourceToTerm(await parsingContext.getContext(keys), value);
+    parsingContext.idStack[depth] = util.nullableTermToArray(await util.resourceToTerm(
+      await parsingContext.getContext(keys), value));
   }
 
 }

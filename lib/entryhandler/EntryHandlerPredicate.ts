@@ -28,40 +28,43 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
     const depthPropertiesGraph: number = depth - depthOffsetGraph;
 
-    if (parsingContext.idStack[depthProperties]) {
+    const subjects = parsingContext.idStack[depthProperties];
+    if (subjects) {
       // Emit directly if the @id was already defined
-      const subject = parsingContext.idStack[depthProperties];
-
-      // Check if we're in a @graph context
-      const atGraph = depthOffsetGraph >= 0;
-      if (atGraph) {
-        const graph: RDF.Term = parsingContext.idStack[depthPropertiesGraph - 1];
-        if (graph) {
-          // Emit our quad if graph @id is known
-          if (reverse) {
-            util.validateReverseSubject(object);
-            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
+      for (const subject of subjects) {
+        // Check if we're in a @graph context
+        const atGraph = depthOffsetGraph >= 0;
+        if (atGraph) {
+          const graphs = parsingContext.idStack[depthPropertiesGraph - 1];
+          if (graphs) {
+            for (const graph of graphs) {
+              // Emit our quad if graph @id is known
+              if (reverse) {
+                util.validateReverseSubject(object);
+                parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
+              } else {
+                parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
+              }
+            }
           } else {
-            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
+            // Buffer our triple if graph @id is not known yet.
+            if (reverse) {
+              util.validateReverseSubject(object);
+              parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
+                {subject: object, predicate, object: subject});
+            } else {
+              parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
+                .push({subject, predicate, object});
+            }
           }
         } else {
-          // Buffer our triple if graph @id is not known yet.
+          // Emit if no @graph was applicable
           if (reverse) {
             util.validateReverseSubject(object);
-            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
-              {subject: object, predicate, object: subject});
+            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, util.getDefaultGraph()));
           } else {
-            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
-              .push({subject, predicate, object});
+            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, util.getDefaultGraph()));
           }
-        }
-      } else {
-        // Emit if no @graph was applicable
-        if (reverse) {
-          util.validateReverseSubject(object);
-          parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, util.getDefaultGraph()));
-        } else {
-          parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, util.getDefaultGraph()));
         }
       }
     } else {
@@ -107,33 +110,36 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     const predicate = await util.predicateToTerm(context, key);
     if (predicate) {
       const objectContext = await parsingContext.getContext(keys, 0);
-      let object = await util.valueToTerm(objectContext, key, value, depth, keys);
-      if (object) {
-        const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
+      const objects = await util.valueToTerm(objectContext, key, value, depth, keys);
+      if (objects.length) {
+        for (let object of objects) {
+          const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
 
-        if (value) {
-          // Special case if our term was defined as an @list, but does not occur in an array,
-          // In that case we just emit it as an RDF list with a single element.
-          const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
-          if (listValueContainer || value['@list']) {
-            if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list']))) && object !== util.rdfNil) {
-              const listPointer: RDF.Term = util.dataFactory.blankNode();
-              parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
-                util.getDefaultGraph()));
-              parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
-                util.getDefaultGraph()));
-              object = listPointer;
-            }
+          if (value) {
+            // Special case if our term was defined as an @list, but does not occur in an array,
+            // In that case we just emit it as an RDF list with a single element.
+            const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
+            if (listValueContainer || value['@list']) {
+              if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list'])))
+                && object !== util.rdfNil) {
+                const listPointer: RDF.Term = util.dataFactory.blankNode();
+                parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
+                  util.getDefaultGraph()));
+                parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
+                  util.getDefaultGraph()));
+                object = listPointer;
+              }
 
-            // Lists are not allowed in @reverse'd properties
-            if (reverse && !parsingContext.allowSubjectList) {
-              throw new Error(`Found illegal list value in subject position at ${key}`);
+              // Lists are not allowed in @reverse'd properties
+              if (reverse && !parsingContext.allowSubjectList) {
+                throw new Error(`Found illegal list value in subject position at ${key}`);
+              }
             }
           }
-        }
 
-        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
-          predicate, object, reverse);
+          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+            predicate, object, reverse);
+        }
       } else {
         // An invalid value was encountered, so we ignore it higher in the stack.
         parsingContext.emittedStack[depth] = false;

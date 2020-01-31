@@ -13,7 +13,8 @@
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
-    "importHelpers": false
+    "importHelpers": false,
+    "strictNullChecks": true
   },
   "include": [
     "index.ts",

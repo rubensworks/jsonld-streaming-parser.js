@@ -9,7 +9,7 @@ import {IEntryHandler} from "../IEntryHandler";
  */
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
-  private static readonly VALID_KEYWORDS_TYPES: {[id: string]: string} = {
+  private static readonly VALID_KEYWORDS_TYPES: {[id: string]: string | null} = {
     '@index': 'string',
     '@list': null,
     '@reverse': 'object',

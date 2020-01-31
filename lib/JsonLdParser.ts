@@ -49,6 +49,8 @@ export class JsonLdParser extends Transform {
 
   // The last depth that was processed.
   private lastDepth: number;
+  // The last keys that were processed.
+  private lastKeys: any[];
   // A promise representing the last job
   private lastOnValueJob: Promise<void>;
 
@@ -64,6 +66,7 @@ export class JsonLdParser extends Transform {
     this.contextJobs = [];
 
     this.lastDepth = 0;
+    this.lastKeys = [];
     this.lastOnValueJob = Promise.resolve();
 
     this.attachJsonParserListeners();
@@ -97,16 +100,19 @@ export class JsonLdParser extends Transform {
    * @param {any[]} keys The stack of keys.
    * @param value The value to parse.
    * @param {number} depth The depth to parse at.
+   * @param {boolean} lastDepthCheck If the lastDepth check should be done for buffer draining.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number) {
+  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean) {
+    let flushStacks: boolean = true;
+
     // When we go up the stack, emit all unidentified values
     // We need to do this before the new job, because the new job may require determined values from the flushed jobs.
-    if (depth < this.lastDepth) {
+    if (lastDepthCheck && depth < this.lastDepth) {
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
       const listPointer = this.parsingContext.listPointerStack[this.lastDepth];
       if (listPointer) {
-        if (listPointer.term) {
+        if ('term' in listPointer) {
           this.emit('data', this.util.dataFactory.quad(listPointer.term, this.util.rdfRest, this.util.rdfNil,
             this.util.getDefaultGraph()));
         } else {
@@ -117,7 +123,14 @@ export class JsonLdParser extends Transform {
       }
 
       // Flush the buffer for lastDepth
-      await this.flushBuffer(this.lastDepth, keys);
+      // If the parent key is a special type of container, postpone flushing until that parent is handled.
+      if (await EntryHandlerContainer.isContainerHandler(this.parsingContext, this.lastKeys, this.lastDepth)) {
+        this.parsingContext.pendingContainerFlushBuffers
+          .push({ depth: this.lastDepth, keys: this.lastKeys.slice(0, this.lastKeys.length) });
+        flushStacks = false;
+      } else {
+        await this.flushBuffer(this.lastDepth, this.lastKeys);
+      }
     }
 
     const key = await this.util.unaliasKeyword(keys[depth], keys, depth);
@@ -174,20 +187,112 @@ export class JsonLdParser extends Transform {
     }
 
     // When we go up the stack, flush the old stack
-    if (depth < this.lastDepth) {
-      // Reset our stack
-      this.parsingContext.processingStack.splice(this.lastDepth, 1);
-      this.parsingContext.emittedStack.splice(this.lastDepth, 1);
-      this.parsingContext.idStack.splice(this.lastDepth, 1);
-      this.parsingContext.graphStack.splice(this.lastDepth + 1, 1);
-      this.parsingContext.jsonLiteralStack.splice(this.lastDepth, 1);
-      this.parsingContext.validationStack.splice(this.lastDepth - 1, 2);
-      this.parsingContext.literalStack.splice(this.lastDepth, 1);
+    if (flushStacks && depth < this.lastDepth) {
+      // Reset our stacks
+      this.flushStacks(this.lastDepth);
     }
     this.lastDepth = depth;
+    this.lastKeys = keys;
 
     // Clear the keyword cache at this depth, and everything underneath.
     this.parsingContext.unaliasedKeywordCacheStack.splice(depth - 1);
+  }
+
+  /**
+   * Flush the processing stacks at the given depth.
+   * @param {number} depth A depth.
+   */
+  public flushStacks(depth: number) {
+    this.parsingContext.processingStack.splice(depth, 1);
+    this.parsingContext.emittedStack.splice(depth, 1);
+    this.parsingContext.idStack.splice(depth, 1);
+    this.parsingContext.graphStack.splice(depth + 1, 1);
+    this.parsingContext.jsonLiteralStack.splice(depth, 1);
+    this.parsingContext.validationStack.splice(depth - 1, 2);
+    this.parsingContext.literalStack.splice(depth, 1);
+  }
+
+  /**
+   * Flush buffers for the given depth.
+   *
+   * This should be called after the last entry at a given depth was processed.
+   *
+   * @param {number} depth A depth.
+   * @param {any[]} keys A stack of keys.
+   * @return {Promise<void>} A promise resolving if flushing is done.
+   */
+  public async flushBuffer(depth: number, keys: any[]) {
+    let subjects: RDF.Term[] = this.parsingContext.idStack[depth];
+    if (!subjects) {
+      subjects = this.parsingContext.idStack[depth] = [ this.util.dataFactory.blankNode() ];
+    }
+
+    // Flush values at this level
+    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
+      this.parsingContext.unidentifiedValuesBuffer[depth];
+    if (valueBuffer) {
+      for (const subject of subjects) {
+        const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
+        const graphs: RDF.Term[] = (this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0)
+          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : [ this.util.getDefaultGraph() ];
+        if (graphs) {
+          for (const graph of graphs) {
+            // Flush values to stream if the graph @id is known
+            this.parsingContext.emittedStack[depth] = true;
+            for (const bufferedValue of valueBuffer) {
+              if (bufferedValue.reverse) {
+                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+                  bufferedValue.object, bufferedValue.predicate, subject, graph));
+              } else {
+                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+                  subject, bufferedValue.predicate, bufferedValue.object, graph));
+              }
+            }
+          }
+        } else {
+          // Place the values in the graphs buffer if the graph @id is not yet known
+          const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
+            depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
+          for (const bufferedValue of valueBuffer) {
+            if (bufferedValue.reverse) {
+              subGraphBuffer.push({
+                object: subject,
+                predicate: bufferedValue.predicate,
+                subject: bufferedValue.object,
+              });
+            } else {
+              subGraphBuffer.push({
+                object: bufferedValue.object,
+                predicate: bufferedValue.predicate,
+                subject,
+              });
+            }
+          }
+        }
+      }
+      this.parsingContext.unidentifiedValuesBuffer.splice(depth, 1);
+      this.parsingContext.literalStack.splice(depth, 1);
+      this.parsingContext.jsonLiteralStack.splice(depth, 1);
+    }
+
+    // Flush graphs at this level
+    const graphBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] =
+      this.parsingContext.unidentifiedGraphsBuffer[depth];
+    if (graphBuffer) {
+      for (const subject of subjects) {
+        // A @graph statement at the root without @id relates to the default graph,
+        // unless there are top-level properties,
+        // others relate to blank nodes.
+        const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
+        && !this.parsingContext.topLevelProperties ? this.util.getDefaultGraph() : subject;
+        this.parsingContext.emittedStack[depth] = true;
+        for (const bufferedValue of graphBuffer) {
+          this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
+            bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
+        }
+      }
+      this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
+    }
   }
 
   /**
@@ -221,7 +326,7 @@ export class JsonLdParser extends Transform {
       });
 
       if (!this.isParsingContextInner(depth)) { // Don't parse inner nodes inside @context
-        const valueJobCb = () => this.newOnValueJob(keys, value, depth);
+        const valueJobCb = () => this.newOnValueJob(keys, value, depth, true);
         if (this.parsingContext.allowOutOfOrderContext
           && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
           // If an out-of-order context is allowed,
@@ -288,87 +393,6 @@ export class JsonLdParser extends Transform {
     // Handle non-context jobs
     for (const job of this.contextAwaitingJobs) {
       await job();
-    }
-  }
-
-  /**
-   * Flush buffers for the given depth.
-   *
-   * This should be called after the last entry at a given depth was processed.
-   *
-   * @param {number} depth A depth.
-   * @param {any[]} keys A stack of keys.
-   * @return {Promise<void>} A promise resolving if flushing is done.
-   */
-  protected async flushBuffer(depth: number, keys: any[]) {
-    let subject: RDF.Term = this.parsingContext.idStack[depth];
-    if (subject === undefined) {
-      subject = this.parsingContext.idStack[depth] = this.util.dataFactory.blankNode();
-    }
-
-    // Flush values at this level
-    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
-      this.parsingContext.unidentifiedValuesBuffer[depth];
-    if (valueBuffer) {
-      if (subject) {
-        const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
-        const graph: RDF.Term = this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0
-          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : this.util.getDefaultGraph();
-        if (graph) {
-          // Flush values to stream if the graph @id is known
-          this.parsingContext.emittedStack[depth] = true;
-          for (const bufferedValue of valueBuffer) {
-            if (bufferedValue.reverse) {
-              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                bufferedValue.object, bufferedValue.predicate, subject, graph));
-            } else {
-              this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                subject, bufferedValue.predicate, bufferedValue.object, graph));
-            }
-          }
-        } else {
-          // Place the values in the graphs buffer if the graph @id is not yet known
-          const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
-            depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
-          for (const bufferedValue of valueBuffer) {
-            if (bufferedValue.reverse) {
-              subGraphBuffer.push({
-                object: subject,
-                predicate: bufferedValue.predicate,
-                subject: bufferedValue.object,
-              });
-            } else {
-              subGraphBuffer.push({
-                object: bufferedValue.object,
-                predicate: bufferedValue.predicate,
-                subject,
-              });
-            }
-          }
-        }
-      }
-      this.parsingContext.unidentifiedValuesBuffer.splice(depth, 1);
-      this.parsingContext.literalStack.splice(depth, 1);
-      this.parsingContext.jsonLiteralStack.splice(depth, 1);
-    }
-
-    // Flush graphs at this level
-    const graphBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] =
-      this.parsingContext.unidentifiedGraphsBuffer[depth];
-    if (graphBuffer) {
-      if (subject) {
-        // A @graph statement at the root without @id relates to the default graph,
-        // unless there are top-level properties,
-        // others relate to blank nodes.
-        const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
-        && !this.parsingContext.topLevelProperties ? this.util.getDefaultGraph() : subject;
-        this.parsingContext.emittedStack[depth] = true;
-        for (const bufferedValue of graphBuffer) {
-          this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-            bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
-        }
-      }
-      this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
     }
   }
 }

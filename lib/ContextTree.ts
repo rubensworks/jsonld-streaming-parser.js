@@ -9,9 +9,9 @@ import {IJsonLdContextNormalized} from "jsonld-context-parser";
 export class ContextTree {
 
   private readonly subTrees: {[key: string]: ContextTree} = {};
-  private context: Promise<IJsonLdContextNormalized>;
+  private context: Promise<IJsonLdContextNormalized> | null;
 
-  public getContext([head, ...tail]: string[]): Promise<IJsonLdContextNormalized> {
+  public getContext([head, ...tail]: string[]): Promise<IJsonLdContextNormalized> | null {
     if (!head && !tail.length) {
       return this.context;
     } else {
@@ -20,7 +20,7 @@ export class ContextTree {
     }
   }
 
-  public setContext([head, ...tail]: string[], context: Promise<IJsonLdContextNormalized>) {
+  public setContext([head, ...tail]: string[], context: Promise<IJsonLdContextNormalized> | null) {
     if (!head && !tail.length) {
       this.context = context;
     } else {

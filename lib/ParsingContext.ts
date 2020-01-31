@@ -25,7 +25,7 @@ export class ParsingContext {
 
   public readonly contextParser: ContextParser;
   public readonly allowOutOfOrderContext: boolean;
-  public readonly baseIRI: string;
+  public readonly baseIRI?: string;
   public readonly produceGeneralizedRdf: boolean;
   public readonly allowSubjectList: boolean;
   public readonly processingMode: string;
@@ -41,12 +41,13 @@ export class ParsingContext {
   public readonly processingStack: boolean[];
   // Stack of indicating if triples have been emitted (or will be emitted) at each depth.
   public readonly emittedStack: boolean[];
-  // Stack of identified ids, tail can be null if unknown
-  public readonly idStack: RDF.Term[];
+  // Stack of identified ids (each entry can have multiple ids), tail can be null if unknown
+  public readonly idStack: RDF.Term[][];
   // Stack of graph flags
   public readonly graphStack: boolean[];
   // Stack of RDF list pointers (for @list)
-  public readonly listPointerStack: { term: RDF.Term, initialPredicate: RDF.Term, listRootDepth: number }[];
+  public readonly listPointerStack
+    : ({ term: RDF.Term, listRootDepth: number } | { initialPredicate: RDF.Term, listRootDepth: number })[];
   // Stack of active contexts
   public readonly contextTree: ContextTree;
   // Stack of flags indicating if the node is a literal
@@ -64,6 +65,9 @@ export class ParsingContext {
   // L0: stack depth; L1: values
   public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
 
+  // Depths that should be still flushed
+  public pendingContainerFlushBuffers: { depth: number, keys: any[] }[];
+
   // If there are top-level properties
   public topLevelProperties: boolean;
   // The processing mode that was defined in the document's context
@@ -74,14 +78,14 @@ export class ParsingContext {
   constructor(options: IParsingContextOptions) {
     // Initialize settings
     this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
-    this.allowOutOfOrderContext = options.allowOutOfOrderContext;
+    this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
     this.baseIRI = options.baseIRI;
-    this.produceGeneralizedRdf = options.produceGeneralizedRdf;
-    this.allowSubjectList = options.allowSubjectList;
+    this.produceGeneralizedRdf = !!options.produceGeneralizedRdf;
+    this.allowSubjectList = !!options.allowSubjectList;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
-    this.errorOnInvalidProperties = options.errorOnInvalidIris;
-    this.validateValueIndexes = options.validateValueIndexes;
-    this.strictRanges = options.strictRanges;
+    this.errorOnInvalidProperties = !!options.errorOnInvalidIris;
+    this.validateValueIndexes = !!options.validateValueIndexes;
+    this.strictRanges = !!options.strictRanges;
     this.defaultGraph = options.defaultGraph;
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;
@@ -102,6 +106,8 @@ export class ParsingContext {
     this.jsonLiteralStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
+
+    this.pendingContainerFlushBuffers = [];
 
     this.parser = options.parser;
     if (options.context) {
@@ -167,10 +173,28 @@ export class ParsingContext {
    * @param {any[]} keys The stack of keys.
    * @param value The value to parse.
    * @param {number} depth The depth to parse at.
+   * @param {boolean} lastDepthCheck If the lastDepth check should be done for buffer draining.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number) {
-    await this.parser.newOnValueJob(keys, value, depth);
+  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean) {
+    await this.parser.newOnValueJob(keys, value, depth, lastDepthCheck);
+  }
+
+  /**
+   * Flush the pending container flush buffers
+   * @return {boolean} If any pending buffers were flushed.
+   */
+  public async handlePendingContainerFlushBuffers(): Promise<boolean> {
+    if (this.pendingContainerFlushBuffers.length > 0) {
+      for (const pendingFlushBuffer of this.pendingContainerFlushBuffers) {
+        await this.parser.flushBuffer(pendingFlushBuffer.depth, pendingFlushBuffer.keys);
+        this.parser.flushStacks(pendingFlushBuffer.depth);
+      }
+      this.pendingContainerFlushBuffers.splice(0, this.pendingContainerFlushBuffers.length);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -236,6 +260,41 @@ export class ParsingContext {
    */
   public getExpandOptions(): IExpandOptions {
     return ParsingContext.EXPAND_OPTIONS[this.activeProcessingMode];
+  }
+
+  /**
+   * Shift the stack at the given offset to the given depth.
+   *
+   * This will override anything in the stack at `depth`,
+   * and this will remove anything at `depth + depthOffset`
+   *
+   * @param depth The target depth.
+   * @param depthOffset The origin depth, relative to `depth`.
+   */
+  public shiftStack(depth: number, depthOffset: number) {
+    // Copy the id stack value up one level so that the next job can access the id.
+    const deeperIdStack = this.idStack[depth + depthOffset];
+    if (deeperIdStack) {
+      this.idStack[depth] = deeperIdStack;
+      this.emittedStack[depth] = true;
+      delete this.idStack[depth + depthOffset];
+    }
+
+    // Shorten key stack
+    if (this.pendingContainerFlushBuffers.length) {
+      for (const buffer of this.pendingContainerFlushBuffers) {
+        buffer.depth--;
+        buffer.keys.splice(depth, depthOffset);
+      }
+    }
+
+    // Splice stacks
+    if (this.unidentifiedValuesBuffer[depth + depthOffset]) {
+      this.unidentifiedValuesBuffer[depth] = this.unidentifiedValuesBuffer[depth + depthOffset];
+      delete this.unidentifiedValuesBuffer[depth + depthOffset];
+    }
+
+    // TODO: also do the same for other stacks
   }
 
 }
