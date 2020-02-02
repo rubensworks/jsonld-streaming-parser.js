@@ -59,11 +59,12 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           }
         } else {
           // Emit if no @graph was applicable
+          const graph = await util.getGraphContainerValue(keys, depthProperties);
           if (reverse) {
             util.validateReverseSubject(object);
-            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, util.getDefaultGraph()));
+            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
           } else {
-            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, util.getDefaultGraph()));
+            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
           }
         }
       }

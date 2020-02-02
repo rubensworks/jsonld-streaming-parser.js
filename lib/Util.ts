@@ -333,6 +333,8 @@ export class Util {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
         return [];
+      } else if (this.parsingContext.graphContainerTermStack[depth + 1]) {
+        return [ this.parsingContext.graphContainerTermStack[depth + 1] ];
       } else if ("@id" in value) {
         if (value["@type"] === '@vocab') {
           return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
@@ -680,8 +682,33 @@ export class Util {
    * Get the default graph.
    * @return {Term} An RDF term.
    */
-  public getDefaultGraph(): RDF.Term {
+  public getDefaultGraph(): RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph {
     return this.parsingContext.defaultGraph || this.dataFactory.defaultGraph();
+  }
+
+  /**
+   * Get the current graph, while taking into account a graph that can be defined via @container: @graph.
+   * If not within a graph container, the default graph will be returned.
+   * @param keys The current keys.
+   * @param depth The current depth.
+   */
+  public async getGraphContainerValue(keys: any[], depth: number)
+    : Promise<RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph> {
+    // Default to default graph
+    let graph = this.getDefaultGraph();
+
+    // Check if we are in an @container: @graph.
+    const container = Util.getContextValueContainer(await this.parsingContext.getContext(keys), keys[depth - 1]);
+    if (container === '@graph') {
+      // Get the graph from the stack.
+      graph = this.parsingContext.graphContainerTermStack[depth];
+      // Set the graph in the stack if none has been set yet.
+      if (!graph) {
+        graph = this.parsingContext.graphContainerTermStack[depth] = this.dataFactory.blankNode();
+      }
+    }
+
+    return graph;
   }
 
 }

@@ -207,6 +207,7 @@ export class JsonLdParser extends Transform {
     this.parsingContext.emittedStack.splice(depth, 1);
     this.parsingContext.idStack.splice(depth, 1);
     this.parsingContext.graphStack.splice(depth + 1, 1);
+    this.parsingContext.graphContainerTermStack.splice(depth + 1, 1);
     this.parsingContext.jsonLiteralStack.splice(depth, 1);
     this.parsingContext.validationStack.splice(depth - 1, 2);
     this.parsingContext.literalStack.splice(depth, 1);
@@ -234,7 +235,8 @@ export class JsonLdParser extends Transform {
       for (const subject of subjects) {
         const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
         const graphs: RDF.Term[] = (this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0)
-          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1] : [ this.util.getDefaultGraph() ];
+          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1]
+          : [ await this.util.getGraphContainerValue(keys, depth) ];
         if (graphs) {
           for (const graph of graphs) {
             // Flush values to stream if the graph @id is known
@@ -478,7 +480,7 @@ export interface IJsonLdParserOptions {
    * The graph to use as default graph when no explicit @graph is set.
    * Defaults to dataFactory.defaultGraph().
    */
-  defaultGraph?: RDF.Term;
+  defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
   /**
    * The mode by which the values with a certain base direction should be transformed into RDF.
    * * 'i18n-datatype': objects have a https://www.w3.org/ns/i18n# datatype.

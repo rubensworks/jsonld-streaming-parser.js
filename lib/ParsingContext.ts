@@ -33,7 +33,7 @@ export class ParsingContext {
   public readonly validateValueIndexes: boolean;
   public readonly strictRanges: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
-  public readonly defaultGraph?: RDF.Term;
+  public readonly defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
   public readonly normalizeLanguageTags?: boolean;
 
@@ -43,8 +43,10 @@ export class ParsingContext {
   public readonly emittedStack: boolean[];
   // Stack of identified ids (each entry can have multiple ids), tail can be null if unknown
   public readonly idStack: RDF.Term[][];
-  // Stack of graph flags
+  // Stack of graph flags (if they point to an @graph in a parent node)
   public readonly graphStack: boolean[];
+  // Stack of graph overrides when in an @container: @graph
+  public readonly graphContainerTermStack: (RDF.NamedNode | RDF.BlankNode)[];
   // Stack of RDF list pointers (for @list)
   public readonly listPointerStack
     : ({ term: RDF.Term, listRootDepth: number } | { initialPredicate: RDF.Term, listRootDepth: number })[];
@@ -98,6 +100,7 @@ export class ParsingContext {
     this.emittedStack = [];
     this.idStack = [];
     this.graphStack = [];
+    this.graphContainerTermStack = [];
     this.listPointerStack = [];
     this.contextTree = new ContextTree();
     this.literalStack = [];
