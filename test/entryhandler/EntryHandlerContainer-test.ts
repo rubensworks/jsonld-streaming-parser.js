@@ -50,6 +50,13 @@ describe('EntryHandlerContainer', () => {
         .toBe(true);
     });
 
+    it('should return true when targeting a depth in an @type container', async () => {
+      parsingContext.contextTree.setContext(["a", "container"],
+        Promise.resolve({ container: { "@container": "@type" } }));
+      expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+        .toBe(true);
+    });
+
     it('should return true when targeting a depth in an unknown container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
         Promise.resolve({ container: { "@container": "@bla" } }));

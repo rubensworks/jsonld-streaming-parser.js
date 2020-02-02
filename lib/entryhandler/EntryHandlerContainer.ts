@@ -1,6 +1,7 @@
 import {ContainerHandlerIdentifier} from "../containerhandler/ContainerHandlerIdentifier";
 import {ContainerHandlerIndex} from "../containerhandler/ContainerHandlerIndex";
 import {ContainerHandlerLanguage} from "../containerhandler/ContainerHandlerLanguage";
+import {ContainerHandlerType} from "../containerhandler/ContainerHandlerType";
 import {IContainerHandler} from "../containerhandler/IContainerHandler";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
@@ -16,6 +17,7 @@ export class EntryHandlerContainer implements IEntryHandler<IContainerHandler> {
     '@id': new ContainerHandlerIdentifier(),
     '@index': new ContainerHandlerIndex(),
     '@language': new ContainerHandlerLanguage(),
+    '@type': new ContainerHandlerType(),
   };
 
   /**

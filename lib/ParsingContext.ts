@@ -283,8 +283,10 @@ export class ParsingContext {
     // Shorten key stack
     if (this.pendingContainerFlushBuffers.length) {
       for (const buffer of this.pendingContainerFlushBuffers) {
-        buffer.depth--;
-        buffer.keys.splice(depth, depthOffset);
+        if (buffer.depth >= depth + depthOffset) {
+          buffer.depth -= depthOffset;
+          buffer.keys.splice(depth, depthOffset);
+        }
       }
     }
 

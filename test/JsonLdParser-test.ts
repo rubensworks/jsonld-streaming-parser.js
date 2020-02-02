@@ -1155,6 +1155,198 @@ describe('JsonLdParser', () => {
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
         });
 
+        it('with @id and type map', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ex:Type1": {
+      "@id": "value1",
+      "value": "1539"
+    },
+    "ex:Type2": {
+      "@id": "value2",
+      "value": "1204"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value2')),
+            triple(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('1539')),
+            triple(namedNode('http://example.com/entries/value1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type1')),
+            triple(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
+              literal('1204')),
+            triple(namedNode('http://example.com/entries/value2'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type2')),
+          ]);
+        });
+
+        it('with @id and type map with an array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ex:Type1": [
+      {
+        "@id": "value1",
+        "value": "1539"
+      },
+      {
+        "@id": "value1.1",
+        "value": "1539.1"
+      }
+    ],
+    "ex:Type2": {
+      "@id": "value2",
+      "value": "1204"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value1.1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value2')),
+            triple(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('1539')),
+            triple(namedNode('http://example.com/entries/value1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type1')),
+            triple(namedNode('http://example.com/entries/value1.1'), namedNode('http://ex.org/value'),
+              literal('1539.1')),
+            triple(namedNode('http://example.com/entries/value1.1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type1')),
+            triple(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
+              literal('1204')),
+            triple(namedNode('http://example.com/entries/value2'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type2')),
+          ]);
+        });
+
+        it('with @id and type map with an array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ex:Type1": []
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('with @id and type map with a nested array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ex:Type1": [
+      [{
+        "@id": "value1",
+        "value": "1539"
+      }],
+      [{
+        "@id": "value1.1",
+        "value": "1539.1"
+      }]
+    ],
+    "ex:Type2": {
+      "@id": "value2",
+      "value": "1204"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value1.1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://example.com/entries/value2')),
+            triple(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('1539')),
+            triple(namedNode('http://example.com/entries/value1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type1')),
+            triple(namedNode('http://example.com/entries/value1.1'), namedNode('http://ex.org/value'),
+              literal('1539.1')),
+            triple(namedNode('http://example.com/entries/value1.1'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type1')),
+            triple(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
+              literal('1204')),
+            triple(namedNode('http://example.com/entries/value2'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://ex.org/Type2')),
+          ]);
+        });
+
+        it('with @id and invalid type map', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Type1": {
+      "@id": "ex:entries/value1",
+      "value": "1539"
+    },
+    "Type2": {
+      "@id": "ex:entries/value2",
+      "value": "1204"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/entries/value1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              namedNode('http://ex.org/entries/value2')),
+            triple(namedNode('http://ex.org/entries/value1'), namedNode('http://ex.org/value'),
+              literal('1539')),
+            triple(namedNode('http://ex.org/entries/value2'), namedNode('http://ex.org/value'),
+              literal('1204')),
+          ]);
+        });
+
         it('with @index in a string value should be ignored', async () => {
           const stream = streamifyString(`
 {
