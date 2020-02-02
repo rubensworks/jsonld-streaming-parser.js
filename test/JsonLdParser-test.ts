@@ -1370,6 +1370,72 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and graph map with an array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@graph" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [
+    {
+      "@id": "value1",
+      "value": "123"
+    },
+    {
+      "@id": "value2",
+      "value": "234"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('g1')),
+            quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('123'), blankNode('g1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('g2')),
+            quad(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
+              literal('234'), blankNode('g2')),
+          ]);
+        });
+
+        it('with @id and graph map with an nested array value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@graph" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [[
+    {
+      "@id": "value1",
+      "value": "123"
+    },
+    {
+      "@id": "value2",
+      "value": "234"
+    }
+  ]]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('g1')),
+            quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('123'), blankNode('g1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('g2')),
+            quad(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
+              literal('234'), blankNode('g2')),
+          ]);
+        });
+
         it('with @id and graph map with multiple values', async () => {
           const stream = streamifyString(`
 {

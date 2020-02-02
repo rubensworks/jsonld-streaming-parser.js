@@ -687,6 +687,29 @@ export class Util {
   }
 
   /**
+   * Get the container type of the given key in the context.
+   *
+   * This will ignore any arrays in the key chain.
+   *
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The container type.
+   */
+  public async getContextValueContainerArrayAware(keys: any[], depth: number)
+    : Promise<string> {
+    for (let i = depth; i > 0; i--) {
+      if (typeof keys[i - 1] !== 'number') { // Skip array keys
+        const container = Util.getContextValue(await this.parsingContext.getContext(keys),
+          '@container', keys[i - 1], null);
+        if (container) {
+          return container;
+        }
+      }
+    }
+    return '@set';
+  }
+
+  /**
    * Get the current graph, while taking into account a graph that can be defined via @container: @graph.
    * If not within a graph container, the default graph will be returned.
    * @param keys The current keys.
@@ -698,7 +721,7 @@ export class Util {
     let graph = this.getDefaultGraph();
 
     // Check if we are in an @container: @graph.
-    const container = Util.getContextValueContainer(await this.parsingContext.getContext(keys), keys[depth - 1]);
+    const container = await this.getContextValueContainerArrayAware(keys, depth);
     if (container === '@graph') {
       // Get the graph from the stack.
       graph = this.parsingContext.graphContainerTermStack[depth];

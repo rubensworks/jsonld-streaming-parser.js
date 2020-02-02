@@ -283,6 +283,13 @@ export class ParsingContext {
       delete this.idStack[depth + depthOffset];
     }
 
+    // Copy the graph container term stack value up one level so that the next job can access the id.
+    const deeperGraphContainerTermStack = this.graphContainerTermStack[depth + depthOffset];
+    if (deeperGraphContainerTermStack) {
+      this.graphContainerTermStack[depth] = deeperGraphContainerTermStack;
+      delete this.graphContainerTermStack[depth + depthOffset];
+    }
+
     // Shorten key stack
     if (this.pendingContainerFlushBuffers.length) {
       for (const buffer of this.pendingContainerFlushBuffers) {
