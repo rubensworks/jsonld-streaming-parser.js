@@ -1589,6 +1589,31 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with @id and graph map and @graph key', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@graph" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "@graph": {
+      "@id": "value1",
+      "value": "1539"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+              blankNode('g1')),
+            quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+              literal('1539'), blankNode('g2')),
+          ]);
+        });
+
         it('with @index in a string value should be ignored', async () => {
           const stream = streamifyString(`
 {

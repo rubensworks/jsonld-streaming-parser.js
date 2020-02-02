@@ -333,8 +333,9 @@ export class Util {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
         return [];
-      } else if (this.parsingContext.graphContainerTermStack[depth + 1]) {
-        return [ this.parsingContext.graphContainerTermStack[depth + 1] ];
+      } else if (Util.getContextValueContainer(await this.parsingContext.getContext(keys), key) === '@graph') {
+        // We are processing a graph container
+        return [ this.parsingContext.graphContainerTermStack[depth + 1] || this.dataFactory.blankNode() ];
       } else if ("@id" in value) {
         if (value["@type"] === '@vocab') {
           return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
