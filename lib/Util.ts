@@ -735,4 +735,35 @@ export class Util {
     return graph;
   }
 
+  /**
+   * Get the properties depth for retrieving properties.
+   *
+   * Typically, the properties depth will be identical to the given depth.
+   *
+   * The following exceptions apply:
+   * * When the parent is @reverse, the depth is decremented by one.
+   * * When @nest parents are found, the depth is decremented by the number of @nest parents.
+   * If in combination with the exceptions above an intermediary array is discovered,
+   * the depth is also decremented by this number of arrays.
+   *
+   * @param keys The current key chain.
+   * @param depth The current depth.
+   */
+  public async getPropertiesDepth(keys: any[], depth: number): Promise<number> {
+    let lastValidDepth = depth;
+    for (let i = depth - 1; i > 0; i--) {
+      if (typeof keys[i] !== 'number') { // Skip array keys
+        const parentKey = await this.unaliasKeyword(keys[i], keys, i);
+        if (parentKey === '@reverse') {
+          return i;
+        } else if (parentKey === '@nest') {
+          lastValidDepth = i;
+        } else {
+          return lastValidDepth;
+        }
+      }
+    }
+    return lastValidDepth;
+  }
+
 }

@@ -13,14 +13,18 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
+    // Determine the canonical place for this id.
+    // For example, @nest parents should be ignored.
+    const depthProperties: number = await util.getPropertiesDepth(keys, depth);
+
     // Error if an @id for this node already existed.
-    if (parsingContext.idStack[depth] !== undefined) {
+    if (parsingContext.idStack[depthProperties] !== undefined) {
       parsingContext.emitError(new Error(`Found duplicate @ids '${parsingContext
-        .idStack[depth][0].value}' and '${value}'`));
+        .idStack[depthProperties][0].value}' and '${value}'`));
     }
 
     // Save our @id on the stack
-    parsingContext.idStack[depth] = util.nullableTermToArray(await util.resourceToTerm(
+    parsingContext.idStack[depthProperties] = util.nullableTermToArray(await util.resourceToTerm(
       await parsingContext.getContext(keys), value));
   }
 

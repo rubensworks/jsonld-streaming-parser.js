@@ -6430,6 +6430,228 @@ describe('JsonLdParser', () => {
 
         // MARKER: Add tests for new features here, wrapped in new describe blocks.
       });
+
+      describe('@nest properties', () => {
+
+        it('with @id and no sub-properties', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": "This value will be ignored"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+        });
+
+        it('(unaliased) with @id and one valid sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": {
+    "p1": "V1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+        it('with @id and one valid sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "p1": "V1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+        it('with o-o-o @id and one valid sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "nested": {
+    "p1": "V1"
+  },
+  "@id": "http://ex.org/myid"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+        it('with @id and one valid sub-property within an array with one entry', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": [{
+    "p1": "V1"
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+        it('with @id and one valid sub-property within an array with two entries', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1",
+    "p2": "ex:p2"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": [{
+    "p1": "V1"
+  },{
+    "p2": "V2"
+  }]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p2'),
+              literal('V2')),
+          ]);
+        });
+
+        it('with @id and two valid sub-properties', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1",
+    "p2": "ex:p2"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "p1": "V1",
+    "p2": "V2"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p2'),
+              literal('V2')),
+          ]);
+        });
+
+        it('with @id and one valid sub-property with a sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1",
+    "p2": "ex:p2"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "p1": {
+      "@id": "http://ex.org/mysubid",
+      "p2": "V1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              namedNode('http://ex.org/mysubid')),
+            triple(namedNode('http://ex.org/mysubid'), namedNode('http://ex.org/p2'),
+              literal('V1')),
+          ]);
+        });
+
+        it('with @id and one valid sub-property with a conflicting inner @id should error', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "@id": "http://ex.org/conflictingid",
+    "p1": "V1"
+  }
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toThrow(new Error('Found duplicate @ids \'http://ex.org/myid\' and \'http://ex.org/conflictingid\''));
+        });
+
+        it('with inner @id and one valid sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "nested": {
+    "@id": "http://ex.org/myid",
+    "p1": "V1"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+        it('doubly nested, with @id and one valid sub-property', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "nested": "@nest",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "nested": {
+      "p1": "V1"
+    }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
+              literal('V1')),
+          ]);
+        });
+
+      });
     });
 
     describe('should not parse', () => {

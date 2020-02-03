@@ -22,7 +22,7 @@ export class ContainerHandlerType implements IContainerHandler {
       const type = util.createVocabOrBaseTerm(context, keyOriginal);
       if (type) {
         // Push the type to the stack using the rdf:type predicate
-        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1, null,
+        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
           util.rdfType, type, false);
       }
 

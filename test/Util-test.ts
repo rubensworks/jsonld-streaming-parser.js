@@ -819,6 +819,50 @@ describe('Util', () => {
       });
     });
 
+    describe('#getPropertiesDepth', () => {
+      it('should return depth for a string parent', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', 'b'], 2)).toBe(2);
+      });
+
+      it('should return depth - 1 for a @reverse parent', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@reverse', 'b'], 3)).toBe(2);
+      });
+
+      it('should return depth - 1 for an aliased @reverse parent', async () => {
+        util.parsingContext.contextTree.setContext([null, 'a'], { reverse: '@reverse' });
+        expect(await util.getPropertiesDepth([null, 'a', 'reverse', 'b'], 3)).toBe(2);
+      });
+
+      it('should return depth - 1 for a @nest parent', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@nest', 'b'], 3)).toBe(2);
+      });
+
+      it('should return depth - 1 for an aliased @nest parent', async () => {
+        util.parsingContext.contextTree.setContext([null, 'a'], { nest: '@nest' });
+        expect(await util.getPropertiesDepth([null, 'a', 'nest', 'b'], 3)).toBe(2);
+      });
+
+      it('should return depth - 1 for a @nest parent within an array', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@nest', 0, 'b'], 4)).toBe(2);
+      });
+
+      it('should return depth - 1 for a @nest parent within arrays', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@nest', 0, 1, 2, 'b'], 6)).toBe(2);
+      });
+
+      it('should return depth - 1 for a @nest parent within an array above @nest', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', 0, '@nest', 'b'], 4)).toBe(3);
+      });
+
+      it('should return depth - 1 for multiple @nest parents', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@nest', '@nest', '@nest', 'b'], 5)).toBe(2);
+      });
+
+      it('should return depth - 1 for multiple @nest parents and arrays', async () => {
+        expect(await util.getPropertiesDepth([null, 'a', '@nest', 0, '@nest', 0, 0, '@nest', 0, 'b'], 9)).toBe(2);
+      });
+    });
+
   });
 
 });

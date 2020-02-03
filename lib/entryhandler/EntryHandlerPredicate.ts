@@ -16,15 +16,14 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
    * @param {Util} util A utility instance.
    * @param {any[]} keys A stack of keys.
    * @param {number} depth The current depth.
-   * @param parentKey The parent key.
    * @param {Term} predicate The predicate.
    * @param {Term} object The object.
    * @param {boolean} reverse If the property is reversed.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
   public static async handlePredicateObject(parsingContext: ParsingContext, util: Util, keys: any[], depth: number,
-                                            parentKey: any, predicate: RDF.Term, object: RDF.Term, reverse: boolean) {
-    const depthProperties: number = depth - (parentKey === '@reverse' ? 1 : 0);
+                                            predicate: RDF.Term, object: RDF.Term, reverse: boolean) {
+    const depthProperties: number = await util.getPropertiesDepth(keys, depth);
     const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
     const depthPropertiesGraph: number = depth - depthOffsetGraph;
 
@@ -105,7 +104,6 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number,
                       testResult: boolean): Promise<any> {
     const keyOriginal = keys[depth];
-    const parentKey = await util.unaliasKeywordParent(keys, depth);
     const context = await parsingContext.getContext(keys);
 
     const predicate = await util.predicateToTerm(context, key);
@@ -114,7 +112,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       const objects = await util.valueToTerm(objectContext, key, value, depth, keys);
       if (objects.length) {
         for (let object of objects) {
-          const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
+          const reverse = Util.isPropertyReverse(context, keyOriginal, await util.unaliasKeywordParent(keys, depth));
 
           if (value) {
             // Special case if our term was defined as an @list, but does not occur in an array,
@@ -138,7 +136,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
             }
           }
 
-          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, parentKey,
+          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
             predicate, object, reverse);
         }
       } else {
