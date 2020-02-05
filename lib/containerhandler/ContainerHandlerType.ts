@@ -17,9 +17,10 @@ export class ContainerHandlerType implements IContainerHandler {
       await parsingContext.newOnValueJob(keys, value, depth - 1, true);
 
       // Identify the type to emit.
-      const keyOriginal = keys[depth];
-      const context = await parsingContext.getContext(keys);
-      const type = util.createVocabOrBaseTerm(context, keyOriginal);
+      const keyOriginal = await util.getContainerKey(keys, depth);
+      const type = keyOriginal !== null
+        ? util.createVocabOrBaseTerm(await parsingContext.getContext(keys), keyOriginal)
+        : null;
       if (type) {
         // Push the type to the stack using the rdf:type predicate
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,

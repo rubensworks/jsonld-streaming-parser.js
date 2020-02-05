@@ -12,10 +12,12 @@ export class ContainerHandlerLanguage implements IContainerHandler {
 
   public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
     : Promise<void> {
+    const language = await util.getContainerKey(keys, depth);
+
     if (Array.isArray(value)) {
-      value = value.map((subValue) => ({ '@value': subValue, '@language': keys[depth] }));
+      value = value.map((subValue) => ({ '@value': subValue, '@language': language }));
     } else {
-      value = { '@value': value, '@language': keys[depth] };
+      value = { '@value': value, '@language': language };
     }
     await parsingContext.newOnValueJob(keys, value, depth - 1, true);
 

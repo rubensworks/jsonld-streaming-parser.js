@@ -31,8 +31,8 @@ export class JsonLdParser extends Transform {
     new EntryHandlerKeywordGraph(),
     new EntryHandlerKeywordType(),
     new EntryHandlerKeywordValue(),
-    new EntryHandlerKeywordUnknownFallback(),
     new EntryHandlerContainer(),
+    new EntryHandlerKeywordUnknownFallback(),
     new EntryHandlerPredicate(),
     new EntryHandlerInvalidFallback(),
   ];

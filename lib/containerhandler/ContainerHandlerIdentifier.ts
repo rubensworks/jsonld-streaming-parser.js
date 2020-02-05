@@ -14,7 +14,10 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
   public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
     : Promise<void> {
     // Create the identifier
-    const id = await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth]);
+    const keyUnaliased = await util.getContainerKey(keys, depth);
+    const id = keyUnaliased !== null
+      ? await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth])
+      : util.dataFactory.blankNode();
 
     // Do nothing if the id is invalid
     if (!id) {

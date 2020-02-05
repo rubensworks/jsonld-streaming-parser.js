@@ -766,4 +766,16 @@ export class Util {
     return lastValidDepth;
   }
 
+  /**
+   * Get the key for the current container entry.
+   * @param keys The key chain.
+   * @param depth The current depth to get the key from.
+   * @return Promise resolving to the key.
+   *         Null will be returned for @none entries, with aliasing taken into account.
+   */
+  public async getContainerKey(keys: string[], depth: number): Promise<any> {
+    const key = await this.unaliasKeyword(keys[depth], keys, depth);
+    return key === '@none' ? null : key;
+  }
+
 }
