@@ -40,6 +40,11 @@ describe('Util', () => {
       expect(Util.getContextValueType({ abc: { '@type': '@id' } }, 'abc'))
         .toEqual('@id');
     });
+
+    it('should return null for @none', async () => {
+      expect(Util.getContextValueType({ abc: { '@type': '@none' } }, 'abc'))
+        .toEqual(null);
+    });
   });
 
   describe('#getContextValueLanguage', () => {
@@ -295,6 +300,12 @@ describe('Util', () => {
           });
 
         it('with an @value and @type should return a typed literal', async () => {
+          return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0, []))
+            .toEqualRdfTermArray([literal('abc', namedNode('http://type.com'))]);
+        });
+
+        it('with an @value and @type and context-@type: @none should return a typed literal', async () => {
+          context = { key: { '@type': '@none' } };
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0, []))
             .toEqualRdfTermArray([literal('abc', namedNode('http://type.com'))]);
         });

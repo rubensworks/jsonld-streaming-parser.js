@@ -74,7 +74,11 @@ export class Util {
    * @return {string} The node type.
    */
   public static getContextValueType(context: IJsonLdContextNormalized, key: string): string | null {
-    return Util.getContextValue(context, '@type', key, null);
+    const valueType = Util.getContextValue(context, '@type', key, null);
+    if (valueType === '@none') {
+      return null;
+    }
+    return valueType;
   }
 
   /**

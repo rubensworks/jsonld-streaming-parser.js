@@ -5074,6 +5074,34 @@ describe('JsonLdParser', () => {
               literal('1', namedNode('http://www.w3.org/2001/XMLSchema#integer'))),
           ]);
         });
+
+        it('for @type: @none on a boolean', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/predicate", "@type": "@none" },
+  },
+  "p": true
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b'), namedNode('http://ex.org/predicate'),
+              literal('true', namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
+          ]);
+        });
+
+        it('for @type: @none on an @value with date', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/predicate", "@type": "@none" },
+  },
+  "p": { "@value": "2018-02-17", "@type": "http://www.w3.org/2001/XMLSchema#date" }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b'), namedNode('http://ex.org/predicate'),
+              literal('2018-02-17', namedNode('http://www.w3.org/2001/XMLSchema#date'))),
+          ]);
+        });
       });
 
       describe('with blank node predicates', () => {
