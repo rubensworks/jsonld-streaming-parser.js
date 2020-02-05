@@ -6073,6 +6073,44 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and identifier map with multiple @none\'s', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/posts/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@id" },
+    "body": "ex:body",
+    "words": "ex:words"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "@none": {
+      "body": "body 1",
+      "words": "1539"
+    },
+    "@none": {
+      "body": "body 2",
+      "words": "1204"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b2')),
+              triple(blankNode('b1'), namedNode('http://ex.org/body'),
+                literal('body 1')),
+              triple(blankNode('b1'), namedNode('http://ex.org/words'),
+                literal('1539')),
+              triple(blankNode('b2'), namedNode('http://ex.org/body'),
+                literal('body 2')),
+              triple(blankNode('b2'), namedNode('http://ex.org/words'),
+                literal('1204')),
+            ]);
+          });
+
         });
 
         describe('for types', () => {
@@ -6111,6 +6149,43 @@ describe('JsonLdParser', () => {
               triple(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value'),
                 literal('1204')),
               triple(namedNode('http://example.com/entries/value2'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Type2')),
+            ]);
+          });
+
+          it('with @id and type map without inner @id\'s', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ex:Type1": {
+      "value": "1539"
+    },
+    "ex:Type2": {
+      "value": "1204"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b2')),
+              triple(blankNode('b1'), namedNode('http://ex.org/value'),
+                literal('1539')),
+              triple(blankNode('b1'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Type1')),
+              triple(blankNode('b2'), namedNode('http://ex.org/value'),
+                literal('1204')),
+              triple(blankNode('b2'),
                 namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 namedNode('http://ex.org/Type2')),
             ]);
@@ -6313,6 +6388,37 @@ describe('JsonLdParser', () => {
                 namedNode('http://ex.org/Type2')),
               triple(namedNode('http://example.com/entries/value3'), namedNode('http://ex.org/value'),
                 literal('111')),
+            ]);
+          });
+
+          it('with @id and type map with multiple @none\'s', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "@none": {
+      "value": "1539"
+    },
+    "@none": {
+      "value": "1204"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b2')),
+              triple(blankNode('b1'), namedNode('http://ex.org/value'),
+                literal('1539')),
+              triple(blankNode('b2'), namedNode('http://ex.org/value'),
+                literal('1204')),
             ]);
           });
 

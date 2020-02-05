@@ -13,8 +13,17 @@ export class ContainerHandlerType implements IContainerHandler {
   public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
     : Promise<void> {
     if (!Array.isArray(value)) {
+      // Check needed for cases where entries don't have an explicit @id
+      const entryHasIdentifier = !!parsingContext.idStack[depth + 1];
+
       // Handle the value of this node, which will also cause the type predicate from above to be emitted.
+      if (!entryHasIdentifier) {
+        delete parsingContext.idStack[depth]; // Force new (blank node) identifier
+      }
       await parsingContext.newOnValueJob(keys, value, depth - 1, true);
+      if (!entryHasIdentifier) {
+        parsingContext.idStack[depth + 1] = parsingContext.idStack[depth]; // Copy the id to the child node, for @type
+      }
 
       // Identify the type to emit.
       const keyOriginal = await util.getContainerKey(keys, depth);
