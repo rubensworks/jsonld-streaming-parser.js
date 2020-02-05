@@ -14,8 +14,14 @@ export class ContainerHandlerType implements IContainerHandler {
     : Promise<void> {
     if (!Array.isArray(value)) {
       if (typeof value === 'string') {
+        // Determine the @type of the container
+        const context = await parsingContext.getContext(keys);
+        const containerTypeType = Util.getContextValueType(context, keys[depth - 1]);
+
         // String values refer to node references
-        const id = await util.createVocabOrBaseTerm(await parsingContext.getContext(keys), value);
+        const id = containerTypeType === '@vocab'
+          ? await util.createVocabOrBaseTerm(context, value)
+          : await util.resourceToTerm(context, value);
         if (id) {
           // Handle the value of this node as @id, which will also cause the predicate from above to be emitted.
           const subValue = { '@id': id.termType === 'NamedNode' ? id.value : value };

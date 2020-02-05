@@ -6200,13 +6200,71 @@ describe('JsonLdParser', () => {
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
           });
 
-          it('with @id and type map with string values expand to @id using @vocab', async () => {
+          it('with @id and type map with string values expand to @id without @type', async () => {
             const stream = streamifyString(`
 {
   "@context": {
     "@base": "http://example.com/entries/",
     "@vocab": "http://example.com/ns/",
     "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Type1": "value1",
+    "Type2": "value2"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value2')),
+              triple(namedNode('http://example.com/entries/value1'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
+              triple(namedNode('http://example.com/entries/value2'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type2')),
+            ]);
+          });
+
+          it('with @id and type map with string values expand to @id with @type: @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "@vocab": "http://example.com/ns/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type", "@type": "@id" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Type1": "value1",
+    "Type2": "value2"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value2')),
+              triple(namedNode('http://example.com/entries/value1'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
+              triple(namedNode('http://example.com/entries/value2'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type2')),
+            ]);
+          });
+
+          it('with @id and type map with string values expand to @id with @type: @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "@vocab": "http://example.com/ns/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type", "@type": "@vocab" },
     "value": "ex:value"
   },
   "@id": "http://ex.org/myid",
@@ -6229,13 +6287,13 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id using @vocab over blank nodes', async () => {
+          it('with @id and type map with string values expand to @id with @type: @vocab over blank nodes', async () => {
             const stream = streamifyString(`
 {
   "@context": {
     "@base": "http://example.com/entries/",
     "@vocab": "http://example.com/ns/",
-    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type", "@type": "@vocab" },
     "value": "ex:value"
   },
   "@id": "http://ex.org/myid",
@@ -6255,6 +6313,62 @@ describe('JsonLdParser', () => {
               triple(blankNode('value2'),
                 namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 namedNode('http://example.com/ns/Type2')),
+            ]);
+          });
+
+          it('with @id and type map with string values expand to @id with array values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "@vocab": "http://example.com/ns/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Type1": [ "value1", "value2" ]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/entries/value2')),
+              triple(namedNode('http://example.com/entries/value1'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
+              triple(namedNode('http://example.com/entries/value2'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
+            ]);
+          });
+
+          it('with @id and type map with string values expand to @id with @type: @vocab and array values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "@vocab": "http://example.com/ns/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@type", "@type": "@vocab" },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Type1": [ "value1", "value2" ]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/ns/value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://example.com/ns/value2')),
+              triple(namedNode('http://example.com/ns/value1'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
+              triple(namedNode('http://example.com/ns/value2'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.com/ns/Type1')),
             ]);
           });
 
