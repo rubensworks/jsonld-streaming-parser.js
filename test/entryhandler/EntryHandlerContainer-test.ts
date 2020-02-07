@@ -31,42 +31,42 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@id" } }));
+        Promise.resolve({ container: { "@container": { "@id": true } } }));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toBe(true);
     });
 
     it('should return true when targeting a depth in an @index container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@index" } }));
+        Promise.resolve({ container: { "@container": { "@index": true } } }));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toBe(true);
     });
 
     it('should return true when targeting a depth in an @language container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@language" } }));
+        Promise.resolve({ container: { "@container": { "@language": true } } }));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toBe(true);
     });
 
     it('should return true when targeting a depth in an @type container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@type" } }));
+        Promise.resolve({ container: { "@container": { "@type": true } } }));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toBe(true);
     });
 
     it('should return true when targeting a depth in an unknown container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@bla" } }));
+        Promise.resolve({ container: { "@container": { "@bla": true } } }));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toBe(false);
     });
 
     it('should return true when targeting a depth within one array in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@id" } }));
+        Promise.resolve({ container: { "@container": { "@id": true  } }}));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext,
         ["a", "container", "key", 0, "subSubKey"], 4))
         .toBe(true);
@@ -74,7 +74,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth within two arrays in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@id" } }));
+        Promise.resolve({ container: { "@container": { "@id": true  } }}));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext,
         ["a", "container", "key", 0, 1, "subSubKey"], 4))
         .toBe(true);
@@ -82,7 +82,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth within an object in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": "@id" } }));
+        Promise.resolve({ container: { "@container": { "@id": true } }}));
       expect(await EntryHandlerContainer.isContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toBe(false);

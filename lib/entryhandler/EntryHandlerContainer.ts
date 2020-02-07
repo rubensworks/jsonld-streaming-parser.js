@@ -34,8 +34,13 @@ export class EntryHandlerContainer implements IEntryHandler<IContainerHandler> {
   public static async isContainerHandler(parsingContext: ParsingContext, keys: any[], depth: number): Promise<boolean> {
     for (let i = depth - 1; i >= 0; i--) {
       if (typeof keys[i] !== 'number') { // Skip array keys
-        return !!EntryHandlerContainer.CONTAINER_HANDLERS[Util.getContextValueContainer(
-          await parsingContext.getContext(keys), keys[i - 1])];
+        const containers = Util.getContextValueContainer(await parsingContext.getContext(keys), keys[i - 1]);
+        for (const containerHandleName in EntryHandlerContainer.CONTAINER_HANDLERS) {
+          if (containers[containerHandleName]) {
+            return true;
+          }
+        }
+        return false;
       }
     }
     return false;
@@ -51,9 +56,14 @@ export class EntryHandlerContainer implements IEntryHandler<IContainerHandler> {
   }
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
-    : Promise<IContainerHandler> {
-    return EntryHandlerContainer.CONTAINER_HANDLERS[Util.getContextValueContainer(
-      await parsingContext.getContext(keys), keys[depth - 1])];
+    : Promise<IContainerHandler | null> {
+    const containers = Util.getContextValueContainer(await parsingContext.getContext(keys), keys[depth - 1]);
+    for (const containerName in EntryHandlerContainer.CONTAINER_HANDLERS) {
+      if (containers[containerName]) {
+        return EntryHandlerContainer.CONTAINER_HANDLERS[containerName];
+      }
+    }
+    return null;
   }
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number,

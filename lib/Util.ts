@@ -48,7 +48,7 @@ export class Util {
    *                  or the given fallback value.
    */
   public static getContextValue<FB>(context: IJsonLdContextNormalized, contextKey: string,
-                                    key: string, fallback: FB): string | FB {
+                                    key: string, fallback: FB): string | any | FB {
     const entry = context[key];
     if (!entry) {
       return fallback;
@@ -63,8 +63,9 @@ export class Util {
    * @param {string} key A context entry key.
    * @return {string} The container type.
    */
-  public static getContextValueContainer(context: IJsonLdContextNormalized, key: string): string {
-    return Util.getContextValue(context, '@container', key, '@set');
+  public static getContextValueContainer(context: IJsonLdContextNormalized, key: string):
+    { [typeName: string]: boolean } {
+    return Util.getContextValue(context, '@container', key, { '@set': true });
   }
 
   /**
@@ -185,7 +186,7 @@ export class Util {
       if (Array.isArray(value)) {
         // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
         // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
-        if (Util.getContextValueContainer(context, key) === '@list' && value.length === 0) {
+        if ('@list' in Util.getContextValueContainer(context, key) && value.length === 0) {
           return [ this.rdfNil ];
         }
         await this.validateValueIndexes(value);
@@ -337,7 +338,7 @@ export class Util {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
         return [];
-      } else if (Util.getContextValueContainer(await this.parsingContext.getContext(keys), key) === '@graph') {
+      } else if ('@graph' in Util.getContextValueContainer(await this.parsingContext.getContext(keys), key)) {
         // We are processing a graph container
         return [ this.parsingContext.graphContainerTermStack[depth + 1] || this.dataFactory.blankNode() ];
       } else if ("@id" in value) {
@@ -701,7 +702,7 @@ export class Util {
    * @return {string} The container type.
    */
   public async getContextValueContainerArrayAware(keys: any[], depth: number)
-    : Promise<string> {
+    : Promise<{ [typeName: string]: boolean }> {
     for (let i = depth; i > 0; i--) {
       if (typeof keys[i - 1] !== 'number') { // Skip array keys
         const container = Util.getContextValue(await this.parsingContext.getContext(keys),
@@ -711,7 +712,7 @@ export class Util {
         }
       }
     }
-    return '@set';
+    return { '@set': true };
   }
 
   /**
@@ -727,7 +728,7 @@ export class Util {
 
     // Check if we are in an @container: @graph.
     const container = await this.getContextValueContainerArrayAware(keys, depth);
-    if (container === '@graph') {
+    if ('@graph' in container) {
       // Get the graph from the stack.
       graph = this.parsingContext.graphContainerTermStack[depth];
       // Set the graph in the stack if none has been set yet.

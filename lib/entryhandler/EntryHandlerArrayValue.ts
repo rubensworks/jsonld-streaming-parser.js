@@ -45,8 +45,8 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       // Throw an error if we encounter a nested list
       if (listRootKey === '@list' ||
         (listRootKey !== null && listRootDepth !== depth - 2 && typeof keys[depth - 2] === 'number'
-          && Util.getContextValueContainer(await parsingContext
-            .getContext(keys, listRootDepth - depth), listRootKey) === '@list')) {
+          && '@list' in Util.getContextValueContainer(await parsingContext
+            .getContext(keys, listRootDepth - depth), listRootKey))) {
         throw new Error(`Lists of lists are not supported: '${listRootKey}'`);
       }
 
@@ -73,7 +73,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
       // Check if the predicate is marked as an @list in the context
       const parentContext = await parsingContext.getContext(keys.slice(0, -1));
-      if (Util.getContextValueContainer(parentContext, parentKey) === '@list') {
+      if ('@list' in Util.getContextValueContainer(parentContext, parentKey)) {
         // Our value is part of an array
         // Emit the given objects as list elements
         const values = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);

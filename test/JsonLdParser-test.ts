@@ -5663,6 +5663,30 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and language map with array container entry', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@language" ] }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": "忍者",
+    "en": "Ninja",
+    "cs": "Nindža"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                literal('忍者', 'ja')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                literal('Ninja', 'en')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                literal('Nindža', 'cs')),
+            ]);
+          });
+
           it('with @id and language map with an array value', async () => {
             const stream = streamifyString(`
 {

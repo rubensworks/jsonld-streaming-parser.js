@@ -22,12 +22,12 @@ describe('Util', () => {
 
   describe('#getContextValueContainer', () => {
     it('should return @set as default', async () => {
-      expect(Util.getContextValueContainer({}, 'abc')).toEqual('@set');
+      expect(Util.getContextValueContainer({}, 'abc')).toEqual({ '@set': true });
     });
 
     it('should return @list when defined as such', async () => {
-      expect(Util.getContextValueContainer({ abc: { '@container': '@list' } }, 'abc'))
-        .toEqual('@list');
+      expect(Util.getContextValueContainer({ abc: { '@container': { '@list': true } } }, 'abc'))
+        .toEqual({ '@list': true });
     });
   });
 
@@ -791,13 +791,13 @@ describe('Util', () => {
         });
 
         it('should return rdf:nil for an empty list', async () => {
-          context = { key: { '@container': '@list' } };
+          context = { key: { '@container': { '@list': true } } };
           return expect(await util.valueToTerm(context, 'key', [], 0, []))
             .toEqualRdfTermArray([namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil')]);
         });
 
         it('should return null for a list with null elements', async () => {
-          context = { key: { '@container': '@list' } };
+          context = { key: { '@container': { '@list': true } } };
           return expect(await util.valueToTerm(context, 'key', [null, null], 0, [])).toEqual([]);
         });
 

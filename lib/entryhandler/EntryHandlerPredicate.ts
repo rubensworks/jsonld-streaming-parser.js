@@ -117,7 +117,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           if (value) {
             // Special case if our term was defined as an @list, but does not occur in an array,
             // In that case we just emit it as an RDF list with a single element.
-            const listValueContainer = Util.getContextValueContainer(context, key) === '@list';
+            const listValueContainer = '@list' in Util.getContextValueContainer(context, key);
             if (listValueContainer || value['@list']) {
               if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list'])))
                 && object !== util.rdfNil) {
