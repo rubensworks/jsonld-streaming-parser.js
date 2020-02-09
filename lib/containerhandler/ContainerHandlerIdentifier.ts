@@ -11,7 +11,12 @@ import {IContainerHandler} from "./IContainerHandler";
  */
 export class ContainerHandlerIdentifier implements IContainerHandler {
 
-  public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
+  public canCombineWithGraph(): boolean {
+    return true;
+  }
+
+  public async handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
+                      keys: string[], value: any, depth: number)
     : Promise<void> {
     // Create the identifier
     const keyUnaliased = await util.getContainerKey(keys, depth);

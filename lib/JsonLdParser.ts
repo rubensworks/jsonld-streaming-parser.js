@@ -124,7 +124,7 @@ export class JsonLdParser extends Transform {
 
       // Flush the buffer for lastDepth
       // If the parent key is a special type of container, postpone flushing until that parent is handled.
-      if (await EntryHandlerContainer.isContainerHandler(this.parsingContext, this.lastKeys, this.lastDepth)) {
+      if (await EntryHandlerContainer.isBufferableContainerHandler(this.parsingContext, this.lastKeys, this.lastDepth)) {
         this.parsingContext.pendingContainerFlushBuffers
           .push({ depth: this.lastDepth, keys: this.lastKeys.slice(0, this.lastKeys.length) });
         flushStacks = false;

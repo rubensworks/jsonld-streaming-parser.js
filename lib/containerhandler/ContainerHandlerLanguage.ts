@@ -10,7 +10,12 @@ import {IContainerHandler} from "./IContainerHandler";
  */
 export class ContainerHandlerLanguage implements IContainerHandler {
 
-  public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
+  public canCombineWithGraph(): boolean {
+    return false;
+  }
+
+  public async handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
+                      keys: string[], value: any, depth: number)
     : Promise<void> {
     const language = await util.getContainerKey(keys, depth);
 

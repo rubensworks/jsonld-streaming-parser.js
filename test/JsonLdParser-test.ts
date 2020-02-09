@@ -5637,6 +5637,27 @@ describe('JsonLdParser', () => {
 
       describe('containers', () => {
 
+        it('with @index in a string value should be ignored', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1" }
+  },
+  "p": [
+    {
+      "@value": "a",
+      "@index": "prop"
+    }
+  ]
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
+              literal('a')),
+          ]);
+
+        });
+
         describe('for languages', () => {
 
           it('with @id and language map', async () => {
@@ -6936,6 +6957,50 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and graph map with multiple values with an outer array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@graph" },
+    "value1": "ex:value1",
+    "value2": "ex:value2",
+    "value3": "ex:value3"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [{
+    "@id": "value1",
+    "value1": "1",
+    "value2": "2",
+    "value3": "3"
+  },{
+    "@id": "value2",
+    "value1": "4",
+    "value2": "5",
+    "value3": "6"
+  }]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g2')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value1'),
+                literal('1'), blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value2'),
+                literal('2'), blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value3'),
+                literal('3'), blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value1'),
+                literal('4'), blankNode('g2')),
+              quad(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value2'),
+                literal('5'), blankNode('g2')),
+              quad(namedNode('http://example.com/entries/value2'), namedNode('http://ex.org/value3'),
+                literal('6'), blankNode('g2')),
+            ]);
+          });
+
           it('with @id and graph map and blank node inner id', async () => {
             const stream = streamifyString(`
 {
@@ -7083,25 +7148,496 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @index in a string value should be ignored', async () => {
+          it('with @id and graph map with @index', async () => {
             const stream = streamifyString(`
 {
   "@context": {
+    "@base": "http://example.com/entries/",
     "ex": "http://ex.org/",
-    "p": { "@id": "http://ex.org/pred1" }
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
   },
-  "p": [
-    {
-      "@value": "a",
-      "@index": "prop"
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": {
+      "@id": "value1",
+      "value": "1539"
     }
-  ]
+  }
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-              triple(blankNode('b1'), namedNode('http://ex.org/pred1'),
-                literal('a')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1539'), blankNode('g1')),
             ]);
+          });
 
+          it('with @id and graph map with @index and @graph key', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": {
+      "@graph": {
+        "@id": "value1",
+        "value": "1539"
+      }
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1539'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": {
+      "@id": "value0",
+      "value": "0"
+    },
+    "index1": {
+      "@id": "value1",
+      "value": "1"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values without id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "p": {
+    "index0": {
+      "value": "0"
+    },
+    "index1": {
+      "value": "1"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(blankNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(blankNode('value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(blankNode('value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values without id with @set', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index", "@set" ] },
+    "value": "ex:value"
+  },
+  "p": {
+    "index0": {
+      "value": "0"
+    },
+    "index1": {
+      "value": "1"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(blankNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(blankNode('value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(blankNode('value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with inner arrays', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": [{
+      "@id": "value0",
+      "value": "0"
+    }],
+    "index1": [{
+      "@id": "value1",
+      "value": "1"
+    }]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with nested inner arrays', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": [[{
+      "@id": "value0",
+      "value": "0"
+    }]],
+    "index1": [[{
+      "@id": "value1",
+      "value": "1"
+    }]]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple inner array values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": [{
+      "@id": "value0",
+      "value": "0"
+    },
+    {
+      "@id": "value1",
+      "value": "1"
+    }]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1'), blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with complex inner arrays', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "index0": [{
+      "@id": "value0",
+      "value": "0"
+    }],
+    "index1": [{
+      "@id": "value1.1",
+      "value": "1.1"
+    },{
+      "@id": "value1.2",
+      "value": "1.2"
+    }]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1.1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1.2')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), blankNode('g0')),
+              quad(namedNode('http://example.com/entries/value1.1'), namedNode('http://ex.org/value'),
+                literal('1.1'), blankNode('g1.1')),
+              quad(namedNode('http://example.com/entries/value1.2'), namedNode('http://ex.org/value'),
+                literal('1.2'), blankNode('g1.2')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with an outer array (1) should be ignored', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [{
+    "index0": {
+      "@id": "value0",
+      "value": "0"
+    },
+    "index1": {
+      "@id": "value1",
+      "value": "1"
+    }
+  }]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with an outer array (2) should be ignored', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [{
+    "index0": {
+      "@id": "value0",
+      "value": "0"
+    }
+  },
+  {
+    "index1": {
+      "@id": "value1",
+      "value": "1"
+    }
+  }]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g1')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with a nested outer array should be ignored', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [[{
+    "index0": {
+      "@id": "value0",
+      "value": "0"
+    },
+    "index1": {
+      "@id": "value1",
+      "value": "1"
+    }
+  }]]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+            ]);
+          });
+
+          it('with @id and graph map with @index with multiple values with nested inner and outer arrays', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@index" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": [[{
+    "index0": [[{
+      "@id": "value0",
+      "value": "0"
+    }]],
+    "index1": [[{
+      "@id": "value1",
+      "value": "1"
+    }]]
+  }]]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('g0')),
+            ]);
+          });
+
+          it('with @id and graph map with @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@id" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "http://ex.org/index0": {
+      "@id": "value1",
+      "value": "1539"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/index0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1539'), namedNode('http://ex.org/index0')),
+            ]);
+          });
+
+          it('with @id and graph map with @id with multiple values', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@id" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "http://ex.org/index0": {
+      "@id": "value0",
+      "value": "0"
+    },
+    "http://ex.org/index1": {
+      "@id": "value1",
+      "value": "1"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/index0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/index1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), namedNode('http://ex.org/index0')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1'), namedNode('http://ex.org/index1')),
+            ]);
+          });
+
+          it('with @id and graph map with @id with multiple values with complex inner arrays', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@id" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "http://ex.org/index0": [{
+      "@id": "value0",
+      "value": "0"
+    }],
+    "http://ex.org/index1": [{
+      "@id": "value1.1",
+      "value": "1.1"
+    },{
+      "@id": "value1.2",
+      "value": "1.2"
+    }]
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/index0')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/index1')),
+              quad(namedNode('http://example.com/entries/value0'), namedNode('http://ex.org/value'),
+                literal('0'), namedNode('http://ex.org/index0')),
+              quad(namedNode('http://example.com/entries/value1.1'), namedNode('http://ex.org/value'),
+                literal('1.1'), namedNode('http://ex.org/index1')),
+              quad(namedNode('http://example.com/entries/value1.2'), namedNode('http://ex.org/value'),
+                literal('1.2'), namedNode('http://ex.org/index1')),
+            ]);
           });
         });
 

@@ -46,7 +46,7 @@ export class ParsingContext {
   // Stack of graph flags (if they point to an @graph in a parent node)
   public readonly graphStack: boolean[];
   // Stack of graph overrides when in an @container: @graph
-  public readonly graphContainerTermStack: (RDF.NamedNode | RDF.BlankNode)[];
+  public readonly graphContainerTermStack: ({ [index: string]: RDF.NamedNode | RDF.BlankNode })[];
   // Stack of RDF list pointers (for @list)
   public readonly listPointerStack
     : ({ term: RDF.Term, listRootDepth: number } | { initialPredicate: RDF.Term, listRootDepth: number })[];
@@ -281,13 +281,6 @@ export class ParsingContext {
       this.idStack[depth] = deeperIdStack;
       this.emittedStack[depth] = true;
       delete this.idStack[depth + depthOffset];
-    }
-
-    // Copy the graph container term stack value up one level so that the next job can access the id.
-    const deeperGraphContainerTermStack = this.graphContainerTermStack[depth + depthOffset];
-    if (deeperGraphContainerTermStack) {
-      this.graphContainerTermStack[depth] = deeperGraphContainerTermStack;
-      delete this.graphContainerTermStack[depth + depthOffset];
     }
 
     // Shorten key stack

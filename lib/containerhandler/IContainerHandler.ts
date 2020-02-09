@@ -7,7 +7,13 @@ import {Util} from "../Util";
 export interface IContainerHandler {
 
   /**
+   * If this container type can be combined with @graph containers.
+   */
+  canCombineWithGraph(): boolean;
+
+  /**
    * Process the given value that has the given container type.
+   * @param containers The applicable container hash.
    * @param parsingContext The parsing context.
    * @param {Util} util A utility instance.
    * @param {string[]} keys The array of stack keys.
@@ -15,6 +21,7 @@ export interface IContainerHandler {
    * @param {number} depth The current stack depth.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
-  handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number): Promise<void>;
+  handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
+         keys: string[], value: any, depth: number): Promise<void>;
 
 }

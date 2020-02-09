@@ -1,6 +1,7 @@
 import {ContextParser, ERROR_CODES, ErrorCoded, IJsonLdContextNormalized} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ParsingContext} from "./ParsingContext";
+import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 
 // tslint:disable-next-line:no-var-requires
 const canonicalizeJson = require('canonicalize');
@@ -340,7 +341,8 @@ export class Util {
         return [];
       } else if ('@graph' in Util.getContextValueContainer(await this.parsingContext.getContext(keys), key)) {
         // We are processing a graph container
-        return [ this.parsingContext.graphContainerTermStack[depth + 1] || this.dataFactory.blankNode() ];
+        const graphContainerEntries = this.parsingContext.graphContainerTermStack[depth + 1];
+        return graphContainerEntries ? Object.values(graphContainerEntries) : [ this.dataFactory.blankNode() ];
       } else if ("@id" in value) {
         if (value["@type"] === '@vocab') {
           return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
@@ -425,7 +427,7 @@ export class Util {
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node or null.
    */
-  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
+  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode | RDF.BlankNode | null {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
@@ -667,6 +669,12 @@ export class Util {
   public async getDepthOffsetGraph(depth: number, keys: any[]): Promise<number> {
     for (let i = depth - 1; i > 0; i--) {
       if (await this.unaliasKeyword(keys[i], keys, i) === '@graph') {
+        // Skip further processing if we are already in an @graph-@id or @graph-@index container
+        const containers = (await EntryHandlerContainer.getContainerHandler(this.parsingContext, keys, i)).containers;
+        if (EntryHandlerContainer.isComplexGraphContainer(containers)) {
+          return -1;
+        }
+
         return depth - i - 1;
       }
     }
@@ -693,29 +701,6 @@ export class Util {
   }
 
   /**
-   * Get the container type of the given key in the context.
-   *
-   * This will ignore any arrays in the key chain.
-   *
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
-   * @param {string} key A context entry key.
-   * @return {string} The container type.
-   */
-  public async getContextValueContainerArrayAware(keys: any[], depth: number)
-    : Promise<{ [typeName: string]: boolean }> {
-    for (let i = depth; i > 0; i--) {
-      if (typeof keys[i - 1] !== 'number') { // Skip array keys
-        const container = Util.getContextValue(await this.parsingContext.getContext(keys),
-          '@container', keys[i - 1], null);
-        if (container) {
-          return container;
-        }
-      }
-    }
-    return { '@set': true };
-  }
-
-  /**
    * Get the current graph, while taking into account a graph that can be defined via @container: @graph.
    * If not within a graph container, the default graph will be returned.
    * @param keys The current keys.
@@ -724,16 +709,30 @@ export class Util {
   public async getGraphContainerValue(keys: any[], depth: number)
     : Promise<RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph> {
     // Default to default graph
-    let graph = this.getDefaultGraph();
+    let graph: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph | null = this.getDefaultGraph();
 
     // Check if we are in an @container: @graph.
-    const container = await this.getContextValueContainerArrayAware(keys, depth);
-    if ('@graph' in container) {
+    const { containers, depth: depthContainer } = await EntryHandlerContainer
+      .getContainerHandler(this.parsingContext, keys, depth);
+    if ('@graph' in containers) {
       // Get the graph from the stack.
-      graph = this.parsingContext.graphContainerTermStack[depth];
+      const graphContainerIndex = EntryHandlerContainer.getContainerGraphIndex(containers, depthContainer, keys);
+      const entry = this.parsingContext.graphContainerTermStack[depthContainer];
+      graph = entry ? entry[graphContainerIndex] : null;
+
       // Set the graph in the stack if none has been set yet.
       if (!graph) {
-        graph = this.parsingContext.graphContainerTermStack[depth] = this.dataFactory.blankNode();
+        let graphId: RDF.NamedNode | RDF.BlankNode | null = null;
+        if ('@id' in containers) {
+          graphId = await this.resourceToTerm(await this.parsingContext.getContext(keys), keys[depthContainer]);
+        }
+        if (!graphId) {
+          graphId = this.dataFactory.blankNode();
+        }
+        if (!this.parsingContext.graphContainerTermStack[depthContainer]) {
+          this.parsingContext.graphContainerTermStack[depthContainer] = {};
+        }
+        graph = this.parsingContext.graphContainerTermStack[depthContainer][graphContainerIndex] = graphId;
       }
     }
 

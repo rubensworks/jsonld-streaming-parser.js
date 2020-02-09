@@ -9,9 +9,16 @@ import {IContainerHandler} from "./IContainerHandler";
  */
 export class ContainerHandlerIndex implements IContainerHandler {
 
-  public async handle(parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number)
+  public canCombineWithGraph(): boolean {
+    return true;
+  }
+
+  public async handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
+                      keys: string[], value: any, depth: number)
     : Promise<void> {
-    await parsingContext.newOnValueJob(keys, value, depth - 1, true);
+    const graphContainer = '@graph' in containers;
+
+    await parsingContext.newOnValueJob(keys, value, depth - (graphContainer ? 2 : 1), true);
 
     parsingContext.emittedStack[depth] = false; // We have emitted a level higher
   }
