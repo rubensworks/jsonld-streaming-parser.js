@@ -7974,6 +7974,68 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should propagate for @propagate: true', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "@propagate": true,
+        "@vocab": "http://ex.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar1": {
+      "@id": "http://ex.org/myinnerinnerid",
+      "bar2": "baz"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar1'),
+                namedNode('http://ex.org/myinnerinnerid')),
+              quad(namedNode('http://ex.org/myinnerinnerid'), namedNode('http://ex.org/bar2'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should not propagate for @propagate: false', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "@propagate": false,
+        "@vocab": "http://ex.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar1": {
+      "@id": "http://ex.org/myinnerinnerid",
+      "bar2": "baz"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar1'),
+                namedNode('http://ex.org/myinnerinnerid')),
+              quad(namedNode('http://ex.org/myinnerinnerid'), namedNode('http://vocab.org/bar2'),
+                literal('baz')),
+            ]);
+          });
+
           it('should not influence neighbour properties', async () => {
             const stream = streamifyString(`
 {

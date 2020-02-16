@@ -186,6 +186,61 @@ describe('ParsingContext', () => {
 
       });
 
+      describe('for non-propagating property-scoped contexts', () => {
+
+        beforeEach(() => {
+          parsingContext.contextTree.setContext([''], Promise.resolve({
+            '@vocab': 'http://vocab.main.org/',
+            'a': {
+              '@context': {
+                '@propagate': false,
+                '@vocab': 'http://vocab.a.org/',
+              },
+              '@id': 'http://a.org',
+            },
+          }));
+        });
+
+        it('should ignore non-applicable properties', async () => {
+          return expect(await parsingContext.getContext(['', 'b', 'subKey']))
+            .toEqual({
+              '@vocab': 'http://vocab.main.org/',
+              'a': {
+                '@context': {
+                  '@propagate': false,
+                  '@vocab': 'http://vocab.a.org/',
+                },
+                '@id': 'http://a.org',
+              },
+            });
+        });
+
+        it('should consider an applicable property', async () => {
+          return expect(await parsingContext.getContext(['', 'a', 'subKey']))
+            .toEqual({
+              '@vocab': 'http://vocab.a.org/',
+              'a': {
+                '@id': 'http://a.org',
+              },
+            });
+        });
+
+        it('should not consider an applicable property when called via sub-properties', async () => {
+          return expect(await parsingContext.getContext(['', 'a', 'subKey1', 'subKey2', 'subKey3']))
+            .toEqual({
+              '@vocab': 'http://vocab.main.org/',
+              'a': {
+                '@context': {
+                  '@propagate': false,
+                  '@vocab': 'http://vocab.a.org/',
+                },
+                '@id': 'http://a.org',
+              },
+            });
+        });
+
+      });
+
       describe('for nested property-scoped contexts', () => {
 
         beforeEach(() => {

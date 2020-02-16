@@ -181,10 +181,20 @@ export class ParsingContext {
       const key = keysOriginal[i];
       const contextKeyEntry = context[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-        const scopedContext = this.parseContext(contextKeyEntry, context);
-        this.contextTree.setContext(keysOriginal.slice(0, i + offset), scopedContext);
-        context = await scopedContext;
-        delete context[key]['@context'];
+        const scopedContext = await this.parseContext(contextKeyEntry, context);
+        const propagate = scopedContext[key]['@context']['@propagate']; // Propagation is true by default
+
+        if (propagate !== false || i === keysOriginal.length - 1 - offset) {
+          if (propagate !== false) {
+            this.contextTree.setContext(keysOriginal.slice(0, i + offset), Promise.resolve(scopedContext));
+          }
+          context = scopedContext;
+
+          // Clean up final context
+          delete context['@propagate'];
+          context[key] = { ...context[key] };
+          delete context[key]['@context'];
+        }
       }
     }
 
