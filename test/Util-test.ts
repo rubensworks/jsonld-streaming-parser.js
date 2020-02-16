@@ -840,7 +840,7 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @reverse parent', async () => {
-        util.parsingContext.contextTree.setContext([null, 'a'], { reverse: '@reverse' });
+        util.parsingContext.contextTree.setContext([null, 'a'], Promise.resolve({ reverse: '@reverse' }));
         expect(await util.getPropertiesDepth([null, 'a', 'reverse', 'b'], 3)).toBe(2);
       });
 
@@ -849,7 +849,7 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @nest parent', async () => {
-        util.parsingContext.contextTree.setContext([null, 'a'], { nest: '@nest' });
+        util.parsingContext.contextTree.setContext([null, 'a'], Promise.resolve({ nest: '@nest' }));
         expect(await util.getPropertiesDepth([null, 'a', 'nest', 'b'], 3)).toBe(2);
       });
 

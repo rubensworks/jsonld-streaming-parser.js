@@ -173,10 +173,11 @@ export class ParsingContext {
     }
 
     // Determine the closest context
-    let context: IJsonLdContextNormalized = await this.contextTree.getContext(keys) || this.rootContext;
+    const contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 1 };
+    let context: IJsonLdContextNormalized = contextData.context;
 
     // Process property-scoped contexts (high-to-low)
-    for (let i = 1; i < keysOriginal.length - offset; i++) {
+    for (let i = contextData.depth; i < keysOriginal.length - offset; i++) {
       const key = keysOriginal[i];
       const contextKeyEntry = context[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {

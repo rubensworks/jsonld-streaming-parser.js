@@ -11,13 +11,17 @@ export class ContextTree {
   private readonly subTrees: {[key: string]: ContextTree} = {};
   private context: Promise<IJsonLdContextNormalized> | null;
 
-  public getContext([head, ...tail]: string[]): Promise<IJsonLdContextNormalized> | null {
-    if (!head && !tail.length) {
-      return this.context;
-    } else {
+  public getContext([head, ...tail]: string[]): Promise<{ context: IJsonLdContextNormalized, depth: number }> | null {
+    if (head || tail.length) {
       const subTree = this.subTrees[head];
-      return (subTree && subTree.getContext(tail)) || this.context;
+      if (subTree) {
+        const subContext = subTree.getContext(tail);
+        if (subContext) {
+          return subContext.then(({ context, depth }) => ({ context, depth: depth + 1 }));
+        }
+      }
     }
+    return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
   }
 
   public setContext([head, ...tail]: string[], context: Promise<IJsonLdContextNormalized> | null) {

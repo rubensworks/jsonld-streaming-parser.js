@@ -168,6 +168,22 @@ describe('ParsingContext', () => {
             });
         });
 
+        it('should only parse a scoped context once for repeated getContext calls', async () => {
+          const spy = jest.spyOn(parsingContext, 'parseContext');
+          await parsingContext.getContext(['', 'a', 'subKey']);
+          await parsingContext.getContext(['', 'a', 'subKey']);
+          await parsingContext.getContext(['', 'a', 'subKey']);
+          return expect(spy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should only parse a scoped context once depth-first getContext calls', async () => {
+          const spy = jest.spyOn(parsingContext, 'parseContext');
+          await parsingContext.getContext(['', 'a', 'subKey', 'subSubKey', 'subSubSubKey']);
+          await parsingContext.getContext(['', 'a', 'subKey', 'subSubKey']);
+          await parsingContext.getContext(['', 'a', 'subKey']);
+          return expect(spy).toHaveBeenCalledTimes(1);
+        });
+
       });
 
       describe('for nested property-scoped contexts', () => {

@@ -18,15 +18,15 @@ describe('ContextTree', () => {
     it('should should set a context at depth 1', async () => {
       const c = Promise.resolve({});
       tree.setContext(['a'], c);
-      expect(tree.getContext(['a'])).toBe(c);
-      expect(tree.getContext(['a', 'b'])).toBe(c);
+      expect(await tree.getContext(['a'])).toEqual({ context: await c, depth: 1 });
+      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 1 });
     });
 
     it('should should set a context at depth 2', async () => {
       const c = Promise.resolve({});
       tree.setContext(['a', 'b'], c);
       expect(tree.getContext(['a'])).toBeFalsy();
-      expect(tree.getContext(['a', 'b'])).toBe(c);
+      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 2 });
     });
 
     it('should allow branched context setting', async () => {
@@ -36,8 +36,8 @@ describe('ContextTree', () => {
       tree.setContext(['a', 'c'], c2);
 
       expect(tree.getContext(['a'])).toBeFalsy();
-      expect(tree.getContext(['a', 'b'])).toBe(c1);
-      expect(tree.getContext(['a', 'c'])).toBe(c2);
+      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c1, depth: 2 });
+      expect(await tree.getContext(['a', 'c'])).toEqual({ context: await c2, depth: 2 });
     });
 
     it('should not allow overriding contexts', async () => {
@@ -47,7 +47,7 @@ describe('ContextTree', () => {
       tree.setContext(['a', 'b'], c2);
 
       expect(tree.getContext(['a'])).toBeFalsy();
-      expect(tree.getContext(['a', 'b'])).toBe(c2);
+      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c2, depth: 2 });
     });
   });
 
@@ -63,8 +63,8 @@ describe('ContextTree', () => {
     it('should return the root', async () => {
       expect(tree.getContext([])).toBeFalsy();
       expect(tree.getContext(['a'])).toBeFalsy();
-      expect(tree.getContext(['a', 'b'])).toBe(root);
-      expect(tree.getContext(['a', 'b', 'c'])).toBe(root);
+      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await root, depth: 2 });
+      expect(await tree.getContext(['a', 'b', 'c'])).toEqual({ context: await root, depth: 2 });
     });
   });
 });
