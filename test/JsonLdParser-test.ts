@@ -7865,6 +7865,187 @@ describe('JsonLdParser', () => {
 
       });
 
+      describe('scoped contexts', () => {
+
+        describe('property scoped contexts', () => {
+
+          it('should add a single property', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "bar": "http://ex.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should add a single property within an array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "bar": "http://ex.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": [{
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should override @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "@vocab": "http://ex.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should propagate by default', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "@vocab": "http://ex.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar1": {
+      "@id": "http://ex.org/myinnerinnerid",
+      "bar2": "baz"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar1'),
+                namedNode('http://ex.org/myinnerinnerid')),
+              quad(namedNode('http://ex.org/myinnerinnerid'), namedNode('http://ex.org/bar2'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should not influence neighbour properties', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "bar": "http://ex.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid1",
+    "bar": "baz"
+  },
+  "foo2": {
+    "@id": "http://ex.org/myinnerid2",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid1')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo2'),
+                namedNode('http://ex.org/myinnerid2')),
+              quad(namedNode('http://ex.org/myinnerid1'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+              quad(namedNode('http://ex.org/myinnerid2'), namedNode('http://vocab.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should add a single property in a 2-level deep nested scoped context', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": {
+        "@vocab": "http://vocab.foo.org/",
+        "bar1": {
+          "@context": {
+            "@vocab": "http://vocab.bar.org/"
+          }
+        }
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar1": {
+      "@id": "http://ex.org/myinnerinnerid",
+      "bar2": "baz"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.foo.org/bar1'),
+                namedNode('http://ex.org/myinnerinnerid')),
+              quad(namedNode('http://ex.org/myinnerinnerid'), namedNode('http://vocab.bar.org/bar2'),
+                literal('baz')),
+            ]);
+          });
+
+        });
+
+      });
+
       // MARKER: Add tests for new features here, wrapped in new describe blocks.
     });
 

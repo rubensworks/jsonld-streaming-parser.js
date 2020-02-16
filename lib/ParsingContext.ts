@@ -164,11 +164,30 @@ export class ParsingContext {
    * @param {number} offset The path offset, defaults to 1.
    * @return {Promise<IJsonLdContextNormalized>} A promise resolving to a context.
    */
-  public getContext(keys: string[], offset = 1): Promise<IJsonLdContextNormalized> {
+  public async getContext(keys: string[], offset = 1): Promise<IJsonLdContextNormalized> {
+    const keysOriginal = keys;
+
+    // Handle offset on keys
     if (offset) {
       keys = keys.slice(0, -offset);
     }
-    return this.contextTree.getContext(keys) || this.rootContext;
+
+    // Determine the closest context
+    let context: IJsonLdContextNormalized = await this.contextTree.getContext(keys) || this.rootContext;
+
+    // Process property-scoped contexts (high-to-low)
+    for (let i = 1; i < keysOriginal.length - offset; i++) {
+      const key = keysOriginal[i];
+      const contextKeyEntry = context[key];
+      if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
+        const scopedContext = this.parseContext(contextKeyEntry, context);
+        this.contextTree.setContext(keysOriginal.slice(0, i + offset), scopedContext);
+        context = await scopedContext;
+        delete context[key]['@context'];
+      }
+    }
+
+    return context;
   }
 
   /**
