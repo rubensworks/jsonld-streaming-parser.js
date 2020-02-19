@@ -235,7 +235,8 @@ export class Util {
           return [];
         }
         if (typeof val === 'object') {
-          throw new Error(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`);
+          throw new ErrorCoded(`The value of an '@value' can not be an object, got '${JSON.stringify(val)}'`,
+            ERROR_CODES.INVALID_VALUE_OBJECT_VALUE);
         }
 
         // Validate @index

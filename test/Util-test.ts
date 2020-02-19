@@ -3,6 +3,7 @@ import {blankNode, literal, namedNode} from "@rdfjs/data-model";
 import "jest-rdf";
 import {Util} from "../lib/Util";
 import {ParsingContextMocked} from "../mocks/ParsingContextMocked";
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 
 describe('Util', () => {
 
@@ -325,13 +326,15 @@ describe('Util', () => {
         it('with a @value object should throw an error', async () => {
           context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
           return expect(util.valueToTerm(context, 'key', { '@value': {} }, 0, []))
-            .rejects.toThrow(new Error('The value of an \'@value\' can not be an object, got \'{}\''));
+            .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'{}\'',
+              ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
         it('with a @value array should throw an error', async () => {
           context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
           return expect(util.valueToTerm(context, 'key', { '@value': [] }, 0, []))
-            .rejects.toThrow(new Error('The value of an \'@value\' can not be an object, got \'[]\''));
+            .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'[]\'',
+              ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
         it('with a @value without @language should reset the language', async () => {
