@@ -323,7 +323,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and an invalid typed literal', async () => {
+        it('with @id and an invalid typed literal should throw', async () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -332,7 +332,8 @@ describe('JsonLdParser', () => {
     "@type": "http://ex.org/ mytype"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Invalid \'@type\' value, got \'"http://ex.org/ mytype"\'', ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
         it('with @id and a prefixed, typed literal', async () => {

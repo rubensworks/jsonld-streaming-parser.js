@@ -299,7 +299,8 @@ export class Util {
           }
           const typeTerm = this.createVocabOrBaseTerm(context, valueType);
           if (!typeTerm) {
-            return [];
+            throw new ErrorCoded(`Invalid '@type' value, got '${JSON.stringify(valueType)}'`,
+              ERROR_CODES.INVALID_TYPED_VALUE);
           }
           if (typeTerm.termType !== 'NamedNode') {
             throw new Error(`Illegal value type (${typeTerm.termType}): ${valueType}`);

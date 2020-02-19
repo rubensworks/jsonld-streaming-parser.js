@@ -404,6 +404,12 @@ describe('Util', () => {
             .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
         });
 
+        it('with a @value and invalid string @type should throw an error', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'a b' }, 0, []))
+            .rejects.toThrow(new ErrorCoded('Invalid \'@type\' value, got \'"a b"\'',
+              ERROR_CODES.INVALID_TYPED_VALUE));
+        });
+
         it('with a @value and boolean @index should not throw an error', async () => {
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0, []))
             .toEqualRdfTermArray([literal('abc')]);
