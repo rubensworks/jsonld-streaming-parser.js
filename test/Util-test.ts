@@ -488,6 +488,33 @@ describe('Util', () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': '_:b' }, 0, []))
             .rejects.toThrow(new Error('Illegal value type (BlankNode): _:b'));
         });
+
+        it('with context-based @json type', async () => {
+          context = { key: { '@type': '@json' } };
+          return expect(util.valueToTerm(context, 'key', { '@value': 'abc' }, 0, []))
+            .resolves.toEqualRdfTermArray([literal('{"@value":"abc"}',
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
+        });
+
+        it('with @value-based @json type', async () => {
+          return expect(util.valueToTerm(context, 'key', { '@value': { v: 'abc' }, '@type': '@json' }, 0, []))
+            .resolves.toEqualRdfTermArray([literal('{"v":"abc"}',
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
+        });
+
+        it('with @value-based @json type that is aliased', async () => {
+          context = { json: { '@id': '@json' } };
+          return expect(util.valueToTerm(context, 'key', { '@value': { v: 'abc' }, '@type': 'json' }, 0, []))
+            .resolves.toEqualRdfTermArray([literal('{"v":"abc"}',
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
+        });
+
+        it('with @value-based and context-based @json type', async () => {
+          context = { key: { '@type': '@json' } };
+          return expect(util.valueToTerm(context, 'key', { '@value': { v: 'abc' }, '@type': '@json' }, 0, []))
+            .resolves.toEqualRdfTermArray([literal('{"@type":"@json","@value":{"v":"abc"}}',
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
+        });
       });
 
       describe('for a string', () => {

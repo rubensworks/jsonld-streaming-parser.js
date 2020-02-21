@@ -230,6 +230,11 @@ export class Util {
           }
         }
 
+        // Skip further processing if we have an @type: @json
+        if (await this.unaliasKeyword(valueType, keys, depth, true, context) === '@json') {
+          return [ this.dataFactory.literal(this.valueToJsonString(val), this.rdfJson) ];
+        }
+
         // Validate @value
         if (val === null) {
           return [];
@@ -588,9 +593,12 @@ export class Util {
    * @param {string[]} keys The path of keys.
    * @param {number} depth The depth to
    * @param {boolean} disableCache If the cache should be disabled
+   * @param {IJsonLdContextNormalized} context A context to unalias with,
+   *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
-  public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean): Promise<any> {
+  public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean,
+                              context?: IJsonLdContextNormalized): Promise<any> {
     // Numbers can not be an alias
     if (Number.isInteger(key)) {
       return key;
@@ -605,7 +613,7 @@ export class Util {
     }
 
     if (!ContextParser.isPotentialKeyword(key)) {
-      const context = await this.parsingContext.getContext(keys);
+      context = context || await this.parsingContext.getContext(keys);
       let unliased = context[key];
       if (unliased && typeof unliased === 'object') {
         unliased = unliased['@id'];
