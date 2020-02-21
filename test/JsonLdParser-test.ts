@@ -7640,6 +7640,59 @@ describe('JsonLdParser', () => {
                 literal('1.2'), namedNode('http://ex.org/index1')),
             ]);
           });
+
+          it('with @id and graph map with @id and @none', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@id" ] },
+    "value": "ex:value"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "@none": {
+      "@id": "value1",
+      "value": "1539"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1539'), blankNode('b1')),
+            ]);
+          });
+
+          it('with @id and graph map with @id and aliased @none', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "@base": "http://example.com/entries/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": [ "@graph", "@id" ] },
+    "value": "ex:value",
+    "none": "@none"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "none": {
+      "@id": "value1",
+      "value": "1539"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('b1')),
+              quad(namedNode('http://example.com/entries/value1'), namedNode('http://ex.org/value'),
+                literal('1539'), blankNode('b1')),
+            ]);
+          });
         });
 
       });

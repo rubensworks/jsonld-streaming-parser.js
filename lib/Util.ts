@@ -734,7 +734,10 @@ export class Util {
       if (!graph) {
         let graphId: RDF.NamedNode | RDF.BlankNode | null = null;
         if ('@id' in containers) {
-          graphId = await this.resourceToTerm(await this.parsingContext.getContext(keys), keys[depthContainer]);
+          const keyUnaliased = await this.getContainerKey(keys, depthContainer);
+          if (keyUnaliased !== null) {
+            graphId = await this.resourceToTerm(await this.parsingContext.getContext(keys), keyUnaliased);
+          }
         }
         if (!graphId) {
           graphId = this.dataFactory.blankNode();
