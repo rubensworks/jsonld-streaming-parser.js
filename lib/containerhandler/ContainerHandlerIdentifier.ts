@@ -18,20 +18,30 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
   public async handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
                       keys: string[], value: any, depth: number)
     : Promise<void> {
-    // Create the identifier
-    const keyUnaliased = await util.getContainerKey(keys, depth);
-    const id = keyUnaliased !== null
-      ? await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth])
-      : util.dataFactory.blankNode();
+    let id: RDF.Term;
 
-    // Do nothing if the id is invalid
-    if (!id) {
-      parsingContext.emittedStack[depth] = false; // Don't emit the predicate owning this container.
-      return;
+    // First check if the child node already has a defined id.
+    if (parsingContext.emittedStack[depth + 1] && parsingContext.idStack[depth + 1]) {
+      // Use the existing identifier
+      id = parsingContext.idStack[depth + 1][0];
+    } else {
+      // Create the identifier
+      const keyUnaliased = await util.getContainerKey(keys, depth);
+      const maybeId = keyUnaliased !== null
+        ? await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth])
+        : util.dataFactory.blankNode();
+
+      // Do nothing if the id is invalid
+      if (!maybeId) {
+        parsingContext.emittedStack[depth] = false; // Don't emit the predicate owning this container.
+        return;
+      }
+      id = maybeId;
+
+      // Insert the id into the stack so that buffered children can make us of it.
+      parsingContext.idStack[depth + 1] = [id];
+
     }
-
-    // Insert the id into the stack so that buffered children can make us of it.
-    parsingContext.idStack[depth + 1] = [ id ];
 
     // Insert the id into the stack so that parents can make use of it.
     // Insert it as an array because multiple id container entries may exist

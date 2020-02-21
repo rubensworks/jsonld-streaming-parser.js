@@ -6243,6 +6243,102 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and identifier map with values already having URI @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/posts/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@id" },
+    "body": "ex:body",
+    "words": "ex:words"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "1/en": {
+      "@id": "http://ex.org/myid1.1",
+      "body": "body 1"
+    },
+    "1/de": {
+      "@id": "http://ex.org/myid1.2",
+      "body": "body 2"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/myid1.1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/myid1.2')),
+              triple(namedNode('http://ex.org/myid1.1'), namedNode('http://ex.org/body'),
+                literal('body 1')),
+              triple(namedNode('http://ex.org/myid1.2'), namedNode('http://ex.org/body'),
+                literal('body 2')),
+            ]);
+          });
+
+          it('with @id and identifier map with values already having blank node @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/posts/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@id" },
+    "body": "ex:body",
+    "words": "ex:words"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "1/en": {
+      "@id": "_:foo",
+      "body": "body 1"
+    },
+    "1/de": {
+      "@id": "_:bar",
+      "body": "body 2"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('foo')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('bar')),
+              triple(blankNode('foo'), namedNode('http://ex.org/body'),
+                literal('body 1')),
+              triple(blankNode('bar'), namedNode('http://ex.org/body'),
+                literal('body 2')),
+            ]);
+          });
+
+          it('with @id and identifier map with values already having @id but no other properties', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example.com/posts/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@id" },
+    "body": "ex:body",
+    "words": "ex:words"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "1/en": {
+      "@id": "http://ex.org/myid1.1"
+    },
+    "1/de": {
+      "@id": "http://ex.org/myid1.2"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/myid1.1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/myid1.2')),
+            ]);
+          });
+
         });
 
         describe('for types', () => {
