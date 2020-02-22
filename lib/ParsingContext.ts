@@ -173,7 +173,7 @@ export class ParsingContext {
     }
 
     // Determine the closest context
-    const contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 1 };
+    const contextData = await this.getContextPropagationAware(keys);
     let context: IJsonLdContextNormalized = contextData.context;
 
     // Process property-scoped contexts (high-to-low)
@@ -199,6 +199,44 @@ export class ParsingContext {
     }
 
     return context;
+  }
+
+  /**
+   * Get the context at the given path.
+   * Non-propagating contexts will be skipped,
+   * unless the context at that exact depth is retrieved.
+   *
+   * This ONLY takes into account context propagation logic,
+   * so this should usually not be called directly,
+   * call {@link #getContext} instead.
+   *
+   * @param keys The path of keys to get the context at.
+   * @return {Promise<{ context: IJsonLdContextNormalized, depth: number }>} A context and its depth.
+   */
+  public async getContextPropagationAware(keys: string[]):
+    Promise<{ context: IJsonLdContextNormalized, depth: number }> {
+    const originalDepth = keys.length;
+    let contextData: { context: IJsonLdContextNormalized, depth: number } | null = null;
+    do {
+      // If we had a previous iteration, jump to the parent of context depth.
+      // We must do this because once we get here, last context had propagation disabled,
+      // so we check its first parent instead.
+      if (contextData) {
+        keys = keys.slice(0, contextData.depth - 1);
+      }
+
+      contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
+    } while (contextData.depth > 0
+    && contextData.context['@propagate'] === false
+    && contextData.depth !== originalDepth);
+
+    // Special case for root context that does not allow propagation.
+    // Fallback to empty context in that case.
+    if (contextData.depth === 0 && contextData.context['@propagate'] === false && contextData.depth !== originalDepth) {
+      contextData.context = {};
+    }
+
+    return contextData;
   }
 
   /**

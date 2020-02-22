@@ -13,6 +13,171 @@ describe('ParsingContext', () => {
       });
     });
 
+    describe('getContextPropagationAware', () => {
+
+      it('should return the root context when no contexts have been set', async () => {
+        return expect(await parsingContext.getContextPropagationAware(['']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+      it('should return the root context when a non-matching context has been set', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({}));
+        return expect(await parsingContext.getContextPropagationAware(['']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+      it('should return a set context', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://bla.org/',
+            },
+            depth: 2,
+          });
+      });
+
+      it('should propagate to a direct parent', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://bla.org/',
+            },
+            depth: 2,
+          });
+      });
+
+      it('should propagate to indirect parents', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://bla.org/',
+            },
+            depth: 2,
+          });
+      });
+
+      it('should skip a non-propagating parent', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+      it('should return a non-propagating context if at that exact depth', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+          .toEqual({
+            context: {
+              '@propagate': false,
+              '@vocab': 'http://bla.org/',
+            },
+            depth: 2,
+          });
+      });
+
+      it('should skip an indirect non-propagating parent', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+      it('should skip multiple indirect non-propagating parent', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla1.org/',
+        }));
+        parsingContext.contextTree.setContext(['', 'a', 'b', 'c'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla2.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+          .toEqual({
+            context: {
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+      it('should ignore non-propagating contexts from above', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@propagate': false,
+          '@vocab': 'http://bla1.org/',
+        }));
+        parsingContext.contextTree.setContext(['', 'a', 'b', 'c'], Promise.resolve({
+          '@propagate': true,
+          '@vocab': 'http://bla2.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+          .toEqual({
+            context: {
+              '@propagate': true,
+              '@vocab': 'http://bla2.org/',
+            },
+            depth: 4,
+          });
+      });
+
+      it('should return an empty context when the root is non-propagating', async () => {
+        parsingContext = new ParsingContextMocked({
+          context: { '@vocab': 'http://vocab.org/', '@propagate': false },
+          parser: <any> null,
+        });
+        return expect(await parsingContext.getContextPropagationAware(['']))
+          .toEqual({
+            context: {},
+            depth: 0,
+          });
+      });
+
+      it('should return an empty context when the root is non-propagating unless root is retrieved', async () => {
+        parsingContext = new ParsingContextMocked({
+          context: { '@vocab': 'http://vocab.org/', '@propagate': false },
+          parser: <any> null,
+        });
+        return expect(await parsingContext.getContextPropagationAware([]))
+          .toEqual({
+            context: {
+              '@propagate': false,
+              '@vocab': 'http://vocab.org/',
+            },
+            depth: 0,
+          });
+      });
+
+    });
+
     describe('getContext', () => {
 
       describe('for basic context trees', () => {
