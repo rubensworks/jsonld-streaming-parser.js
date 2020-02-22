@@ -108,8 +108,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
     const predicate = await util.predicateToTerm(context, key);
     if (predicate) {
-      const objectContext = await parsingContext.getContext(keys, 0);
-      const objects = await util.valueToTerm(objectContext, key, value, depth, keys);
+      const objects = await util.valueToTerm(context, key, value, depth, keys);
       if (objects.length) {
         for (let object of objects) {
           const reverse = Util.isPropertyReverse(context, keyOriginal, await util.unaliasKeywordParent(keys, depth));

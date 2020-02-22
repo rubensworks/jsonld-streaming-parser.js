@@ -200,7 +200,7 @@ export class Util {
       }
 
       // In all other cases, we have a hash
-      value = await this.unaliasKeywords(value, keys, depth); // Un-alias potential keywords in this hash
+      value = await this.unaliasKeywords(value, keys, depth, context); // Un-alias potential keywords in this hash
       if ('@value' in value) {
         let val;
         let valueLanguage;
@@ -642,12 +642,15 @@ export class Util {
    * @param {{[p: string]: any}} hash A hash object.
    * @param {string[]} keys The path of keys.
    * @param {number} depth The depth.
+   * @param {IJsonLdContextNormalized} context A context to unalias with,
+   *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
    */
-  public async unaliasKeywords(hash: {[id: string]: any}, keys: string[], depth: number): Promise<{[id: string]: any}> {
+  public async unaliasKeywords(hash: {[id: string]: any}, keys: string[], depth: number,
+                               context?: IJsonLdContextNormalized): Promise<{[id: string]: any}> {
     const newHash: {[id: string]: any} = {};
     for (const key in hash) {
-      newHash[await this.unaliasKeyword(key, keys, depth + 1, true)] = hash[key];
+      newHash[await this.unaliasKeyword(key, keys, depth + 1, true, context)] = hash[key];
     }
     return newHash;
   }

@@ -8524,6 +8524,57 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should handle a value node', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "type": "@type",
+    "Type": {
+      "@context": {
+        "value": "@value"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Type",
+  "bar": {
+    "value": "value",
+    "type": "value-type"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://vocab.org/Type')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/bar'),
+                literal('value', namedNode('http://vocab.org/value-type'))),
+            ]);
+          });
+
+          it('should handle a property value datatype', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "type": "@type",
+    "Type": {
+      "@context": {
+        "bar": { "@type": "value-type" }
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Type",
+  "bar": "value"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://vocab.org/Type')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/bar'),
+                literal('value', namedNode('http://vocab.org/value-type'))),
+            ]);
+          });
+
         });
 
         describe('different scoping combinations', () => {

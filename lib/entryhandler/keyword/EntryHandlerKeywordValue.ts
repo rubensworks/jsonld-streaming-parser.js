@@ -11,6 +11,11 @@ export class EntryHandlerKeywordValue extends EntryHandlerKeyword {
     super('@value');
   }
 
+  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
+    : Promise<boolean> {
+    return await util.unaliasKeyword(keys[depth], keys.slice(0, keys.length - 1), depth - 1, true) === '@value';
+  }
+
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // If the value is valid, indicate that we are processing a literal.
