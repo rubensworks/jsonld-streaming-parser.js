@@ -8256,6 +8256,133 @@ describe('JsonLdParser', () => {
 
         });
 
+        describe('type scoped contexts', () => {
+
+          it('should handle a single type and single property', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://ex.org/Foo",
+      "@context": {
+        "bar": "http://ex.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Foo",
+  "bar": "baz"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should handle a two types and single property with property overriding', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo1": {
+      "@id": "http://ex.org/Foo1",
+      "@context": {
+        "bar": "http://ex.1.org/bar"
+      }
+    },
+    "Foo2": {
+      "@id": "http://ex.org/Foo2",
+      "@context": {
+        "bar": "http://ex.2.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": [ "Foo1", "Foo2" ],
+  "bar": "baz"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo1')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo2')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://ex.2.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should handle a two types and single property with property overriding in lexical order', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo1": {
+      "@id": "http://ex.org/Foo1",
+      "@context": {
+        "bar": "http://ex.1.org/bar"
+      }
+    },
+    "Foo2": {
+      "@id": "http://ex.org/Foo2",
+      "@context": {
+        "bar": "http://ex.2.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": [ "Foo2", "Foo1" ],
+  "bar": "baz"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo1')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo2')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://ex.2.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('should handle a two types and two properties', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo1": {
+      "@id": "http://ex.org/Foo1",
+      "@context": {
+        "bar1": "http://ex.1.org/bar"
+      }
+    },
+    "Foo2": {
+      "@id": "http://ex.org/Foo2",
+      "@context": {
+        "bar2": "http://ex.2.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": [ "Foo1", "Foo2" ],
+  "bar1": "baz1",
+  "bar2": "baz2"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo1')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo2')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://ex.1.org/bar'),
+                literal('baz1')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://ex.2.org/bar'),
+                literal('baz2')),
+            ]);
+          });
+
+        });
+
       });
 
       // MARKER: Add tests for new features here, wrapped in new describe blocks.

@@ -2,6 +2,7 @@ import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
+import {IJsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContext";
 
 /**
  * Handles @graph entries.
@@ -31,6 +32,21 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
           predicate, type, reverse);
       }
+    }
+
+    // Collect type-scoped contexts if they exist
+    let scopedContext: Promise<IJsonLdContextNormalized> = Promise.resolve(context);
+    let hasTypedScopedContext = false;
+    for (const element of elements.sort()) { // Spec requires lexicographical ordering
+      const typeContext = Util.getContextValue(context, '@context', element, null);
+      if (typeContext) {
+        hasTypedScopedContext = true;
+        scopedContext = scopedContext.then((c) => parsingContext.parseContext(typeContext, c));
+      }
+    }
+    // If at least least one type-scoped context applies, set them in the tree.
+    if (hasTypedScopedContext) {
+      parsingContext.contextTree.setContext(keys.slice(0, keys.length - 1), scopedContext);
     }
   }
 
