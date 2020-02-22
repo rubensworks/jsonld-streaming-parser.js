@@ -22,6 +22,13 @@ describe('ContextTree', () => {
       expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 1 });
     });
 
+    it('should should set a context at depth 1 for an undefined key', async () => {
+      const c = Promise.resolve({ a: 'b' });
+      tree.setContext([undefined], c);
+      expect(await tree.getContext([undefined])).toEqual({ context: await c, depth: 1 });
+      expect(await tree.getContext([undefined, 'b'])).toEqual({ context: await c, depth: 1 });
+    });
+
     it('should should set a context at depth 2', async () => {
       const c = Promise.resolve({});
       tree.setContext(['a', 'b'], c);

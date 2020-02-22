@@ -108,7 +108,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     if (value) {
       if (!listPointer || !('term' in listPointer)) {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
-        const listRootContext = await parsingContext.getContext(listRootKeys);
+        const listRootContext = await parsingContext.getContext(listRootKeys, 0);
         const predicate = await util.predicateToTerm(listRootContext, listRootKey);
         const reverse = Util.isPropertyReverse(listRootContext, listRootKey, keys[listRootDepth - 1]);
 

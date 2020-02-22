@@ -8465,6 +8465,163 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should not propagate by default', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://ex.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/",
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Foo",
+  "bar": {
+    "@id": "http://ex.org/myinnerid",
+    "baz": "buzz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.1.org/bar'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.org/baz'),
+                literal('buzz')),
+            ]);
+          });
+
+          it('should propagate on @propagate: true', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://ex.org/Foo",
+      "@context": {
+        "@propagate": true,
+        "@vocab": "http://vocab.1.org/",
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Foo",
+  "bar": {
+    "@id": "http://ex.org/myinnerid",
+    "baz": "buzz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.1.org/bar'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.1.org/baz'),
+                literal('buzz')),
+            ]);
+          });
+
+        });
+
+        describe('different scoping combinations', () => {
+
+          it('type-scoping has priority over embedded context', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://ex.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/",
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "prop": {
+    "@context": {
+      "@vocab": "http://vocab.ignored.org/"
+    },
+    "@id": "http://ex.org/myinnerid",
+    "@type": "Foo",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/prop'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.1.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('type-scoping has priority over property-scoping', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://ex.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/",
+      }
+    },
+    "prop": {
+      "@context": {
+        "@vocab": "http://vocab.ignored.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "prop": {
+    "@id": "http://ex.org/myinnerid",
+    "@type": "Foo",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/prop'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://ex.org/Foo')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.1.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
+          it('embedded context has priority over property-scoping', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "prop": {
+      "@context": {
+        "@vocab": "http://vocab.ignored.org/"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "prop": {
+    "@context": {
+      "@vocab": "http://vocab.1.org/"
+    },
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/prop'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.1.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
         });
 
       });

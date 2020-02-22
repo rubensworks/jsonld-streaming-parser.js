@@ -46,6 +46,23 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     }
     // If at least least one type-scoped context applies, set them in the tree.
     if (hasTypedScopedContext) {
+      // Do not propagate by default
+      scopedContext = scopedContext.then((c) => {
+        if (!('@propagate' in c)) {
+          c['@propagate'] = false;
+        }
+
+        // Set the original context at this depth as a fallback
+        // This is needed when a context was already defined at the given depth,
+        // and this context needs to remain accessible from child nodes when propagation is disabled.
+        if (c['@propagate'] === false) {
+          c['@__propagateFallback'] = context;
+        }
+
+        return c;
+      });
+
+      // Set the new context in the context tree
       parsingContext.contextTree.setContext(keys.slice(0, keys.length - 1), scopedContext);
     }
   }

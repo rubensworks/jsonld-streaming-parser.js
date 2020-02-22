@@ -11,8 +11,9 @@ export class ContextTree {
   private readonly subTrees: {[key: string]: ContextTree} = {};
   private context: Promise<IJsonLdContextNormalized> | null;
 
-  public getContext([head, ...tail]: string[]): Promise<{ context: IJsonLdContextNormalized, depth: number }> | null {
-    if (head || tail.length) {
+  public getContext(keys: string[]): Promise<{ context: IJsonLdContextNormalized, depth: number }> | null {
+    if (keys.length > 0) {
+      const [head, ...tail] = keys;
       const subTree = this.subTrees[head];
       if (subTree) {
         const subContext = subTree.getContext(tail);
@@ -24,10 +25,11 @@ export class ContextTree {
     return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
   }
 
-  public setContext([head, ...tail]: string[], context: Promise<IJsonLdContextNormalized> | null) {
-    if (!head && !tail.length) {
+  public setContext(keys: string[], context: Promise<IJsonLdContextNormalized> | null) {
+    if (keys.length === 0) {
       this.context = context;
     } else {
+      const [head, ...tail] = keys;
       let subTree = this.subTrees[head];
       if (!subTree) {
         subTree = this.subTrees[head] = new ContextTree();

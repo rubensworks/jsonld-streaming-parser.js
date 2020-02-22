@@ -176,6 +176,36 @@ describe('ParsingContext', () => {
           });
       });
 
+      it('should return a non-propagating context if at that exact depth with a fallback context', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@__propagateFallback': { fallback: true },
+          '@propagate': false,
+          '@vocab': 'http://bla.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+          .toEqual({
+            context: {
+              '@__propagateFallback': { fallback: true },
+              '@propagate': false,
+              '@vocab': 'http://bla.org/',
+            },
+            depth: 2,
+          });
+      });
+
+      it('should return the fallback context from a non-propagating context if calling from deeper', async () => {
+        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+          '@__propagateFallback': { fallback: true },
+          '@propagate': false,
+          '@vocab': 'http://bla.org/',
+        }));
+        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+          .toEqual({
+            context: { fallback: true },
+            depth: 2,
+          });
+      });
+
     });
 
     describe('getContext', () => {

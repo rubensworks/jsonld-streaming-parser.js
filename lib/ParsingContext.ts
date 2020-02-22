@@ -218,14 +218,20 @@ export class ParsingContext {
     const originalDepth = keys.length;
     let contextData: { context: IJsonLdContextNormalized, depth: number } | null = null;
     do {
-      // If we had a previous iteration, jump to the parent of context depth.
-      // We must do this because once we get here, last context had propagation disabled,
-      // so we check its first parent instead.
-      if (contextData) {
-        keys = keys.slice(0, contextData.depth - 1);
-      }
+      if (contextData && '@__propagateFallback' in contextData.context) {
+        // If a propagation fallback context has been set,
+        // fallback to that context and retry for the same depth.
+        contextData.context = contextData.context['@__propagateFallback'];
+      } else {
+        if (contextData) {
+          // If we had a previous iteration, jump to the parent of context depth.
+          // We must do this because once we get here, last context had propagation disabled,
+          // so we check its first parent instead.
+          keys = keys.slice(0, contextData.depth - 1);
+        }
 
-      contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
+        contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
+      }
     } while (contextData.depth > 0
     && contextData.context['@propagate'] === false
     && contextData.depth !== originalDepth);
