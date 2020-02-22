@@ -24,16 +24,9 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     const reverse = Util.isPropertyReverse(context, keyOriginal, await util.unaliasKeywordParent(keys, depth));
 
     // Handle multiple values if the value is an array
-    if (Array.isArray(value)) {
-      for (const element of value) {
-        const type = util.createVocabOrBaseTerm(context, element);
-        if (type) {
-          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-            predicate, type, reverse);
-        }
-      }
-    } else {
-      const type = util.createVocabOrBaseTerm(context, value);
+    const elements = Array.isArray(value) ? value : [ value ];
+    for (const element of elements) {
+      const type = util.createVocabOrBaseTerm(context, element);
       if (type) {
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
           predicate, type, reverse);
