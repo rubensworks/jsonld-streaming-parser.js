@@ -4631,6 +4631,364 @@ describe('JsonLdParser', () => {
           });
         });
 
+        describe('an out-of-order type-scoped context', () => {
+          it('with a context, predicate and contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, predicate and non-contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, contexted-type and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, non-contexted-type and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a predicate, context and contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "@type": "Foo"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a predicate, context and non-contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "@type": "Foo"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a predicate, contexted-type and context', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a predicate, non-contexted-type and context', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a contexted-type, predicate and context', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a non-contexted-type, predicate and context', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a contexted-type, context and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a non-contexted-type, context and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, and two sets of predicate and contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "a": {
+    "pred1": "http://ex.org/obj1",
+    "@type": "Foo"
+  },
+  "b": {
+    "pred2": "http://ex.org/obj2",
+    "@type": "Foo"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b0'), namedNode('http://vocab.org/a'), blankNode('b1')),
+              triple(blankNode('b0'), namedNode('http://vocab.org/b'), blankNode('b2')),
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+              triple(blankNode('b2'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b2'), namedNode('http://vocab.1.org/pred2'), literal('http://ex.org/obj2')),
+            ]);
+          });
+
+          it('with a context, predicate and 2 contexted-types in array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": [ "Foo", "Foo2" ]
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://vocab.org/Foo2')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, predicate and contexted-type, followed by another predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "pred2": "http://ex.org/obj2",
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred2'), literal('http://ex.org/obj2')),
+            ]);
+          });
+
+          it('with a context, predicate and contexted-type, followed by another predicate with inner node', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "pred2": {
+    "@id": "http://ex.org/obj2",
+    "pred3": "http://ex.org/obj3",
+  },
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred2'), namedNode('http://ex.org/obj2')),
+              triple(namedNode('http://ex.org/obj2'), namedNode('http://vocab.org/pred3'),
+                literal('http://ex.org/obj3')),
+            ]);
+          });
+        });
+
       });
 
       describe('not allowing an out-of-order context', () => {

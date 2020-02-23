@@ -135,6 +135,23 @@ export class Util {
   }
 
   /**
+   * Check if the given first array (needle) is a prefix of the given second array (haystack).
+   * @param needle An array to check if it is a prefix.
+   * @param haystack An array to look in.
+   */
+  public static isPrefixArray(needle: string[], haystack: string[]): boolean {
+    if (needle.length > haystack.length) {
+      return false;
+    }
+    for (let i = 0; i < needle.length; i++) {
+      if (needle[i] !== haystack[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Make sure that @id-@index pairs are equal over all array values.
    * Reject otherwise.
    * @param {any[]} value An array value.

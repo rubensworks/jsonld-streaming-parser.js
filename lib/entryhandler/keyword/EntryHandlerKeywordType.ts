@@ -1,8 +1,8 @@
+import {IJsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContext";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
-import {IJsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContext";
 
 /**
  * Handles @graph entries.

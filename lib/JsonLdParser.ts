@@ -42,10 +42,12 @@ export class JsonLdParser extends Transform {
   private readonly util: Util;
 
   private readonly jsonParser: any;
-  // Jobs that are not started yet because of a missing @context
-  private readonly contextAwaitingJobs: (() => Promise<void>)[];
-  // Jobs that are not started yet that process a @context
+  // Jobs that are not started yet that process a @context (only used if allowOutOfOrderContext is true)
   private readonly contextJobs: (() => Promise<void>)[][];
+  // Jobs that are not started yet that process a @type (only used if allowOutOfOrderContext is true)
+  private readonly typeJobs: { job: () => Promise<void>, keys: string[] }[];
+  // Jobs that are not started yet because of a missing @context or @type (only used if allowOutOfOrderContext is true)
+  private readonly contextAwaitingJobs: { job: () => Promise<void>, keys: string[] }[];
 
   // The last depth that was processed.
   private lastDepth: number;
@@ -62,8 +64,9 @@ export class JsonLdParser extends Transform {
     this.util = new Util({ dataFactory: options.dataFactory, parsingContext: this.parsingContext });
 
     this.jsonParser = new Parser();
-    this.contextAwaitingJobs = [];
     this.contextJobs = [];
+    this.typeJobs = [];
+    this.contextAwaitingJobs = [];
 
     this.lastDepth = 0;
     this.lastKeys = [];
@@ -336,16 +339,21 @@ export class JsonLdParser extends Transform {
           && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
           // If an out-of-order context is allowed,
           // we have to buffer everything.
-          // We store jobs for @context's separately,
+          // We store jobs for @context's and @type's separately,
           // because at the end, we have to process them first.
+          // We also handle @type because these *could* introduce a type-scoped context.
           if (keys[depth] === '@context') {
             let jobs = this.contextJobs[depth];
             if (!jobs) {
               jobs = this.contextJobs[depth] = [];
             }
             jobs.push(valueJobCb);
+          } else if (keys[depth] === '@type'
+            || typeof keys[depth] === 'number' && keys[depth - 1] === '@type') { // Also capture @type with array values
+            // Remove @type from keys, because we want it to apply to parent later on
+            this.typeJobs.push({ job: valueJobCb, keys: keys.slice(0, keys.length - 1) });
           } else {
-            this.contextAwaitingJobs.push(valueJobCb);
+            this.contextAwaitingJobs.push({ job: valueJobCb, keys });
           }
         } else {
           // Make sure that our value jobs are chained synchronously
@@ -397,7 +405,37 @@ export class JsonLdParser extends Transform {
 
     // Handle non-context jobs
     for (const job of this.contextAwaitingJobs) {
-      await job();
+      // Check if we have a type (with possible type-scoped context) that should be handled before.
+      // We check all possible parent nodes for the current job, from root to leaves.
+      if (this.typeJobs.length > 0) {
+        // First collect all applicable type jobs
+        const applicableTypeJobs: { job: () => Promise<void>, keys: string[] }[] = [];
+        const applicableTypeJobIds: number[] = [];
+        for (let i = 0; i < this.typeJobs.length; i++) {
+          const typeJob = this.typeJobs[i];
+          if (Util.isPrefixArray(typeJob.keys, job.keys)) {
+            applicableTypeJobs.push(typeJob);
+            applicableTypeJobIds.push(i);
+          }
+        }
+
+        // Next, sort the jobs from short to long key length (to ensure types higher up in the tree to be handled first)
+        const sortedTypeJobs = applicableTypeJobs.sort((job1, job2) => job1.keys.length - job2.keys.length);
+
+        // Finally, execute the jobs in order
+        for (const typeJob of sortedTypeJobs) {
+          await typeJob.job();
+        }
+
+        // Remove the executed type jobs
+        // Sort first, so we can efficiently splice
+        const sortedApplicableTypeJobIds = applicableTypeJobIds.sort().reverse();
+        for (const jobId of sortedApplicableTypeJobIds) {
+          this.typeJobs.splice(jobId, 1);
+        }
+      }
+
+      await job.job();
     }
   }
 }

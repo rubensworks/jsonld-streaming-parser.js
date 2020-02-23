@@ -146,6 +146,42 @@ describe('Util', () => {
     });
   });
 
+  describe('isPrefixArray', () => {
+    it('should return true for empty arrays', async () => {
+      expect(Util.isPrefixArray([], [])).toBe(true);
+    });
+
+    it('should return true for empty needle in non-empty haystack', async () => {
+      expect(Util.isPrefixArray([], ['a', 'b', 'c'])).toBe(true);
+    });
+
+    it('should return false for non-empty needle in empty haystack', async () => {
+      expect(Util.isPrefixArray(['a'], [])).toBe(false);
+    });
+
+    it('should return false for needle larger than in haystack', async () => {
+      expect(Util.isPrefixArray(['a', 'b'], ['a'])).toBe(false);
+    });
+
+    it('should return true for needle equal to haystack', async () => {
+      expect(Util.isPrefixArray(['a', 'b'], ['a', 'b'])).toBe(true);
+    });
+
+    it('should return true for needle prefix of haystack', async () => {
+      expect(Util.isPrefixArray(['a'], ['a', 'b', 'c'])).toBe(true);
+      expect(Util.isPrefixArray(['a'], ['a', 'b', 'c', 'd'])).toBe(true);
+      expect(Util.isPrefixArray(['a', 'b'], ['a', 'b', 'c'])).toBe(true);
+      expect(Util.isPrefixArray(['a', 'b'], ['a', 'b', 'c', 'd'])).toBe(true);
+    });
+
+    it('should return false for needle not prefix of haystack', async () => {
+      expect(Util.isPrefixArray(['b'], ['a', 'b', 'c'])).toBe(false);
+      expect(Util.isPrefixArray(['b'], ['a', 'b', 'c', 'd'])).toBe(false);
+      expect(Util.isPrefixArray(['b', 'c'], ['a', 'b', 'c'])).toBe(false);
+      expect(Util.isPrefixArray(['b', 'c'], ['a', 'b', 'c', 'd'])).toBe(false);
+    });
+  });
+
   describe('instance', () => {
 
     let util;
