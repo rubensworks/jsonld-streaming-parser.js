@@ -125,12 +125,15 @@ export class ParsingContext {
    * Parse the given context with the configured options.
    * @param {JsonLdContext} context A context to parse.
    * @param {IJsonLdContextNormalized} parentContext An optional parent context.
+   * @param {boolean} ignoreProtection If @protected term checks should be ignored.
    * @return {Promise<IJsonLdContextNormalized>} A promise resolving to the parsed context.
    */
-  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalized)
+  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalized,
+                            ignoreProtection?: boolean)
     : Promise<IJsonLdContextNormalized> {
     return this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
+      ignoreProtection,
       normalizeLanguageTags: this.normalizeLanguageTags,
       parentContext,
       processingMode: this.activeProcessingMode,
@@ -181,7 +184,7 @@ export class ParsingContext {
       const key = keysOriginal[i];
       const contextKeyEntry = context[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-        const scopedContext = await this.parseContext(contextKeyEntry, context);
+        const scopedContext = await this.parseContext(contextKeyEntry, context, true);
         const propagate = scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {

@@ -8917,6 +8917,33 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should add allow a protected property to be overridden', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "@protected": true,
+    "bar": "http://ex.overrideme.org/bar",
+    "foo": {
+      "@context": {
+        "bar": "http://ex.org/bar"
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+              quad(namedNode('http://ex.org/myinnerid'), namedNode('http://ex.org/bar'),
+                literal('baz')),
+            ]);
+          });
+
         });
 
         describe('type scoped contexts', () => {
