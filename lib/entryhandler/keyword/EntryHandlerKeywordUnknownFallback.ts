@@ -21,6 +21,10 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
     return false;
   }
 
+  public isStackProcessor(): boolean {
+    return true;
+  }
+
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     const key = await util.unaliasKeyword(keys[depth], keys, depth);

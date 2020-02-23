@@ -4745,6 +4745,227 @@ describe('JsonLdParser', () => {
           });
         });
 
+        describe('an out-of-order type-scoped context', () => {
+          it('with a context, predicate and contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo"
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'type-scoped context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a context, predicate and non-contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, contexted-type and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.1.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a context, non-contexted-type and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1"
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example.org/Foo')),
+              triple(blankNode('b1'), namedNode('http://vocab.org/pred1'), literal('http://ex.org/obj1')),
+            ]);
+          });
+
+          it('with a predicate, context and contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  },
+  "@type": "Foo"
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a predicate, context and non-contexted-type', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "@type": "Foo"
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a predicate, contexted-type and context', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a predicate, non-contexted-type and context', async () => {
+            const stream = streamifyString(`
+{
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a contexted-type, predicate and context', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a non-contexted-type, predicate and context', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a contexted-type, context and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo",
+      "@context": {
+        "@vocab": "http://vocab.1.org/"
+      }
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a non-contexted-type, context and predicate', async () => {
+            const stream = streamifyString(`
+{
+  "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+        });
+
       });
 
       describe('@type', () => {

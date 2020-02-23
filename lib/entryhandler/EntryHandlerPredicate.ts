@@ -80,6 +80,10 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     return true;
   }
 
+  public isStackProcessor(): boolean {
+    return true;
+  }
+
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     const key = keys[depth];

@@ -173,12 +173,15 @@ export class JsonLdParser extends Transform {
         if (testResult) {
           // Pass processing over to the handler
           await entryHandler.handle(this.parsingContext, this.util, key, keys, value, depth, testResult);
+
+          // Flag that this depth is processed
+          if (entryHandler.isStackProcessor()) {
+            this.parsingContext.processingStack[depth] = true;
+          }
+
           break;
         }
       }
-
-      // Flag that this depth is processed
-      this.parsingContext.processingStack[depth] = true;
     }
 
     // Validate value indexes on the root.
@@ -416,9 +419,10 @@ export interface IJsonLdParserOptions {
    */
   baseIRI?: string;
   /**
-   * If @context definitions should be allowed as non-first object entries.
+   * If @context definitions should be allowed as non-first object entries,
+   * and @type definitions not as next next entries.
    * When enabled, streaming results may not come as soon as possible,
-   * and will be buffered until the end when no context is defined at all.
+   * and will be buffered until the end when no context/type is defined at all.
    * Defaults to false.
    *
    * Spec-compliance: to be fully spec-compliant,

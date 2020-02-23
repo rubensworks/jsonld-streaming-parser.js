@@ -12,6 +12,10 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     super('@context');
   }
 
+  public isStackProcessor(): boolean {
+    return false;
+  }
+
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.

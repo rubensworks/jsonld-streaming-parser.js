@@ -12,6 +12,12 @@ export interface IEntryHandler<T> {
   isPropertyHandler(): boolean;
 
   /**
+   * @return {boolean} If this handler should flag {@link ParsingContext#processingStack} for the given depth.
+   *                   Handlers for things like @id, @context and return false, while property handlers return true.
+   */
+  isStackProcessor(): boolean;
+
+  /**
    * Check if the given key is valid.
    *
    * This is called when validating parent keys.

@@ -11,6 +11,10 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
     super('@id');
   }
 
+  public isStackProcessor(): boolean {
+    return false;
+  }
+
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // Determine the canonical place for this id.

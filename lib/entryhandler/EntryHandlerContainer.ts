@@ -175,6 +175,10 @@ export class EntryHandlerContainer implements IEntryHandler<{
     return false;
   }
 
+  public isStackProcessor(): boolean {
+    return true;
+  }
+
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     return !!await this.test(parsingContext, util, null, keys, depth);

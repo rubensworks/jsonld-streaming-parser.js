@@ -12,6 +12,10 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     return false;
   }
 
+  public isStackProcessor(): boolean {
+    return true;
+  }
+
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     return this.test(parsingContext, util, null, keys, depth);
