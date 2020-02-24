@@ -213,7 +213,8 @@ export class Util {
 
       // Handle local context in the value
       if ('@context' in value) {
-        context = await this.parsingContext.parseContext(value['@context'], context);
+        context = await this.parsingContext.parseContext(value['@context'],
+          await this.parsingContext.getContext(keys, 0));
       }
 
       // In all other cases, we have a hash

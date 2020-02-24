@@ -288,6 +288,7 @@ describe('Util', () => {
 
         it('with a relative @id and empty local @context with @base in parent context', async () => {
           context = { '@base': 'http://ex.org/' };
+          util.parsingContext.contextTree.setContext([], Promise.resolve({ '@base': 'http://ex.org/' }));
           return expect(await util.valueToTerm(context, 'key', { '@context': {}, '@id': 'abc' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/abc')]);
         });

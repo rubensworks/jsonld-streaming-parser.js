@@ -9370,7 +9370,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.PROTECTED_TERM_REDIFINITION));
         });
 
-        it('should not error on protected term overrides in before a property scoped-context', async () => {
+        it('should not error on protected term overrides before a property scoped-context', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -9396,7 +9396,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error on protected term overrides in after a property scoped-context', async () => {
+        it('should error on protected term overrides after a property scoped-context', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -9418,6 +9418,32 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
             ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+        });
+
+        it('should not error on protected term, context null in a property scoped-context, and override', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@protected": true,
+    "foo": "http://ex.org/foo",
+    "scope": {
+      "@id": "http://ex.org/scope",
+      "@context": null
+    }
+  },
+  "scope": {
+    "@context": {
+      "foo": "http://ex.2.org/foo"
+    },
+    "foo": "bar"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''), namedNode('http://ex.org/scope'),
+              blankNode('b1')),
+            quad(blankNode('b1'), namedNode('http://ex.2.org/foo'),
+              literal('bar')),
+          ]);
         });
 
       });

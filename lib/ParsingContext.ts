@@ -189,15 +189,19 @@ export class ParsingContext {
           || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
-          if (propagate !== false) {
-            this.contextTree.setContext(keysOriginal.slice(0, i + offset), Promise.resolve(scopedContext));
-          }
           context = scopedContext;
 
           // Clean up final context
           delete context['@propagate'];
           context[key] = { ...context[key] };
+          if ('@id' in contextKeyEntry) {
+            context[key]['@id'] = contextKeyEntry['@id'];
+          }
           delete context[key]['@context'];
+
+          if (propagate !== false) {
+            this.contextTree.setContext(keysOriginal.slice(0, i + offset), Promise.resolve(context));
+          }
         }
       }
     }
