@@ -185,7 +185,8 @@ export class ParsingContext {
       const contextKeyEntry = context[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
         const scopedContext = await this.parseContext(contextKeyEntry, context, true);
-        const propagate = scopedContext[key]['@context']['@propagate']; // Propagation is true by default
+        const propagate = !(key in scopedContext)
+          || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
           if (propagate !== false) {

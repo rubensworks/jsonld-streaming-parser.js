@@ -8787,6 +8787,30 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should propagate by default with nullification', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "foo": {
+      "@context": null
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@id": "http://ex.org/myinnerid",
+    "bar1": {
+      "@id": "http://ex.org/myinnerinnerid",
+      "bar2": "baz"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+                namedNode('http://ex.org/myinnerid')),
+            ]);
+          });
+
           it('should propagate for @propagate: true', async () => {
             const stream = streamifyString(`
 {
