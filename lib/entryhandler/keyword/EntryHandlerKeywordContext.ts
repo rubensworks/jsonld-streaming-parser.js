@@ -24,8 +24,10 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
         '(enable with `allowOutOfOrderContext`)'));
     }
 
-    // Find the parent context to inherit from
-    const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(keys.slice(0, -1));
+    // Find the parent context to inherit from.
+    // We actually request a context for the current depth (with fallback to parent)
+    // because we want to take into account any property-scoped contexts that are defined for this depth.
+    const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(keys);
 
     // Set the context for this scope
     const context = parsingContext.parseContext(value, await parentContext);

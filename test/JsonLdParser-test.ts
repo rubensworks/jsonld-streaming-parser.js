@@ -9307,6 +9307,121 @@ describe('JsonLdParser', () => {
 
       });
 
+      describe('protected terms', () => {
+
+        it('should error on protected term overrides', async () => {
+          const stream = streamifyString(`
+{
+  "@context": [
+    {
+      "@vocab": "http://vocab.org/",
+      "@protected": true,
+      "foo": "http://ex.org/foo"
+    },
+    {
+      "foo": "http://ex.2.org/foo"
+    }
+  ],
+  "foo": "bar"
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
+            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+        });
+
+        it('should not error on protected term overrides with identical value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": [
+    {
+      "@vocab": "http://vocab.org/",
+      "@protected": true,
+      "foo": "http://ex.org/foo"
+    },
+    {
+      "foo": "http://ex.org/foo"
+    }
+  ],
+  "foo": "bar"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''), namedNode('http://ex.org/foo'),
+              literal('bar')),
+          ]);
+        });
+
+        it('should error on protected term overrides in embedded contexts', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "@protected": true,
+    "foo": "http://ex.org/foo"
+  },
+  "scope": {
+    "@context": {
+      "foo": "http://ex.2.org/foo"
+    },
+    "foo": "bar"
+  }
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
+            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+        });
+
+        it('should not error on protected term overrides in before a property scoped-context', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "@protected": true,
+    "foo": "http://ex.org/foo",
+    "scope": {
+      "@context": {
+        "@protected": true,
+        "foo": "http://ex.2.org/foo"
+      }
+    }
+  },
+  "scope": {
+    "foo": "bar"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(blankNode(''), namedNode('http://vocab.org/scope'),
+              blankNode('b1')),
+            quad(blankNode('b1'), namedNode('http://ex.2.org/foo'),
+              literal('bar')),
+          ]);
+        });
+
+        it('should error on protected term overrides in after a property scoped-context', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "scope": {
+      "@context": {
+        "@protected": true,
+        "foo": "http://ex.org/foo"
+      }
+    }
+  },
+  "scope": {
+    "@context": {
+      "foo": "http://ex.2.org/foo"
+    },
+    "foo": "bar"
+  }
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
+            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+        });
+
+      });
+
       // MARKER: Add tests for new features here, wrapped in new describe blocks.
     });
 
