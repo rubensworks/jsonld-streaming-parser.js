@@ -755,7 +755,7 @@ export class Util {
       if (!graph) {
         let graphId: RDF.NamedNode | RDF.BlankNode | null = null;
         if ('@id' in containers) {
-          const keyUnaliased = await this.getContainerKey(keys, depthContainer);
+          const keyUnaliased = await this.getContainerKey(keys[depthContainer], keys, depthContainer);
           if (keyUnaliased !== null) {
             graphId = await this.resourceToTerm(await this.parsingContext.getContext(keys), keyUnaliased);
           }
@@ -806,14 +806,15 @@ export class Util {
 
   /**
    * Get the key for the current container entry.
+   * @param key A key, can be falsy.
    * @param keys The key chain.
    * @param depth The current depth to get the key from.
    * @return Promise resolving to the key.
    *         Null will be returned for @none entries, with aliasing taken into account.
    */
-  public async getContainerKey(keys: string[], depth: number): Promise<any> {
-    const key = await this.unaliasKeyword(keys[depth], keys, depth);
-    return key === '@none' ? null : key;
+  public async getContainerKey(key: any, keys: string[], depth: number): Promise<any> {
+    const keyUnaliased = await this.unaliasKeyword(key, keys, depth);
+    return keyUnaliased === '@none' ? null : keyUnaliased;
   }
 
 }

@@ -17,7 +17,7 @@ export class ContainerHandlerLanguage implements IContainerHandler {
   public async handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
                       keys: string[], value: any, depth: number)
     : Promise<void> {
-    const language = await util.getContainerKey(keys, depth);
+    const language = await util.getContainerKey(keys[depth], keys, depth);
 
     if (Array.isArray(value)) {
       value = value.map((subValue) => ({ '@value': subValue, '@language': language }));

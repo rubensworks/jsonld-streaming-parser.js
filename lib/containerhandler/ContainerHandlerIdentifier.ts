@@ -26,7 +26,7 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
       id = parsingContext.idStack[depth + 1][0];
     } else {
       // Create the identifier
-      const keyUnaliased = await util.getContainerKey(keys, depth);
+      const keyUnaliased = await util.getContainerKey(keys[depth], keys, depth);
       const maybeId = keyUnaliased !== null
         ? await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth])
         : util.dataFactory.blankNode();

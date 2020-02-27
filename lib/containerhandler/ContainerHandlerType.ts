@@ -52,7 +52,7 @@ export class ContainerHandlerType implements IContainerHandler {
       }
 
       // Identify the type to emit.
-      const keyOriginal = await util.getContainerKey(keys, depth);
+      const keyOriginal = await util.getContainerKey(keys[depth], keys, depth);
       const type = keyOriginal !== null
         ? util.createVocabOrBaseTerm(await parsingContext.getContext(keys), keyOriginal)
         : null;
