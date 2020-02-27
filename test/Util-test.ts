@@ -98,6 +98,16 @@ describe('Util', () => {
     });
   });
 
+  describe('#getContextValueIndex', () => {
+    it('should return null as default', async () => {
+      expect(Util.getContextValueIndex({}, 'abc')).toBe(null);
+    });
+
+    it('should return the value when defined as such', async () => {
+      expect(Util.getContextValueIndex({ abc: { '@index': 'bla' } }, 'abc')).toBe('bla');
+    });
+  });
+
   describe('#isPropertyReverse', () => {
     it('should return false as default', async () => {
       expect(Util.isPropertyReverse({}, 'abc', 'def')).toBe(false);

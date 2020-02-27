@@ -114,6 +114,16 @@ export class Util {
   }
 
   /**
+   * Get the @index of the given key in the context.
+   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {string} key A context entry key.
+   * @return {string} The index.
+   */
+  public static getContextValueIndex(context: IJsonLdContextNormalized, key: string): string | null {
+    return Util.getContextValue(context, '@index', key, context['@index'] || null);
+  }
+
+  /**
    * Check if the given key refers to a reversed property.
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The property key.
