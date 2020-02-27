@@ -119,7 +119,7 @@ export class Util {
    * @param {string} key A context entry key.
    * @return {string} The index.
    */
-  public static getContextValueIndex(context: IJsonLdContextNormalized, key: string): string | null {
+  public static getContextValueIndex(context: IJsonLdContextNormalized, key: string): any | null {
     return Util.getContextValue(context, '@index', key, context['@index'] || null);
   }
 

@@ -1,3 +1,5 @@
+import {ContextParser} from "jsonld-context-parser/lib/ContextParser";
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
 import {EntryHandlerPredicate} from "../entryhandler/EntryHandlerPredicate";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
@@ -25,6 +27,17 @@ export class ContainerHandlerIndex implements IContainerHandler {
       const indexKey = keys[depth - 1];
       const indexPropertyRaw = Util.getContextValueIndex(context, indexKey);
       if (indexPropertyRaw) {
+        // Validate the @index value
+        if (ContextParser.isPotentialKeyword(indexPropertyRaw)) {
+          throw new ErrorCoded(`Keywords can not be used as @index value, got: ${indexPropertyRaw}`,
+            ERROR_CODES.INVALID_TERM_DEFINITION);
+        }
+        if (typeof indexPropertyRaw !== 'string') {
+          throw new ErrorCoded(`@index values must be strings, got: ${indexPropertyRaw}`,
+            ERROR_CODES.INVALID_TERM_DEFINITION);
+        }
+
+        // Expand the @index value
         const indexProperty = util.createVocabOrBaseTerm(context, indexPropertyRaw);
         if (indexProperty) {
           const indexValues = await util.valueToTerm(context, indexKey,

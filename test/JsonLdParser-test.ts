@@ -6873,6 +6873,46 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with a keyword @index value should error', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index", "@index": "@keyword" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": {
+      "@id": "ex:id1",
+      "ex:name": "Name1"
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              new ErrorCoded('Keywords can not be used as @index value, got: @keyword',
+                ERROR_CODES.INVALID_TERM_DEFINITION));
+          });
+
+          it('with a non-string @index value should error', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index", "@index": true }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": {
+      "@id": "ex:id1",
+      "ex:name": "Name1"
+    }
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              new ErrorCoded('@index values must be strings, got: true',
+              ERROR_CODES.INVALID_TERM_DEFINITION));
+          });
+
         });
 
         describe('for identifiers', () => {
