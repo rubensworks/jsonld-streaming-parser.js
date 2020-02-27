@@ -6913,6 +6913,94 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_TERM_DEFINITION));
           });
 
+          it('with @id and index map with a raw value should error', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index", "@index": "ex:prop" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": "ex:id1"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              new ErrorCoded('Property-based index containers require nodes as values or strings with ' +
+                '@type: @id, but got: ex:id1',
+                ERROR_CODES.INVALID_VALUE_OBJECT));
+          });
+
+          it('with @id and index map with a raw value in an array should error', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index", "@index": "ex:prop" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": [ "ex:id1" ]
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              new ErrorCoded('Property-based index containers require nodes as values or strings with ' +
+                '@type: @id, but got: ex:id1',
+                ERROR_CODES.INVALID_VALUE_OBJECT));
+          });
+
+          it('with @id and index map with a raw value with @type: @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@type": "@id", "@container": "@index", "@index": "ex:prop" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": "ex:id1"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/id1'), namedNode('http://ex.org/prop'),
+                literal('Value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/id1')),
+            ]);
+          });
+
+          it('with @id and index map with a raw value with @type: @id with invalid IRI', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@type": "@id", "@container": "@index", "@index": "ex:prop" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": "id1"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          });
+
+          it('with @id and index map with a raw value with @type: @bla should error', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@type": "@bla", "@container": "@index", "@index": "ex:prop" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": "ex:id1"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              new ErrorCoded('A context @type must be an absolute IRI, found: \'p\': \'@bla\'',
+                ERROR_CODES.INVALID_TYPE_MAPPING));
+          });
+
         });
 
         describe('for identifiers', () => {

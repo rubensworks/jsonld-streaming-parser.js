@@ -37,10 +37,26 @@ export class ContainerHandlerIndex implements IContainerHandler {
             ERROR_CODES.INVALID_TERM_DEFINITION);
         }
 
+        // When @index is used, values must be node values, unless @type: @id is defined in the context
+        if (typeof value !== 'object') {
+          // Error if we don't have @type: @id
+          if (Util.getContextValueType(context, indexKey) !== '@id') {
+            throw new ErrorCoded(
+              `Property-based index containers require nodes as values or strings with @type: @id, but got: ${value}`,
+              ERROR_CODES.INVALID_VALUE_OBJECT);
+          }
+
+          // Add an @id to the stack, so our expanded @index value can make use of it
+          const id = util.resourceToTerm(context, value);
+          if (id) {
+            parsingContext.idStack[depth + 1] = [id];
+          }
+        }
+
         // Expand the @index value
         const indexProperty = util.createVocabOrBaseTerm(context, indexPropertyRaw);
         if (indexProperty) {
-          const indexValues = await util.valueToTerm(context, indexKey,
+          const indexValues = await util.valueToTerm(context, <any> null, // No specific key applies here, so pass null
             await util.getContainerKey(keys[depth], keys, depth), depth, keys);
           for (const indexValue of indexValues) {
             await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
