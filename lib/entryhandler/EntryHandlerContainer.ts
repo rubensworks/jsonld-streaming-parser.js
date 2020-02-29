@@ -52,11 +52,15 @@ export class EntryHandlerContainer implements IEntryHandler<{
    * @return The graph index.
    */
   public static getContainerGraphIndex(containers: {[typeName: string]: boolean}, depth: number, keys: any[]): string {
-    const isSimpleGraphContainer = EntryHandlerContainer.isSimpleGraphContainer(containers);
+    let isSimpleGraphContainer = EntryHandlerContainer.isSimpleGraphContainer(containers);
     let index = '';
     for (let i = depth; i < keys.length; i++) {
       if (!isSimpleGraphContainer || typeof keys[i] === 'number') {
         index += ':' + keys[i];
+      }
+      // Only allow a second 'real' key if in a non-simple graph container.
+      if (!isSimpleGraphContainer && typeof keys[i] !== 'number') {
+        isSimpleGraphContainer = true;
       }
     }
     return index;

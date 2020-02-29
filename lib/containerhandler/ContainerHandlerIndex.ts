@@ -58,9 +58,20 @@ export class ContainerHandlerIndex implements IContainerHandler {
         if (indexProperty) {
           const indexValues = await util.valueToTerm(context, indexPropertyRaw,
             await util.getContainerKey(keys[depth], keys, depth), depth, keys);
-          for (const indexValue of indexValues) {
-            await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
-              indexProperty, indexValue, false);
+
+          if (graphContainer) {
+            // When we're in a graph container, attach the index to the graph identifier
+            const graphId = await util.getGraphContainerValue(keys, depth + 1);
+            for (const indexValue of indexValues) {
+              parsingContext.emitQuad(depth, util.dataFactory.quad(graphId, indexProperty, indexValue,
+                util.getDefaultGraph()));
+            }
+          } else {
+            // Otherwise, attach the index to the node identifier
+            for (const indexValue of indexValues) {
+              await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
+                indexProperty, indexValue, false);
+            }
           }
         }
       }
