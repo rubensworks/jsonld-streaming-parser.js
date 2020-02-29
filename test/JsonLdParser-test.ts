@@ -6873,6 +6873,33 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and index map with one entry where prop has @type: @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://base.org/",
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@index", "@index": "ex:prop" },
+    "ex:prop": { "@type": "@id" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "Value1": {
+      "@id": "ex:id1",
+      "ex:name": "Name1"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/id1'), namedNode('http://ex.org/name'),
+                literal('Name1')),
+              triple(namedNode('http://ex.org/id1'), namedNode('http://ex.org/prop'),
+                namedNode('http://base.org/Value1')),
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode('http://ex.org/id1')),
+            ]);
+          });
+
           it('with a keyword @index value should error', async () => {
             const stream = streamifyString(`
 {

@@ -56,7 +56,7 @@ export class ContainerHandlerIndex implements IContainerHandler {
         // Expand the @index value
         const indexProperty = util.createVocabOrBaseTerm(context, indexPropertyRaw);
         if (indexProperty) {
-          const indexValues = await util.valueToTerm(context, <any> null, // No specific key applies here, so pass null
+          const indexValues = await util.valueToTerm(context, indexPropertyRaw,
             await util.getContainerKey(keys[depth], keys, depth), depth, keys);
           for (const indexValue of indexValues) {
             await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
