@@ -4350,7 +4350,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @prefix ending on non-gen-delim char should be ignored', async () => {
+        it('without @prefix ending on non-gen-delim char should not expand', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4358,10 +4358,59 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('abc:def'),
+              literal('Brew Eats')),
+          ]);
         });
 
-        it('without @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
+        it('without @prefix ending on gen-delim char should not expand', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "abc": { "@id": "http://ex.org/compact/" }
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('abc:def'),
+              literal('Brew Eats')),
+          ]);
+        });
+
+        it('in compact form ending on non-gen-delim char should not expand', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "abc": "http://ex.org/compact-"
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('abc:def'),
+              literal('Brew Eats')),
+          ]);
+        });
+
+        it('in compact form ending on gen-delim char should expand', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "abc": "http://ex.org/compact/"
+  },
+  "abc:def": "Brew Eats"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('http://ex.org/compact/def'),
+              literal('Brew Eats')),
+          ]);
+        });
+
+        it('without @prefix in 1.0 ending on non-gen-delim char should not expand', async () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -4370,10 +4419,14 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('abc:def'),
+              literal('Brew Eats')),
+          ]);
         });
 
-        it('with @prefix in 1.0 ending on non-gen-delim char should be ignored', async () => {
+        it('with @prefix in 1.0 ending on non-gen-delim char should not expand', async () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -4382,7 +4435,11 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('http://example.org/places#BrewEats'),
+              namedNode('abc:def'),
+              literal('Brew Eats')),
+          ]);
         });
       });
 

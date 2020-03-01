@@ -12,12 +12,14 @@ export class ParsingContext {
 
   public static EXPAND_OPTIONS: {[version: number]: IExpandOptions} = {
     1.0: {
-      allowNonGenDelimsIfPrefix: false,
+      allowPrefixForcing: false,
+      allowPrefixNonGenDelims: false,
       allowReverseRelativeToVocab: false,
       allowVocabRelativeToBase: false,
     },
     1.1: {
-      allowNonGenDelimsIfPrefix: true,
+      allowPrefixForcing: true,
+      allowPrefixNonGenDelims: false,
       allowReverseRelativeToVocab: false,
       allowVocabRelativeToBase: true,
     },
