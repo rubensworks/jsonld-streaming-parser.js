@@ -227,7 +227,9 @@ export class ParsingContext {
     Promise<{ context: IJsonLdContextNormalized, depth: number }> {
     const originalDepth = keys.length;
     let contextData: { context: IJsonLdContextNormalized, depth: number } | null = null;
+    let hasApplicablePropertyScopedContext: boolean;
     do {
+      hasApplicablePropertyScopedContext = false;
       if (contextData && '@__propagateFallback' in contextData.context) {
         // If a propagation fallback context has been set,
         // fallback to that context and retry for the same depth.
@@ -242,14 +244,21 @@ export class ParsingContext {
 
         contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
       }
-    } while (contextData.depth > 0 // Root context has a special case
-    && contextData.context['@propagate'] === false // Stop loop if propagation is true
-    && contextData.depth !== originalDepth // Stop loop if requesting exact depth of non-propagating
+
       // Allow non-propagating contexts to propagate one level deeper
       // if it defines a property-scoped context that is applicable for the current key.
       // @see https://w3c.github.io/json-ld-api/tests/toRdf-manifest#tc012
-    && !(keys[keys.length - 1] in contextData.context && '@context' in contextData.context[keys[keys.length - 1]])
-      );
+      const lastKey = keys[keys.length - 1];
+      if (lastKey in contextData.context) {
+        const lastKeyValue = contextData.context[lastKey];
+        if (lastKeyValue && typeof lastKeyValue === 'object' && '@context' in lastKeyValue) {
+          hasApplicablePropertyScopedContext = true;
+        }
+      }
+    } while (contextData.depth > 0 // Root context has a special case
+    && contextData.context['@propagate'] === false // Stop loop if propagation is true
+    && contextData.depth !== originalDepth // Stop loop if requesting exact depth of non-propagating
+    && !hasApplicablePropertyScopedContext);
 
      // Special case for root context that does not allow propagation.
     // Fallback to empty context in that case.
