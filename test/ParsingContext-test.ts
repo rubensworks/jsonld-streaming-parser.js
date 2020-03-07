@@ -535,6 +535,32 @@ describe('ParsingContext', () => {
 
       });
 
+      describe('for type-scoped and property-scoped contexts', () => {
+
+        beforeEach(() => {
+          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({
+            '@__propagateFallback': { fallback: true },
+            '@propagate': false,
+            '@vocab': 'http://bla.org/',
+            'bar': {
+              '@context': {
+                baz: { '@type': '@vocab' },
+              },
+            },
+          }));
+        });
+
+        it('should consider the applicable property-scoped context', async () => {
+          return expect(await parsingContext.getContext(['', 'a', 'bar'], 0))
+            .toEqual({
+              '@__propagateFallback': { fallback: true },
+              '@vocab': 'http://bla.org/',
+              'bar': {},
+              'baz': { '@type': '@vocab' },
+            });
+        });
+      });
+
     });
 
   });

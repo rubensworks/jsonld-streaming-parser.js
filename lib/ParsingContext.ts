@@ -242,11 +242,16 @@ export class ParsingContext {
 
         contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
       }
-    } while (contextData.depth > 0
-    && contextData.context['@propagate'] === false
-    && contextData.depth !== originalDepth);
+    } while (contextData.depth > 0 // Root context has a special case
+    && contextData.context['@propagate'] === false // Stop loop if propagation is true
+    && contextData.depth !== originalDepth // Stop loop if requesting exact depth of non-propagating
+      // Allow non-propagating contexts to propagate one level deeper
+      // if it defines a property-scoped context that is applicable for the current key.
+      // @see https://w3c.github.io/json-ld-api/tests/toRdf-manifest#tc012
+    && !(keys[keys.length - 1] in contextData.context && '@context' in contextData.context[keys[keys.length - 1]])
+      );
 
-    // Special case for root context that does not allow propagation.
+     // Special case for root context that does not allow propagation.
     // Fallback to empty context in that case.
     if (contextData.depth === 0 && contextData.context['@propagate'] === false && contextData.depth !== originalDepth) {
       contextData.context = {};

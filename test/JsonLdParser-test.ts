@@ -9934,6 +9934,35 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('type-scoping and property-scoping', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example/",
+    "Foo": {
+      "@context": {
+        "bar": {
+          "@context": {
+            "baz": {"@type": "@vocab"}
+          }
+        }
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "@type": "Foo",
+  "bar": { "baz": "buzz" }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myid'), namedNode('http://example/bar'),
+                blankNode('b0')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Foo')),
+              quad(blankNode('b0'), namedNode('http://example/baz'),
+                namedNode('http://example/buzz')),
+            ]);
+          });
+
         });
 
       });
