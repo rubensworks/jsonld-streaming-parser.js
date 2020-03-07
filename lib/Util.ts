@@ -379,6 +379,16 @@ export class Util {
         const graphContainerEntries = this.parsingContext.graphContainerTermStack[depth + 1];
         return graphContainerEntries ? Object.values(graphContainerEntries) : [ this.dataFactory.blankNode() ];
       } else if ("@id" in value) {
+        // Use deeper context if the value node contains other properties next to @id,
+        // unless an embedded context is set to null.
+        if (Object.keys(value).length > 1) {
+          context = await this.parsingContext.getContext(keys, 0);
+        }
+        // Handle local context in the value
+        if ('@context' in value) {
+          context = await this.parsingContext.parseContext(value['@context'], context);
+        }
+
         if (value["@type"] === '@vocab') {
           return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
         } else {

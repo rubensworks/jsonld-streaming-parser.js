@@ -292,6 +292,7 @@ describe('Util', () => {
         it('with an empty @id with baseIRI and vocabIRI should return a named node for @type = @vocab', async () => {
           util = new Util({ dataFactory, parsingContext: new ParsingContextMocked(null) });
           context = { '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' };
+          util.parsingContext.contextTree.setContext([], Promise.resolve(context));
           return expect(await util.valueToTerm(context, 'key', { '@id': '', '@type': '@vocab' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://vocab.org/')]);
         });
@@ -313,6 +314,28 @@ describe('Util', () => {
           context = { '@base': 'http://ex.org/' };
           return expect(await util.valueToTerm(context, 'key', { '@context': null, '@id': 'abc' }, 0, []))
             .toEqual([]);
+        });
+
+        it('with a relative @id and no other properties with @base in parent context should return', async () => {
+          context = { '@base': 'http://ex.do.org/' };
+          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.ignored.org/' }));
+          return expect(await util.valueToTerm(context, 'key', { '@id': 'abc' }, 0, ['key']))
+            .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
+        });
+
+        it('with a relative @id and other properties with @base in inner context should return', async () => {
+          context = { '@base': 'http://ex.ignored.org/' };
+          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.do.org/' }));
+          return expect(await util.valueToTerm(context, 'key', { '@id': 'abc', 'a': 'b' }, 0, ['key']))
+            .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
+        });
+
+        it('with a relative @id and @context with @base in inner context should return', async () => {
+          context = { '@base': 'http://ex.ignored1.org/' };
+          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.ignored2.org/' }));
+          const context2 = { '@base': 'http://ex.do.org/' };
+          return expect(await util.valueToTerm(context, 'key', { '@id': 'abc', '@context': context2 }, 0, ['key']))
+            .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
         });
 
         it('with an @value should return a literal', async () => {

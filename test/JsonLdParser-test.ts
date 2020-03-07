@@ -4023,7 +4023,7 @@ describe('JsonLdParser', () => {
     "property": [
       {
         "@context": null,
-        "@id": "../document-relative",
+        "@id": "../document-relative2",
         "property": "context completely reset, drops property"
       }
     ]
@@ -4035,12 +4035,12 @@ describe('JsonLdParser', () => {
               dataFactory,
             });
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('http://example.org/document-base-overwritten'),
+                namedNode('http://example.com/vocab#property'),
+                namedNode('https://json-ld.org/test-suite/document-relative2')),
               triple(namedNode('https://json-ld.org/test-suite/document-relative'),
                 namedNode('http://example.com/vocab#property'),
                 namedNode('http://example.org/document-base-overwritten')),
-              triple(namedNode('http://example.org/document-base-overwritten'),
-                namedNode('http://example.com/vocab#property'),
-                namedNode('https://json-ld.org/test-suite/document-relative')),
             ]);
           });
 
@@ -5044,6 +5044,34 @@ describe('JsonLdParser', () => {
                 literal('http://ex.org/obj3')),
             ]);
           });
+
+          it('with a context, predicate and inner id and inner type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example/base-base",
+    "@vocab": "http://example/",
+    "foo": "http://example/foo",
+    "Type": {
+      "@context": {
+        "@base": "http://example/typed-base"
+      }
+    }
+  },
+  "@id": "#base-id",
+  "p": {
+    "@id": "#typed-id",
+    "@type": "Type"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Type')),
+              quad(namedNode('http://example/base-base#base-id'), namedNode('http://example/p'),
+                namedNode('http://example/typed-base#typed-id')),
+            ]);
+          });
         });
 
       });
@@ -5378,6 +5406,29 @@ describe('JsonLdParser', () => {
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
               'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+          });
+
+          it('with a context, predicate and inner id and inner type', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example/base-base",
+    "@vocab": "http://example/",
+    "foo": "http://example/foo",
+    "Type": {
+      "@context": {
+        "@base": "http://example/typed-base"
+      }
+    }
+  },
+  "@id": "#base-id",
+  "p": {
+    "@id": "#typed-id",
+    "@type": "Type"
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
+              'type-scoped context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
           });
         });
 
@@ -9615,8 +9666,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Foo",
+  "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -9645,8 +9696,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": [ "Foo1", "Foo2" ],
+  "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -9677,8 +9728,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": [ "Foo2", "Foo1" ],
+  "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -9709,8 +9760,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": [ "Foo1", "Foo2" ],
+  "@id": "http://ex.org/myid",
   "bar1": "baz1",
   "bar2": "baz2"
 }`);
@@ -9738,8 +9789,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Foo",
+  "@id": "http://ex.org/myid",
   "bar": {
     "@id": "http://ex.org/myinnerid",
     "baz": "buzz"
@@ -9768,8 +9819,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Foo",
+  "@id": "http://ex.org/myid",
   "bar": {
     "@id": "http://ex.org/myinnerid",
     "baz": "buzz"
@@ -9797,8 +9848,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Type",
+  "@id": "http://ex.org/myid",
   "bar": {
     "value": "value",
     "type": "value-type"
@@ -9824,8 +9875,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Type",
+  "@id": "http://ex.org/myid",
   "bar": "value"
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -9833,6 +9884,105 @@ describe('JsonLdParser', () => {
                 namedNode('http://vocab.org/Type')),
               quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/bar'),
                 literal('value', namedNode('http://vocab.org/value-type'))),
+            ]);
+          });
+
+          it('should handle @base of @id', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example/base-base",
+    "@vocab": "http://example/",
+    "foo": "http://example/foo",
+    "Type": {
+      "@context": {
+        "@base": "http://example/typed-base"
+      }
+    }
+  },
+  "@id": "#base-id",
+  "p": {
+    "@type": "Type",
+    "@id": "#typed-id"
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Type')),
+              quad(namedNode('http://example/base-base#base-id'), namedNode('http://example/p'),
+                namedNode('http://example/typed-base#typed-id')),
+            ]);
+          });
+
+          it('should handle @base of @id with a nested node with other props', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example/base-base",
+    "@vocab": "http://example/",
+    "foo": "http://example/foo",
+    "Type": {
+      "@context": {
+        "@base": "http://example/typed-base"
+      }
+    }
+  },
+  "@id": "#base-id",
+  "p": {
+    "@type": "Type",
+    "@id": "#typed-id",
+    "subjectReference": {
+      "@id": "#subject-reference-id",
+      "p": "0"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://example/base-base#subject-reference-id'), namedNode('http://example/p'),
+                literal('0')),
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://example/subjectReference'),
+                namedNode('http://example/base-base#subject-reference-id')),
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Type')),
+              quad(namedNode('http://example/base-base#base-id'), namedNode('http://example/p'),
+                namedNode('http://example/typed-base#typed-id')),
+            ]);
+          });
+
+          it('should handle @base of @id with a nested node without other props', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://example/base-base",
+    "@vocab": "http://example/",
+    "foo": "http://example/foo",
+    "Type": {
+      "@context": {
+        "@base": "http://example/typed-base"
+      }
+    }
+  },
+  "@id": "#base-id",
+  "p": {
+    "@type": "Type",
+    "@id": "#typed-id",
+    "subjectReference": {
+      "@id": "#subject-reference-id"
+    }
+  }
+}`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://example/subjectReference'),
+                namedNode('http://example/typed-base#subject-reference-id')),
+              quad(namedNode('http://example/typed-base#typed-id'),
+                namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Type')),
+              quad(namedNode('http://example/base-base#base-id'), namedNode('http://example/p'),
+                namedNode('http://example/typed-base#typed-id')),
             ]);
           });
 
@@ -9857,8 +10007,8 @@ describe('JsonLdParser', () => {
     "@context": {
       "@vocab": "http://vocab.ignored.org/"
     },
-    "@id": "http://ex.org/myinnerid",
     "@type": "Foo",
+    "@id": "http://ex.org/myinnerid",
     "bar": "baz"
   }
 }`);
@@ -9891,8 +10041,8 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid",
   "prop": {
-    "@id": "http://ex.org/myinnerid",
     "@type": "Foo",
+    "@id": "http://ex.org/myinnerid",
     "bar": "baz"
   }
 }`);
@@ -9949,8 +10099,8 @@ describe('JsonLdParser', () => {
       }
     }
   },
-  "@id": "http://ex.org/myid",
   "@type": "Foo",
+  "@id": "http://ex.org/myid",
   "bar": { "baz": "buzz" }
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
