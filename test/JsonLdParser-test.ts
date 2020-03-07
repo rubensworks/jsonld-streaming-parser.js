@@ -9986,6 +9986,37 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should handle a graph container', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "foo": "ex:foo",
+    "Outer": {
+      "@id": "ex:Outer",
+      "@context": {
+        "nested": {
+          "@id": "ex:nested",
+          "@container": "@graph"
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "ex:outer",
+  "nested": {
+    "@id": "ex:inner",
+    "foo": "bar"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:foo'), literal('bar'), blankNode('g0')),
+              quad(namedNode('ex:outer'), namedNode('ex:nested'), blankNode('g0')),
+              quad(namedNode('ex:outer'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Outer')),
+            ]);
+          });
+
         });
 
         describe('different scoping combinations', () => {

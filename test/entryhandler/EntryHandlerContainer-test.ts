@@ -240,7 +240,7 @@ describe('EntryHandlerContainer', () => {
     });
 
     it('should return when targeting a depth in an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
+      parsingContext.contextTree.setContext(["a"],
         Promise.resolve({ container: { "@container": { "@graph": true } } }));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
         .toMatchObject({
@@ -251,7 +251,7 @@ describe('EntryHandlerContainer', () => {
     });
 
     it('should return when targeting a depth in an @graph @set container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
+      parsingContext.contextTree.setContext(["a"],
         Promise.resolve({ container: { "@container": { "@graph": true, "@set": true } } }));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
         .toMatchObject({

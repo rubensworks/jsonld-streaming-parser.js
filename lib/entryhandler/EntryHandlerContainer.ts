@@ -92,7 +92,7 @@ export class EntryHandlerContainer implements IEntryHandler<{
     let checkGraphContainer = false;
 
     // Iterate from deeper to higher
-    const context = await parsingContext.getContext(keys);
+    const context = await parsingContext.getContext(keys, 2);
     for (let i = depth - 1; i >= 0; i--) {
       if (typeof keys[i] !== 'number') { // Skip array keys
         // @graph containers without any other types are one level less deep, and require special handling
