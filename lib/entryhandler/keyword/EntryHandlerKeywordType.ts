@@ -47,7 +47,8 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // If at least least one type-scoped context applies, set them in the tree.
     if (hasTypedScopedContext) {
       // Error if an out-of-order type-scoped context was found when support is not enabled.
-      if (!parsingContext.allowOutOfOrderContext && parsingContext.processingStack[depth]) {
+      if (!parsingContext.allowOutOfOrderContext
+        && (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
         parsingContext.emitError(new Error('Found an out-of-order type-scoped context, while support is not enabled.' +
           '(enable with `allowOutOfOrderContext`)'));
       }
