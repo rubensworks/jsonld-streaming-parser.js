@@ -10113,6 +10113,215 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('type-scoping and property-scoping with @type: @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Inner": {
+      "@context": {
+        "foo": {
+          "@type": "@vocab",
+          "@context": {
+            "Foo": "ex:Foo"
+          }
+        }
+      }
+    }
+  },
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "@type": "Inner",
+    "@id": "http://ex.org/myidinner",
+    "foo": "Foo"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://vocab.org/foo'),
+                namedNode('ex:Foo')),
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://vocab.org/Inner')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/nested'),
+                namedNode('http://ex.org/myidinner')),
+            ]);
+          });
+
+          it('double type-scoping and property-scoping with @type: @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Outer": {
+      "@id": "ex:Outer",
+      "@context": {
+        "nested": "ex:nested"
+      }
+    },
+    "Inner": {
+      "@context": {
+        "foo": {
+          "@type": "@vocab",
+          "@context": {
+            "Foo": "ex:Foo"
+          }
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "@type": "Inner",
+    "@id": "http://ex.org/myidinner",
+    "foo": "Foo"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://vocab.org/foo'),
+                namedNode('ex:Foo')),
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://vocab.org/Inner')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Outer')),
+              quad(namedNode('http://ex.org/myid'), namedNode('ex:nested'),
+                namedNode('http://ex.org/myidinner')),
+            ]);
+          });
+
+          it('double type-scoping and property-scoping with @type: @vocab (2)', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Outer": {
+      "@id": "ex:Outer",
+      "@context": {
+        "nested": "ex:nested"
+      }
+    },
+    "Inner": {
+      "@id": "ex:Inner",
+      "@context": {
+        "foo": {
+          "@id": "ex:foo",
+          "@type": "@vocab",
+          "@context": {
+            "Foo": "ex:Foo"
+          }
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "@type": "Inner",
+    "@id": "http://ex.org/myidinner",
+    "foo": "Foo"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myidinner'), namedNode('ex:foo'),
+                namedNode('ex:Foo')),
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Inner')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Outer')),
+              quad(namedNode('http://ex.org/myid'), namedNode('ex:nested'),
+                namedNode('http://ex.org/myidinner')),
+            ]);
+          });
+
+          it('double type-scoping and property-scoping with @type: @vocab with blank nodes', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Outer": {
+      "@id": "ex:Outer",
+      "@context": {
+        "nested": "ex:nested"
+      }
+    },
+    "Inner": {
+      "@id": "ex:Inner",
+      "@context": {
+        "foo": {
+          "@id": "ex:foo",
+          "@type": "@vocab",
+          "@context": {
+            "Foo": "ex:Foo"
+          }
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "nested": {
+    "@type": "Inner",
+    "foo": "Foo"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(blankNode('myidinner'), namedNode('ex:foo'),
+                namedNode('ex:Foo')),
+              quad(blankNode('myidinner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Inner')),
+              quad(blankNode('myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Outer')),
+              quad(blankNode('myid'), namedNode('ex:nested'),
+                blankNode('myidinner')),
+            ]);
+          });
+
+          it('double type-scoping and property-scoping with @type: @vocab without @vocab', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "Outer": {
+      "@id": "ex:Outer",
+      "@context": {
+        "nested": "ex:nested"
+      }
+    },
+    "Inner": {
+      "@id": "ex:Inner",
+      "@context": {
+        "foo": {
+          "@id": "ex:foo",
+          "@type": "@vocab",
+          "@context": {
+            "Foo": "ex:Foo"
+          }
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "http://ex.org/myid",
+  "nested": {
+    "@type": "Inner",
+    "@id": "http://ex.org/myidinner",
+    "foo": "Foo"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('http://ex.org/myidinner'), namedNode('ex:foo'),
+                namedNode('ex:Foo')),
+              quad(namedNode('http://ex.org/myidinner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Inner')),
+              quad(namedNode('http://ex.org/myid'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Outer')),
+              quad(namedNode('http://ex.org/myid'), namedNode('ex:nested'),
+                namedNode('http://ex.org/myidinner')),
+            ]);
+          });
+
         });
 
       });

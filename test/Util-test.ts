@@ -605,6 +605,18 @@ describe('Util', () => {
             .toEqualRdfTermArray([literal('abc', namedNode('http://ex.org/'))]);
         });
 
+        it('should consider a property-scoped context with @type: @vocab', async () => {
+          context = { key: { '@id': 'http://irrelevant', '@type': '@vocab', '@context': { abc: 'ex:abc' } } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
+            .toEqualRdfTermArray([namedNode('ex:abc')]);
+        });
+
+        it('should consider a property-scoped context with @language', async () => {
+          context = { key: { '@id': 'http://irrelevant', '@context': { '@language': 'en' } } };
+          return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
+            .toEqualRdfTermArray([literal('abc', 'en')]);
+        });
+
         it('with an @language: en-us should return a literal with that language', async () => {
           context = { key: { '@language': 'en-us' } };
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))

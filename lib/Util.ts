@@ -404,17 +404,38 @@ export class Util {
         }
       }
     case 'string':
-      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, value, null));
+      return this.nullableTermToArray(this.stringValueToTerm(depth,
+        await this.getContextSelfOrPropertyScoped(context, key), key, value, null));
     case 'boolean':
-      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, Boolean(value).toString(),
+      return this.nullableTermToArray(this.stringValueToTerm(depth,
+        await this.getContextSelfOrPropertyScoped(context, key), key, Boolean(value).toString(),
         this.dataFactory.namedNode(Util.XSD_BOOLEAN)));
     case 'number':
-      return this.nullableTermToArray(this.stringValueToTerm(depth, context, key, value, this.dataFactory.namedNode(
+      return this.nullableTermToArray(this.stringValueToTerm(depth,
+        await this.getContextSelfOrPropertyScoped(context, key), key, value, this.dataFactory.namedNode(
         value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE)));
     default:
       this.parsingContext.emitError(new Error(`Could not determine the RDF type of a ${type}`));
       return [];
     }
+  }
+
+  /**
+   * If the context defines a property-scoped context for the given key,
+   * that context will be returned.
+   * Otherwise, the given context will be returned as-is.
+   *
+   * This should be used for valueToTerm cases that are not objects.
+   * @param context A context.
+   * @param key A JSON key.
+   */
+  public async getContextSelfOrPropertyScoped(context: IJsonLdContextNormalized, key: string)
+    : Promise<IJsonLdContextNormalized> {
+    const contextKeyEntry = context[key];
+    if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
+      context = await this.parsingContext.parseContext(contextKeyEntry, context, true);
+    }
+    return context;
   }
 
   /**
