@@ -555,8 +555,8 @@ describe('ParsingContext', () => {
             .toEqual({
               '@__propagateFallback': { fallback: true },
               '@vocab': 'http://bla.org/',
-              'bar': {},
-              'baz': { '@type': '@vocab' },
+              'bar': { '@id': 'http://bla.org/bar' },
+              'baz': { '@type': '@vocab', '@id': 'http://bla.org/baz' },
             });
         });
       });

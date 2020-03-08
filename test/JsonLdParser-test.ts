@@ -9358,6 +9358,30 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('should use proper @vocab scope for defined terms', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "bar": {}
+  },
+  "@id": "http://ex.org/myid",
+  "foo": {
+    "@context": {
+      "@vocab": "http://vocab.1.org/"
+    },
+    "@id": "http://ex.org/myinnerid",
+    "bar": "baz"
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('http://ex.org/myid'), namedNode('http://vocab.org/foo'),
+              namedNode('http://ex.org/myinnerid')),
+            quad(namedNode('http://ex.org/myinnerid'), namedNode('http://vocab.org/bar'),
+              literal('baz')),
+          ]);
+        });
+
       });
 
       describe('scoped contexts', () => {
