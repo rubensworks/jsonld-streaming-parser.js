@@ -6694,6 +6694,39 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should be removable by overriding with a type-scoped context', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example/",
+    "prop": {"@container": "@index"},
+    "Outer": {
+      "@context": {
+        "prop": {
+          "@id": "http://example/outer-prop"
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "ex:outer",
+  "prop": {
+    "Inner": {
+      "@id": "ex:inner"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('ex:outer'), namedNode('http://example/outer-prop'),
+                blankNode('b0')),
+              triple(namedNode('ex:outer'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Outer')),
+              triple(blankNode('b0'), namedNode('http://example/Inner'),
+                namedNode('ex:inner')),
+            ]);
+          });
+
         });
 
         describe('for property-based indexes', () => {

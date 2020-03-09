@@ -60,6 +60,11 @@ export class Util {
 
   /**
    * Get the container type of the given key in the context.
+   *
+   * Should any context-scoping bugs should occur related to this in the future,
+   * it may be required to increase the offset from the depth at which the context is retrieved by one (to 2).
+   * This is because containers act 2 levels deep.
+   *
    * @param {IJsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The container type.

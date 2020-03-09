@@ -190,7 +190,7 @@ export class EntryHandlerContainer implements IEntryHandler<{
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
     : Promise<{ containers: { [typeName: string]: boolean }, handler: IContainerHandler } | null> {
-    const containers = Util.getContextValueContainer(await parsingContext.getContext(keys), keys[depth - 1]);
+    const containers = Util.getContextValueContainer(await parsingContext.getContext(keys, 2), keys[depth - 1]);
     for (const containerName in EntryHandlerContainer.CONTAINER_HANDLERS) {
       if (containers[containerName]) {
         return {
