@@ -24,7 +24,7 @@ export class ContainerHandlerLanguage implements IContainerHandler {
     } else {
       value = { '@value': value, '@language': language };
     }
-    await parsingContext.newOnValueJob(keys, value, depth - 1, true);
+    await parsingContext.newOnValueJob(keys.slice(0, keys.length - 1), value, depth - 1, true);
 
     parsingContext.emittedStack[depth] = false; // We have emitted a level higher
   }

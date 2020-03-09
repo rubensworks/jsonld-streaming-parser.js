@@ -76,7 +76,8 @@ export class ContainerHandlerIndex implements IContainerHandler {
         }
       }
 
-      await parsingContext.newOnValueJob(keys, value, depth - (graphContainer ? 2 : 1), true);
+      const depthOffset = graphContainer ? 2 : 1;
+      await parsingContext.newOnValueJob(keys.slice(0, keys.length - depthOffset), value, depth - depthOffset, true);
 
       // Flush any pending flush buffers
       await parsingContext.handlePendingContainerFlushBuffers();

@@ -9085,6 +9085,46 @@ describe('JsonLdParser', () => {
           });
         });
 
+        describe('for combinations', () => {
+          it('an index container with a type-scoped context overriding a prop as a type container', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example/",
+    "prop": {"@container": "@index"},
+    "Outer": {
+      "@context": {
+        "prop": {
+          "@id": "http://example/outer-prop",
+          "@container": "@type"
+        }
+      }
+    }
+  },
+  "@type": "Outer",
+  "@id": "ex:outer",
+  "prop": {
+    "Inner": {
+      "prop": {
+        "bar": "baz"
+      }
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('ex:outer'), namedNode('http://example/outer-prop'),
+                blankNode('b0')),
+              triple(namedNode('ex:outer'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Outer')),
+              triple(blankNode('b0'), namedNode('http://example/prop'),
+                literal('baz')),
+              triple(blankNode('b0'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('http://example/Inner')),
+            ]);
+          });
+        });
+
       });
 
       describe('@nest properties', () => {

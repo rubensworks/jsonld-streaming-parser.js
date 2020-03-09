@@ -30,7 +30,7 @@ export class ContainerHandlerType implements IContainerHandler {
         if (id) {
           // Handle the value of this node as @id, which will also cause the predicate from above to be emitted.
           const subValue = { '@id': id.termType === 'NamedNode' ? id.value : value };
-          await parsingContext.newOnValueJob(keys, subValue, depth - 1, true);
+          await parsingContext.newOnValueJob(keys.slice(0, keys.length - 1), subValue, depth - 1, true);
 
           // Set the id in the stack so it can be used for the rdf:type handling later on
           parsingContext.idStack[depth + 1] = [ id ];
@@ -45,7 +45,7 @@ export class ContainerHandlerType implements IContainerHandler {
         if (!entryHasIdentifier) {
           delete parsingContext.idStack[depth]; // Force new (blank node) identifier
         }
-        await parsingContext.newOnValueJob(keys, value, depth - 1, true);
+        await parsingContext.newOnValueJob(keys.slice(0, keys.length - 1), value, depth - 1, true);
         if (!entryHasIdentifier) {
           parsingContext.idStack[depth + 1] = parsingContext.idStack[depth]; // Copy the id to the child node, for @type
         }
