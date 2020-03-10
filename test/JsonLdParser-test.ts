@@ -9747,6 +9747,81 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should handle an @id node within a property', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://unused/",
+    "bar": {
+      "@id": "ex:bar",
+      "@context": {
+        "@base": "http://example/"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "ex:nested": {
+    "@id": "ex:inner",
+    "bar": {"@id": "a"}
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:bar'), namedNode('http://example/a')),
+              quad(namedNode('ex:outer'), namedNode('ex:nested'), namedNode('ex:inner')),
+            ]);
+          });
+
+          it('should handle an @id node within a property in an array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://unused/",
+    "bar": {
+      "@id": "ex:bar",
+      "@context": {
+        "@base": "http://example/"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "ex:nested": {
+    "@id": "ex:inner",
+    "bar": [{"@id": "a"}]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:bar'), namedNode('http://example/a')),
+              quad(namedNode('ex:outer'), namedNode('ex:nested'), namedNode('ex:inner')),
+            ]);
+          });
+
+          it('should handle an @id node with other properties within a property', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://unused/",
+    "bar": {
+      "@id": "ex:bar",
+      "@context": {
+        "@base": "http://example/"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "ex:nested": {
+    "@id": "ex:inner",
+    "bar": {"@id": "a", "p": true}
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:bar'), namedNode('http://example/a')),
+              quad(namedNode('ex:outer'), namedNode('ex:nested'), namedNode('ex:inner')),
+            ]);
+          });
+
         });
 
         describe('type scoped contexts', () => {
