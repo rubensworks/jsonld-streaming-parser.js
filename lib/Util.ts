@@ -226,6 +226,9 @@ export class Util {
         return [];
       }
 
+      // Handle property-scoped contexts
+      context = await this.getContextSelfOrPropertyScoped(context, key);
+
       // Handle local context in the value
       if ('@context' in value) {
         context = await this.parsingContext.parseContext(value['@context'],
@@ -387,8 +390,6 @@ export class Util {
         // Use deeper context if the value node contains other properties next to @id.
         if (Object.keys(value).length > 1) {
           context = await this.parsingContext.getContext(keys, 0);
-        } else {
-          context = await this.getContextSelfOrPropertyScoped(context, key);
         }
         // Handle local context in the value
         if ('@context' in value) {

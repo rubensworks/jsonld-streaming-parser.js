@@ -9822,6 +9822,31 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should handle an @value node within a property', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "nested": "ex:nested",
+    "foo": {
+      "@id": "ex:foo",
+      "@context": {
+        "value": "@value"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "nested": {
+    "@id": "ex:inner",
+    "foo": [{"value": "1"}]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:foo'), literal('1')),
+              quad(namedNode('ex:outer'), namedNode('ex:nested'), namedNode('ex:inner')),
+            ]);
+          });
+
         });
 
         describe('type scoped contexts', () => {
