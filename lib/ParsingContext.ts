@@ -169,8 +169,13 @@ export class ParsingContext {
    * @param {number} offset The path offset, defaults to 1.
    * @return {Promise<IJsonLdContextNormalized>} A promise resolving to a context.
    */
-  public async getContext(keys: string[], offset = 1): Promise<IJsonLdContextNormalized> {
+  public async getContext(keys: any[], offset = 1): Promise<IJsonLdContextNormalized> {
     const keysOriginal = keys;
+
+    // Ignore array keys at the end
+    while (typeof keys[keys.length - 1] === 'number') {
+      keys = keys.slice(0, keys.length - 1);
+    }
 
     // Handle offset on keys
     if (offset) {

@@ -10114,6 +10114,66 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('should assign appropriate context to @value nodes', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "ex:",
+    "Type": {
+      "@context": {
+        "value": "@value"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "prop": {
+    "@type": "Type",
+    "@id": "ex:inner",
+    "prop": {
+      "value": "v2"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:prop'), literal('v2')),
+              quad(namedNode('ex:inner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Type')),
+              quad(namedNode('ex:outer'), namedNode('ex:prop'), namedNode('ex:inner')),
+            ]);
+          });
+
+          it('should assign appropriate context to @value nodes in an array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "ex:",
+    "Type": {
+      "@context": {
+        "value": "@value"
+      }
+    }
+  },
+  "@id": "ex:outer",
+  "prop": {
+    "@type": "Type",
+    "@id": "ex:inner",
+    "prop": [
+      {
+        "value": "v2"
+      }
+    ]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              quad(namedNode('ex:inner'), namedNode('ex:prop'), literal('v2')),
+              quad(namedNode('ex:inner'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                namedNode('ex:Type')),
+              quad(namedNode('ex:outer'), namedNode('ex:prop'), namedNode('ex:inner')),
+            ]);
+          });
+
         });
 
         describe('different scoping combinations', () => {

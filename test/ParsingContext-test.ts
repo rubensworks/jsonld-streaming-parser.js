@@ -243,6 +243,54 @@ describe('ParsingContext', () => {
             });
         });
 
+        it('should return a set context with offset 0 and ignore one array key', async () => {
+          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 'a', 1], 0))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
+        it('should return a set context with offset 1 and ignore one array key', async () => {
+          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 'a', 'b', 1]))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
+        it('should return a set context with offset 0 and ignore multiple array keys', async () => {
+          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 'a', 1, 0, 2], 0))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
+        it('should return a set context with offset 1 and ignore multiple array key', async () => {
+          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 'a', 'b', 1, 0, 2]))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
+        it('should return a set context with offset 0 and not ignore non-last array keys', async () => {
+          parsingContext.contextTree.setContext(['', 1, 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 1, 'a'], 0))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
+        it('should return a set context with offset 1 and not ignore non-last array keys', async () => {
+          parsingContext.contextTree.setContext(['', 1, 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
+          return expect(await parsingContext.getContext(['', 1, 'a', 'b']))
+            .toEqual({
+              '@vocab': 'http://bla.org/',
+            });
+        });
+
         it('should fail to return a set context with offset 2 and fallback to root', async () => {
           parsingContext.contextTree.setContext(['', 'a'], Promise.resolve({ '@vocab': 'http://bla.org/' }));
           return expect(await parsingContext.getContext(['', 'a', 'b'], 2))

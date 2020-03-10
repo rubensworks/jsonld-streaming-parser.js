@@ -25,7 +25,7 @@ export class ContextTree {
     return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
   }
 
-  public setContext(keys: string[], context: Promise<IJsonLdContextNormalized> | null) {
+  public setContext(keys: any[], context: Promise<IJsonLdContextNormalized> | null) {
     if (keys.length === 0) {
       this.context = context;
     } else {
