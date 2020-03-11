@@ -6727,6 +6727,48 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with multiple raw value entries in one index', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "container": { "@id": "ex:container", "@container": "@index" }
+  },
+  "@id": "ex:root",
+  "container": {
+    "A": [
+      "A",
+      "B"
+    ]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('ex:root'), namedNode('ex:container'), literal('A')),
+              triple(namedNode('ex:root'), namedNode('ex:container'), literal('B')),
+            ]);
+          });
+
+          it('with multiple @value entries in one index', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "container": { "@id": "ex:container", "@container": "@index" }
+  },
+  "@id": "ex:root",
+  "container": {
+    "A": [
+      { "@value": "A" },
+      { "@value": "B" }
+    ]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              triple(namedNode('ex:root'), namedNode('ex:container'), literal('A')),
+              triple(namedNode('ex:root'), namedNode('ex:container'), literal('B')),
+            ]);
+          });
+
         });
 
         describe('for property-based indexes', () => {
@@ -10753,6 +10795,42 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+      });
+
+      describe('array values', () => {
+        it('with raw values', async () => {
+          parser = new JsonLdParser({processingMode: '1.0'});
+          const stream = streamifyString(`
+{
+  "@id": "ex:id",
+  "ex:p": [
+    "A",
+    "B"
+  ]
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('ex:id'), namedNode('ex:p'), literal('A')),
+            quad(namedNode('ex:id'), namedNode('ex:p'), literal('B')),
+          ]);
+        });
+
+        it('with @value', async () => {
+          parser = new JsonLdParser({processingMode: '1.0'});
+          const stream = streamifyString(`
+{
+  "@id": "ex:id",
+  "ex:p": [
+    {"@value": "A"},
+    {"@value": "B"}
+  ]
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            quad(namedNode('ex:id'), namedNode('ex:p'), literal('A')),
+            quad(namedNode('ex:id'), namedNode('ex:p'), literal('B')),
+          ]);
+        });
       });
 
       // MARKER: Add tests for new features here, wrapped in new describe blocks.

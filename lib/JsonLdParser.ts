@@ -216,7 +216,8 @@ export class JsonLdParser extends Transform {
     this.parsingContext.graphContainerTermStack.splice(depth, 1);
     this.parsingContext.jsonLiteralStack.splice(depth, 1);
     this.parsingContext.validationStack.splice(depth - 1, 2);
-    this.parsingContext.literalStack.splice(depth, 1);
+    this.parsingContext.literalStack.splice(depth, this.parsingContext.literalStack.length - depth);
+    // TODO: just like the literal stack, splice all other stack until the end as well?
   }
 
   /**
