@@ -35,38 +35,29 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       // Our value is part of an array
 
       // Determine the list root key
-      let listRootKey = null;
+      let listRootKey: string | number | null = null;
       let listRootDepth = 0;
       for (let i = depth - 2; i > 0; i--) {
         const keyOption = keys[i];
-        if (typeof keyOption === 'string') {
+        if (typeof keyOption === 'string' || typeof keyOption === 'number') {
           listRootDepth = i;
           listRootKey = keyOption;
           break;
         }
       }
 
-      // Throw an error if we encounter a nested list
-      if (listRootKey === '@list' ||
-        (listRootKey !== null && listRootDepth !== depth - 2 && typeof keys[depth - 2] === 'number'
-          && '@list' in Util.getContextValueContainer(await parsingContext
-            .getContext(keys, listRootDepth - depth), listRootKey))) {
-        throw new Error(`Lists of lists are not supported: '${listRootKey}'`);
-      }
-
       if (listRootKey !== null) {
         // Emit the given objects as list elements
         const values = await util.valueToTerm(await parsingContext.getContext(keys),
-          listRootKey, value, depth, keys);
+          <string> listRootKey, value, depth, keys);
         for (const object of values) {
-          await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, listRootDepth), listRootDepth,
-            listRootKey, keys);
+          await this.handleListElement(parsingContext, util, object, depth,
+            keys.slice(0, listRootDepth), listRootDepth);
         }
 
         // If no values were found, emit a falsy list element to force an empty RDF list to be emitted.
         if (values.length === 0) {
-          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, listRootDepth), listRootDepth,
-            listRootKey, keys);
+          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, listRootDepth), listRootDepth);
         }
       }
     } else if (parentKey === '@set') {
@@ -82,14 +73,12 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         // Emit the given objects as list elements
         const values = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
         for (const object of values) {
-          await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1,
-            parentKey, keys);
+          await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1);
         }
 
         // If no values were found, emit a falsy list element to force an empty RDF list to be emitted.
         if (values.length === 0) {
-          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, -1), depth - 1,
-            parentKey, keys);
+          await this.handleListElement(parsingContext, util, null, depth, keys.slice(0, -1), depth - 1);
         }
       } else {
         // Copy the stack values up one level so that the next job can access them.
@@ -105,49 +94,34 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
   }
 
   protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term | null, depth: number,
-                                    listRootKeys: string[], listRootDepth: number, listRootKey: string, keys: any[]) {
-        // Buffer our value as an RDF list using the listRootKey as predicate
+                                    listRootKeys: string[], listRootDepth: number) {
+    // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer = parsingContext.listPointerStack[depth];
 
     if (value) {
-      if (!listPointer || !('term' in listPointer)) {
+      if (!listPointer || !listPointer.value) {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
-        const listRootContext = await parsingContext.getContext(listRootKeys, 0);
-        const predicate = await util.predicateToTerm(listRootContext, listRootKey);
-        const reverse = Util.isPropertyReverse(listRootContext, listRootKey, keys[listRootDepth - 1]);
-
-        // Lists are not allowed in @reverse'd properties
-        if (reverse && !parsingContext.allowSubjectList) {
-          throw new Error(`Found illegal list value in subject position at ${listRootKey}`);
-        }
-
-        if (predicate) {
-          parsingContext.getUnidentifiedValueBufferSafe(listRootDepth)
-            .push({predicate, object: linkTerm, reverse});
-        }
-        listPointer = { term: linkTerm, listRootDepth };
+        listPointer = { value: linkTerm, listRootDepth, listId: linkTerm };
       } else {
         // rdf:rest links are always emitted before the next element,
         // as the blank node identifier is only created at that point.
         // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
         const newLinkTerm: RDF.Term = util.dataFactory.blankNode();
-        parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.term, util.rdfRest, newLinkTerm,
+        parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.value, util.rdfRest, newLinkTerm,
           util.getDefaultGraph()));
 
         // Update the list pointer for the next element
-        listPointer.term = newLinkTerm;
+        listPointer.value = newLinkTerm;
       }
 
       // Emit a list element for the current value
-      parsingContext.emitQuad(depth, util.dataFactory.quad(<RDF.Term> listPointer.term, util.rdfFirst, value,
+      parsingContext.emitQuad(depth, util.dataFactory.quad(<RDF.Term> listPointer.value, util.rdfFirst, value,
         util.getDefaultGraph()));
     } else {
       // A falsy list element if found.
-      // Just enable the list flag for this depth if it has not been set before.
+      // Mark it as an rdf:nil list until another valid list element comes in
       if (!listPointer) {
-        const predicate = await util.predicateToTerm(await parsingContext.getContext(listRootKeys), listRootKey);
-        // Predicate won't be falsy because otherwise listPointer would be falsy as well.
-        listPointer = { initialPredicate: <RDF.Term> predicate, listRootDepth };
+        listPointer = { listRootDepth, listId: util.rdfNil };
       }
     }
 

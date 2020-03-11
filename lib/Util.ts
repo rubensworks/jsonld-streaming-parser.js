@@ -219,8 +219,12 @@ export class Util {
       if (Array.isArray(value)) {
         // We handle arrays at value level so we can emit earlier, so this is handled already when we get here.
         // Empty context-based lists are emitted at this place, because our streaming algorithm doesn't detect those.
-        if ('@list' in Util.getContextValueContainer(context, key) && value.length === 0) {
-          return [ this.rdfNil ];
+        if ('@list' in Util.getContextValueContainer(context, key)) {
+          if (value.length === 0) {
+            return [ this.rdfNil ];
+          } else {
+            return this.parsingContext.idStack[depth + 1] || [];
+          }
         }
         await this.validateValueIndexes(value);
         return [];
@@ -359,7 +363,7 @@ export class Util {
         // No need to do anything here, this is handled at the deeper level.
         return [];
       } else if ('@list' in value) {
-        // No other entries are allow in this value
+        // No other entries are allowed in this value
         if (Object.keys(value).length > 1) {
           throw new Error(`Found illegal neighbouring entries next to @set in value: ${JSON.stringify(value)}`);
         }
@@ -371,7 +375,7 @@ export class Util {
           if (listValue.length === 0) {
             return [ this.rdfNil ];
           } else {
-            return [];
+            return this.parsingContext.idStack[depth + 1] || [];
           }
         } else {
           // We only have a single list element here, so emit this directly as single element

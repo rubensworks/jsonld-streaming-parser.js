@@ -1525,6 +1525,20 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with a list as @reverse value, with allowSubjectList false', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "term": {"@reverse": "http://example/reverse"}
+  },
+  "@id": "http://example/foo",
+  "term": {"@list": ["http://example/bar"]}
+}`);
+          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, allowSubjectList: false });
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toThrow(new Error('Found illegal list value in subject position at term'));
+        });
+
         it('with a list as @reverse value, with allowSubjectList true', async () => {
           const stream = streamifyString(`
 {
@@ -2434,7 +2448,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": [{ "@list": [ "a", "b", "c" ] }]
 }`);
             const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            return expect(output).toBeRdfIsomorphic([
               triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
               triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
               triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
@@ -2447,25 +2461,170 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with an anonymous list array, in an list container', () => {
-          it('without @id should emit an error', async () => {
+          it('without @id', async () => {
             const stream = streamifyString(`
 {
   "@context": { "p": {"@id": "http://ex.org/pred1", "@container": "@list" } },
   "p": [{ "@list": [ "a", "b", "c" ] }]
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects
-              .toEqual(new Error('Lists of lists are not supported: \'p\''));
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), blankNode('l0')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('a')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('b')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), blankNode('l2')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'first'), literal('c')),
+              triple(blankNode('l2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://ex.org/pred1'), blankNode('lr0')),
+            ]);
           });
         });
 
         describe('a triple with nested anonymous list arrays', () => {
-          it('without @id should emit an error', async () => {
+          it('without @id, single outer value, and a single inner value', async () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz"]}]}
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects
-              .toEqual(new Error('Lists of lists are not supported: \'@list\''));
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), blankNode('l0')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('baz')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('lr0')),
+            ]);
+          });
+
+          it('without @id, single outer value, and multiple inner values', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [{"@list": ["baz1", "baz2"]}]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), blankNode('l0')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('baz1')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), blankNode('l1')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('baz2')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('lr0')),
+            ]);
+          });
+
+          it('without @id, multiple outer values, and a single inner value', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [
+    {"@list": ["baz1"]},
+    {"@list": ["baz2"]}
+  ]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l0.a'), namedNode(Util.RDF + 'first'), blankNode('l0.0.a')),
+              triple(blankNode('l0.a'), namedNode(Util.RDF + 'rest'), blankNode('l0.b')),
+              triple(blankNode('l0.b'), namedNode(Util.RDF + 'first'), blankNode('l0.1.a')),
+              triple(blankNode('l0.b'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0.0.a'), namedNode(Util.RDF + 'first'), literal('baz1')),
+              triple(blankNode('l0.0.a'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0.1.a'), namedNode(Util.RDF + 'first'), literal('baz2')),
+              triple(blankNode('l0.1.a'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('l0.a')),
+            ]);
+          });
+
+          it('without @id, multiple outer values, and a multiple inner value', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [
+    {"@list": ["baz1.1", "baz1.2"]},
+    {"@list": ["baz2.1", "baz2.2"]}
+  ]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l0.a'), namedNode(Util.RDF + 'first'), blankNode('l0.0.a')),
+              triple(blankNode('l0.a'), namedNode(Util.RDF + 'rest'), blankNode('l0.b')),
+              triple(blankNode('l0.b'), namedNode(Util.RDF + 'first'), blankNode('l0.1.a')),
+              triple(blankNode('l0.b'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0.0.a'), namedNode(Util.RDF + 'first'), literal('baz1.1')),
+              triple(blankNode('l0.0.a'), namedNode(Util.RDF + 'rest'), blankNode('l0.0.b')),
+              triple(blankNode('l0.0.b'), namedNode(Util.RDF + 'first'), literal('baz1.2')),
+              triple(blankNode('l0.0.b'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0.1.a'), namedNode(Util.RDF + 'first'), literal('baz2.1')),
+              triple(blankNode('l0.1.a'), namedNode(Util.RDF + 'rest'), blankNode('l0.1.b')),
+              triple(blankNode('l0.1.b'), namedNode(Util.RDF + 'first'), literal('baz2.2')),
+              triple(blankNode('l0.1.b'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('l0.a')),
+            ]);
+          });
+
+          it('without @id, single outer value, and a no inner value', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [{"@list": []}]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), namedNode(Util.RDF + 'nil')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('lr0')),
+            ]);
+          });
+
+          it('without @id, single outer value, and a single inner value, and a non-list outer value after', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [{"@list": ["baz"]}, { "@id": "ex:bla" }]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), blankNode('l0')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), blankNode('lr1')),
+              triple(blankNode('lr1'), namedNode(Util.RDF + 'first'), namedNode('ex:bla')),
+              triple(blankNode('lr1'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('baz')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('lr0')),
+            ]);
+          });
+
+          it('without @id, single outer value, and a single inner value, and a non-list outer value before', async () => {
+            const stream = streamifyString(`
+{
+  "http://example.com/foo": {"@list": [{ "@id": "ex:bla" }, {"@list": ["baz"]}]}
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'first'), namedNode('ex:bla')),
+              triple(blankNode('lr0'), namedNode(Util.RDF + 'rest'), blankNode('lr1')),
+              triple(blankNode('lr1'), namedNode(Util.RDF + 'first'), blankNode('l0')),
+              triple(blankNode('lr1'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), literal('baz')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('a'), namedNode('http://example.com/foo'), blankNode('lr0')),
+            ]);
           });
         });
 

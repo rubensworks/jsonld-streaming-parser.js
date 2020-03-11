@@ -122,7 +122,8 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
             // In that case we just emit it as an RDF list with a single element.
             const listValueContainer = '@list' in Util.getContextValueContainer(context, key);
             if (listValueContainer || value['@list']) {
-              if ((listValueContainer || (value['@list'] && !Array.isArray(value['@list'])))
+              if (((listValueContainer && !Array.isArray(value) && !value['@list'])
+                || (value['@list'] && !Array.isArray(value['@list'])))
                 && object !== util.rdfNil) {
                 const listPointer: RDF.Term = util.dataFactory.blankNode();
                 parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,

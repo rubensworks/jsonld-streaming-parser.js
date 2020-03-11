@@ -115,13 +115,15 @@ export class JsonLdParser extends Transform {
       // Check if we had any RDF lists that need to be terminated with an rdf:nil
       const listPointer = this.parsingContext.listPointerStack[this.lastDepth];
       if (listPointer) {
-        if ('term' in listPointer) {
-          this.emit('data', this.util.dataFactory.quad(listPointer.term, this.util.rdfRest, this.util.rdfNil,
+        // Terminate the list if the had at least one value
+        if (listPointer.value) {
+          this.emit('data', this.util.dataFactory.quad(listPointer.value, this.util.rdfRest, this.util.rdfNil,
             this.util.getDefaultGraph()));
-        } else {
-          this.parsingContext.getUnidentifiedValueBufferSafe(listPointer.listRootDepth)
-            .push({ predicate: listPointer.initialPredicate, object: this.util.rdfNil, reverse: false });
         }
+
+        // Add the list id to the id stack, so it can be used higher up in the stack
+        this.parsingContext.idStack[listPointer.listRootDepth + 1] = [ listPointer.listId ];
+
         this.parsingContext.listPointerStack.splice(this.lastDepth, 1);
       }
 

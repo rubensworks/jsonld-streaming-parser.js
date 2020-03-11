@@ -36,9 +36,9 @@ describe('EntryHandlerArrayValue', () => {
       ]);
     });
 
-    it('an invalid key stack with a number parent key, and not handle the list element', async () => {
+    it('an invalid key stack with an object parent key, and not handle the list element', async () => {
       jest.spyOn(handler, <any> 'handleListElement');
-      await handler.handle(parsingContext, util, 0, [ undefined, 0, '@list', 0 ], "someValue", 3);
+      await handler.handle(parsingContext, util, 0, [ undefined, {}, '@list', 0 ], "someValue", 3);
       expect((<any> handler).handleListElement).not.toHaveBeenCalled();
     });
 
