@@ -10834,7 +10834,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
-            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+            ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
         it('should not error on protected term overrides with identical value', async () => {
@@ -10875,7 +10875,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
-            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+            ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
         it('should not error on protected term overrides before a property scoped-context', async () => {
@@ -10925,7 +10925,7 @@ describe('JsonLdParser', () => {
 }`);
           return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
-            ERROR_CODES.PROTECTED_TERM_REDIFINITION));
+            ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
         it('should not error on protected term, context null in a property scoped-context, and override', async () => {
