@@ -145,7 +145,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error when mapped via the context via @reverse', async () => {
+        it('should be ignored when mapped via the context via @reverse', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -154,12 +154,13 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": "should not be here"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
-            'Invalid IRI mapping found for context entry \'ignoreMe\': \'{"@reverse":true,"@id":"@ignoreMe"}\'',
-            ERROR_CODES.INVALID_IRI_MAPPING));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+          ]);
         });
 
-        it('should error when mapped via the context via @reverse and a sub-property', async () => {
+        it('should be ignored when mapped via the context via @reverse and a sub-property', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -168,12 +169,13 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": {"http://example.org/text": "should not be here"}
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
-            'Invalid IRI mapping found for context entry \'ignoreMe\': \'{"@reverse":true,"@id":"@ignoreMe"}\'',
-            ERROR_CODES.INVALID_IRI_MAPPING));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode(), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+          ]);
         });
 
-        it('should error when mapped via the context via @reverse and a sub-property and @vocab', async () => {
+        it('should fallback to @vocab when mapped via the context via @reverse and a sub-prop', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -181,11 +183,16 @@ describe('JsonLdParser', () => {
     "ignoreMe": {"@reverse": "@ignoreMe"}
   },
   "@type": "http://example.com/IgnoreTest",
-  "ignoreMe": {"text": "should not be here"}
+  "ignoreMe": {"text": "should be here"}
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
-            'Invalid IRI mapping found for context entry \'ignoreMe\': \'{"@reverse":true,"@id":"@ignoreMe"}\'',
-            ERROR_CODES.INVALID_IRI_MAPPING));
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(blankNode('b1'), namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.com/IgnoreTest')),
+            triple(blankNode('b1'), namedNode('http://example.org/ignoreMe'),
+              blankNode('b2')),
+            triple(blankNode('b2'), namedNode('http://example.org/text'),
+              literal('should be here')),
+          ]);
         });
       });
 
@@ -6177,7 +6184,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias a reversed @type', async () => {
+        it('should error on alias a reversed @type', async () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6186,11 +6193,9 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "a": "http://ex.org/bla",
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
-            triple(namedNode('http://ex.org/bla'),
-              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-              namedNode('http://ex.org/myid')),
-          ]);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toThrow(new ErrorCoded('Invalid @reverse value, must be absolute IRI or blank node: \'@type\'',
+            ERROR_CODES.INVALID_IRI_MAPPING));
         });
 
         it('should alias @value', async () => {

@@ -14,13 +14,11 @@ export class ParsingContext {
     1.0: {
       allowPrefixForcing: false,
       allowPrefixNonGenDelims: false,
-      allowReverseRelativeToVocab: false,
       allowVocabRelativeToBase: false,
     },
     1.1: {
       allowPrefixForcing: true,
       allowPrefixNonGenDelims: false,
-      allowReverseRelativeToVocab: false,
       allowVocabRelativeToBase: true,
     },
   };
