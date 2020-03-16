@@ -11106,11 +11106,11 @@ describe('JsonLdParser', () => {
     });
   });
 
-  describe('when instantiated with errorOnInvalidIris true', () => {
+  describe('when instantiated with strictValues true', () => {
     let parser;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ errorOnInvalidIris: true });
+      parser = new JsonLdParser({ strictValues: true });
     });
 
     it('should error on an unknown keyword', async () => {
@@ -11182,7 +11182,7 @@ describe('JsonLdParser', () => {
     "@index": "baz"
   }
 ]`);
-      parser = new JsonLdParser({ errorOnInvalidIris: true, validateValueIndexes: true });
+      parser = new JsonLdParser({ strictValues: true, validateValueIndexes: true });
       return expect(arrayifyStream(stream.pipe(parser))).rejects
         .toEqual(new Error('Conflicting @index value for http://example/foo'));
     });
@@ -11253,7 +11253,7 @@ describe('JsonLdParser', () => {
     let contextListener;
 
     beforeEach(() => {
-      parser = new JsonLdParser({errorOnInvalidIris: true});
+      parser = new JsonLdParser({strictValues: true});
       contextListener = jest.fn();
       parser.on('context', contextListener);
     });

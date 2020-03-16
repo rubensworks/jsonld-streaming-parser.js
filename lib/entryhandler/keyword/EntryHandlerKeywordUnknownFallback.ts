@@ -5,7 +5,7 @@ import {IEntryHandler} from "../IEntryHandler";
 
 /**
  * A catch-all for keywords, that will either emit an error or ignore,
- * depending on whether or not the `errorOnInvalidIris` property is set.
+ * depending on whether or not the `strictValues` property is set.
  */
 export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean> {
 
@@ -53,7 +53,7 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
       if (keywordType && typeof value !== keywordType) {
         parsingContext.emitError(new Error(`Invalid value type for '${key}' with value '${value}'`));
       }
-    } else if (parsingContext.errorOnInvalidProperties) {
+    } else if (parsingContext.strictValues) {
       parsingContext.emitError(new Error(`Unknown keyword '${key}' with value '${value}'`));
     }
     parsingContext.emittedStack[depth] = false;

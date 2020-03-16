@@ -493,9 +493,12 @@ export interface IJsonLdParserOptions {
    * should be silently dropped.
    * When setting this value to true,
    * an error will be thrown when such properties occur.
+   *
+   * This also applies to invalid values such as language tags.
+   *
    * Defaults to false.
    */
-  errorOnInvalidIris?: boolean;
+  strictValues?: boolean;
   /**
    * If RDF lists can appear in the subject position.
    * Defaults to false.
@@ -513,14 +516,6 @@ export interface IJsonLdParserOptions {
    * this must be explicitly set to true.
    */
   validateValueIndexes?: boolean;
-  /**
-   * If values should be strictly checked.
-   * If true, an error will be thrown on invalid value ranged.
-   * if false, the resulting triple/quad will be omitted.
-   *
-   * Defaults to false.
-   */
-  strictRanges?: boolean;
   /**
    * The graph to use as default graph when no explicit @graph is set.
    * Defaults to dataFactory.defaultGraph().

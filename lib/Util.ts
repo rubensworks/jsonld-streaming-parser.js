@@ -296,7 +296,7 @@ export class Util {
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
 
-          if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictRanges)) {
+          if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictValues)) {
             return [];
           }
 
@@ -311,7 +311,7 @@ export class Util {
               `When an '@direction' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
 
-          if (!ContextParser.validateDirection(valueDirection, this.parsingContext.strictRanges)) {
+          if (!ContextParser.validateDirection(valueDirection, this.parsingContext.strictValues)) {
             return [];
           }
         }
@@ -486,7 +486,7 @@ export class Util {
     if (Util.isValidIri(expanded)) {
       return this.dataFactory.namedNode(expanded);
     } else {
-      if (expanded && this.parsingContext.errorOnInvalidProperties) {
+      if (expanded && this.parsingContext.strictValues) {
         this.parsingContext.emitError(new ErrorCoded(`Invalid predicate IRI: ${expanded}`,
           ERROR_CODES.INVALID_IRI_MAPPING));
       } else {
@@ -510,7 +510,7 @@ export class Util {
     }
     const iri = ContextParser.expandTerm(key, context, false, this.parsingContext.getExpandOptions());
     if (!Util.isValidIri(iri)) {
-      if (iri && this.parsingContext.errorOnInvalidProperties) {
+      if (iri && this.parsingContext.strictValues) {
         this.parsingContext.emitError(new Error(`Invalid resource IRI: ${iri}`));
       } else {
         return null;
@@ -537,7 +537,7 @@ export class Util {
       expanded = ContextParser.expandTerm(key, context, false, expandOptions);
     }
     if (!Util.isValidIri(expanded)) {
-      if (expanded && this.parsingContext.errorOnInvalidProperties) {
+      if (expanded && this.parsingContext.strictValues) {
         this.parsingContext.emitError(new Error(`Invalid term IRI: ${expanded}`));
       } else {
         return null;

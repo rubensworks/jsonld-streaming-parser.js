@@ -4,7 +4,7 @@ import {IEntryHandler} from "./IEntryHandler";
 
 /**
  * A catch-all for properties, that will either emit an error or ignore,
- * depending on whether or not the `errorOnInvalidIris` property is set.
+ * depending on whether or not the `strictValues` property is set.
  */
 export class EntryHandlerInvalidFallback implements IEntryHandler<boolean> {
 

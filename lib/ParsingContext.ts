@@ -29,9 +29,8 @@ export class ParsingContext {
   public readonly produceGeneralizedRdf: boolean;
   public readonly allowSubjectList: boolean;
   public readonly processingMode: string;
-  public readonly errorOnInvalidProperties: boolean;
+  public readonly strictValues: boolean;
   public readonly validateValueIndexes: boolean;
-  public readonly strictRanges: boolean;
   public readonly rootContext: Promise<IJsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
@@ -84,9 +83,8 @@ export class ParsingContext {
     this.produceGeneralizedRdf = !!options.produceGeneralizedRdf;
     this.allowSubjectList = !!options.allowSubjectList;
     this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
-    this.errorOnInvalidProperties = !!options.errorOnInvalidIris;
+    this.strictValues = !!options.strictValues;
     this.validateValueIndexes = !!options.validateValueIndexes;
-    this.strictRanges = !!options.strictRanges;
     this.defaultGraph = options.defaultGraph;
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;

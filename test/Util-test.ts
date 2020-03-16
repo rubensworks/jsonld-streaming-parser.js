@@ -429,8 +429,8 @@ describe('Util', () => {
             .resolves.toEqual([]);
         });
 
-        it('with a @value and invalid @language should throw an error when strictRanges is true', async () => {
-          util.parsingContext.strictRanges = true;
+        it('with a @value and invalid @language should throw an error when strictValues is true', async () => {
+          util.parsingContext.strictValues = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en us' }, 0, []))
             .rejects.toThrow(new Error('The value of an \'@language\' must be a valid language tag, got \'"en us"\''));
         });
@@ -451,20 +451,18 @@ describe('Util', () => {
             .resolves.toEqual([]);
         });
 
-        it('with a @value and invalid @direction should throw an error when strictRanges is true', async () => {
-          util.parsingContext.strictRanges = true;
+        it('with a @value and invalid @direction should throw an error when strictValues is true', async () => {
+          util.parsingContext.strictValues = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'r tl' }, 0, []))
             .rejects.toThrow(new Error('The value of an \'@direction\' must be \'ltr\' or \'rtl\', got \'"r tl"\''));
         });
 
         it('with a @value and valid @direction rtl should return a plain literal', async () => {
-          util.parsingContext.strictRanges = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl' }, 0, []))
             .resolves.toEqualRdfTermArray([literal('abc')]);
         });
 
         it('with a @value and valid @direction ltr should return a plain literal', async () => {
-          util.parsingContext.strictRanges = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'ltr' }, 0, []))
             .resolves.toEqualRdfTermArray([literal('abc')]);
         });
