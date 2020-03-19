@@ -1,6 +1,6 @@
-import {ContextParser, IExpandOptions, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {ContextParser, IExpandOptions, IJsonLdContextNormalizedRaw, JsonLdContext,
+  JsonLdContextNormalized} from "jsonld-context-parser";
 import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
-import {JsonLdContext} from "jsonld-context-parser/lib/JsonLdContext";
 import * as RDF from "rdf-js";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
@@ -31,7 +31,7 @@ export class ParsingContext {
   public readonly processingMode: string;
   public readonly strictValues: boolean;
   public readonly validateValueIndexes: boolean;
-  public readonly rootContext: Promise<IJsonLdContextNormalized>;
+  public readonly rootContext: Promise<JsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
   public readonly normalizeLanguageTags?: boolean;
@@ -114,20 +114,21 @@ export class ParsingContext {
       this.rootContext = this.parseContext(options.context);
       this.rootContext.then((context) => this.validateContext(context));
     } else {
-      this.rootContext = Promise.resolve(this.baseIRI ? { '@base': this.baseIRI, '@__baseDocument': true } : {});
+      this.rootContext = Promise.resolve(new JsonLdContextNormalized(
+        this.baseIRI ? { '@base': this.baseIRI, '@__baseDocument': true } : {}));
     }
   }
 
   /**
    * Parse the given context with the configured options.
    * @param {JsonLdContext} context A context to parse.
-   * @param {IJsonLdContextNormalized} parentContext An optional parent context.
+   * @param {JsonLdContextNormalized} parentContext An optional parent context.
    * @param {boolean} ignoreProtection If @protected term checks should be ignored.
-   * @return {Promise<IJsonLdContextNormalized>} A promise resolving to the parsed context.
+   * @return {Promise<JsonLdContextNormalized>} A promise resolving to the parsed context.
    */
-  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalized,
+  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalizedRaw,
                             ignoreProtection?: boolean)
-    : Promise<IJsonLdContextNormalized> {
+    : Promise<JsonLdContextNormalized> {
     return this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
       ignoreProtection,
@@ -140,10 +141,10 @@ export class ParsingContext {
   /**
    * Check if the given context is valid.
    * If not, an error will be thrown.
-   * @param {IJsonLdContextNormalized} context A context.
+   * @param {JsonLdContextNormalized} context A context.
    */
-  public validateContext(context: IJsonLdContextNormalized) {
-    const activeVersion: number = <number> <any> context['@version'];
+  public validateContext(context: JsonLdContextNormalized) {
+    const activeVersion: number = <number> <any> context.getContextRaw()['@version'];
     if (activeVersion) {
       if (this.activeProcessingMode && activeVersion > this.activeProcessingMode) {
         throw new ErrorCoded(`Unsupported JSON-LD version '${activeVersion}' under active processing mode ${
@@ -162,9 +163,9 @@ export class ParsingContext {
    * Get the context at the given path.
    * @param {keys} keys The path of keys to get the context at.
    * @param {number} offset The path offset, defaults to 1.
-   * @return {Promise<IJsonLdContextNormalized>} A promise resolving to a context.
+   * @return {Promise<JsonLdContextNormalized>} A promise resolving to a context.
    */
-  public async getContext(keys: any[], offset = 1): Promise<IJsonLdContextNormalized> {
+  public async getContext(keys: any[], offset = 1): Promise<JsonLdContextNormalized> {
     const keysOriginal = keys;
 
     // Ignore array keys at the end
@@ -179,36 +180,38 @@ export class ParsingContext {
 
     // Determine the closest context
     const contextData = await this.getContextPropagationAware(keys);
-    let context: IJsonLdContextNormalized = contextData.context;
+    const context: JsonLdContextNormalized = contextData.context;
 
     // Process property-scoped contexts (high-to-low)
+    let contextRaw: IJsonLdContextNormalizedRaw = context.getContextRaw();
     for (let i = contextData.depth; i < keysOriginal.length - offset; i++) {
       const key = keysOriginal[i];
-      const contextKeyEntry = context[key];
+      const contextKeyEntry = contextRaw[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-        const scopedContext = await this.parseContext(contextKeyEntry, context, true);
+        const scopedContext = (await this.parseContext(contextKeyEntry, contextRaw, true)).getContextRaw();
         const propagate = !(key in scopedContext)
           || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
-          context = scopedContext;
+          contextRaw = scopedContext;
 
           // Clean up final context
-          delete context['@propagate'];
-          context[key] = { ...context[key] };
+          delete contextRaw['@propagate'];
+          contextRaw[key] = { ...contextRaw[key] };
           if ('@id' in contextKeyEntry) {
-            context[key]['@id'] = contextKeyEntry['@id'];
+            contextRaw[key]['@id'] = contextKeyEntry['@id'];
           }
-          delete context[key]['@context'];
+          delete contextRaw[key]['@context'];
 
           if (propagate !== false) {
-            this.contextTree.setContext(keysOriginal.slice(0, i + offset), Promise.resolve(context));
+            this.contextTree.setContext(keysOriginal.slice(0, i + offset),
+              Promise.resolve(new JsonLdContextNormalized(contextRaw)));
           }
         }
       }
     }
 
-    return context;
+    return new JsonLdContextNormalized(contextRaw);
   }
 
   /**
@@ -221,19 +224,19 @@ export class ParsingContext {
    * call {@link #getContext} instead.
    *
    * @param keys The path of keys to get the context at.
-   * @return {Promise<{ context: IJsonLdContextNormalized, depth: number }>} A context and its depth.
+   * @return {Promise<{ context: JsonLdContextNormalized, depth: number }>} A context and its depth.
    */
   public async getContextPropagationAware(keys: string[]):
-    Promise<{ context: IJsonLdContextNormalized, depth: number }> {
+    Promise<{ context: JsonLdContextNormalized, depth: number }> {
     const originalDepth = keys.length;
-    let contextData: { context: IJsonLdContextNormalized, depth: number } | null = null;
+    let contextData: { context: JsonLdContextNormalized, depth: number } | null = null;
     let hasApplicablePropertyScopedContext: boolean;
     do {
       hasApplicablePropertyScopedContext = false;
-      if (contextData && '@__propagateFallback' in contextData.context) {
+      if (contextData && '@__propagateFallback' in contextData.context.getContextRaw()) {
         // If a propagation fallback context has been set,
         // fallback to that context and retry for the same depth.
-        contextData.context = contextData.context['@__propagateFallback'];
+        contextData.context = new JsonLdContextNormalized(contextData.context.getContextRaw()['@__propagateFallback']);
       } else {
         if (contextData) {
           // If we had a previous iteration, jump to the parent of context depth.
@@ -249,21 +252,23 @@ export class ParsingContext {
       // if it defines a property-scoped context that is applicable for the current key.
       // @see https://w3c.github.io/json-ld-api/tests/toRdf-manifest#tc012
       const lastKey = keys[keys.length - 1];
-      if (lastKey in contextData.context) {
-        const lastKeyValue = contextData.context[lastKey];
+      if (lastKey in contextData.context.getContextRaw()) {
+        const lastKeyValue = contextData.context.getContextRaw()[lastKey];
         if (lastKeyValue && typeof lastKeyValue === 'object' && '@context' in lastKeyValue) {
           hasApplicablePropertyScopedContext = true;
         }
       }
     } while (contextData.depth > 0 // Root context has a special case
-    && contextData.context['@propagate'] === false // Stop loop if propagation is true
+    && contextData.context.getContextRaw()['@propagate'] === false // Stop loop if propagation is true
     && contextData.depth !== originalDepth // Stop loop if requesting exact depth of non-propagating
     && !hasApplicablePropertyScopedContext);
 
      // Special case for root context that does not allow propagation.
     // Fallback to empty context in that case.
-    if (contextData.depth === 0 && contextData.context['@propagate'] === false && contextData.depth !== originalDepth) {
-      contextData.context = {};
+    if (contextData.depth === 0
+      && contextData.context.getContextRaw()['@propagate'] === false
+      && contextData.depth !== originalDepth) {
+      contextData.context = new JsonLdContextNormalized({});
     }
 
     return contextData;

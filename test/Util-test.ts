@@ -1,124 +1,127 @@
 import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, literal, namedNode} from "@rdfjs/data-model";
 import "jest-rdf";
+import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
 import {Util} from "../lib/Util";
 import {ParsingContextMocked} from "../mocks/ParsingContextMocked";
-import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 
 describe('Util', () => {
 
   describe('#getContextValue', () => {
     it('should return the fallback when the context does not contain the given key', async () => {
-      expect(Util.getContextValue({}, 'a', 'x', 'FB')).toEqual('FB');
+      expect(Util.getContextValue(new JsonLdContextNormalized({}), 'a', 'x', 'FB')).toEqual('FB');
     });
 
     it('should return the fallback when the context contains the given key, without contextKey', async () => {
-      expect(Util.getContextValue({ x: {} }, 'a', 'x', 'FB')).toEqual('FB');
+      expect(Util.getContextValue(new JsonLdContextNormalized({ x: {} }), 'a', 'x', 'FB')).toEqual('FB');
     });
 
     it('should return the value when the context contains the given key, with contextKey', async () => {
-      expect(Util.getContextValue({ x: { a: 'b' } }, 'a', 'x', 'FB')).toEqual('b');
+      expect(Util.getContextValue(new JsonLdContextNormalized({ x: { a: 'b' } }), 'a', 'x', 'FB')).toEqual('b');
     });
   });
 
   describe('#getContextValueContainer', () => {
     it('should return @set as default', async () => {
-      expect(Util.getContextValueContainer({}, 'abc')).toEqual({ '@set': true });
+      expect(Util.getContextValueContainer(new JsonLdContextNormalized({}), 'abc')).toEqual({ '@set': true });
     });
 
     it('should return @list when defined as such', async () => {
-      expect(Util.getContextValueContainer({ abc: { '@container': { '@list': true } } }, 'abc'))
-        .toEqual({ '@list': true });
+      expect(Util.getContextValueContainer(new JsonLdContextNormalized({ abc: { '@container': { '@list': true } } }),
+        'abc')).toEqual({ '@list': true });
     });
   });
 
   describe('#getContextValueType', () => {
     it('should return null as default', async () => {
-      expect(Util.getContextValueType({}, 'abc')).toBe(null);
+      expect(Util.getContextValueType(new JsonLdContextNormalized({}), 'abc')).toBe(null);
     });
 
     it('should return @id when defined as such', async () => {
-      expect(Util.getContextValueType({ abc: { '@type': '@id' } }, 'abc'))
+      expect(Util.getContextValueType(new JsonLdContextNormalized({ abc: { '@type': '@id' } }), 'abc'))
         .toEqual('@id');
     });
 
     it('should return null for @none', async () => {
-      expect(Util.getContextValueType({ abc: { '@type': '@none' } }, 'abc'))
+      expect(Util.getContextValueType(new JsonLdContextNormalized({ abc: { '@type': '@none' } }), 'abc'))
         .toEqual(null);
     });
   });
 
   describe('#getContextValueLanguage', () => {
     it('should return null as default', async () => {
-      expect(Util.getContextValueLanguage({}, 'abc')).toBe(null);
+      expect(Util.getContextValueLanguage(new JsonLdContextNormalized({}), 'abc')).toBe(null);
     });
 
     it('should return @language on root as default if available', async () => {
-      expect(Util.getContextValueLanguage({ '@language': 'nl-be' }, 'abc')).toBe('nl-be');
+      expect(Util.getContextValueLanguage(new JsonLdContextNormalized({ '@language': 'nl-be' }), 'abc')).toBe('nl-be');
     });
 
     it('should return the entry language', async () => {
-      expect(Util.getContextValueLanguage({ abc: { '@language': 'en-us' } }, 'abc'))
+      expect(Util.getContextValueLanguage(new JsonLdContextNormalized({ abc: { '@language': 'en-us' } }), 'abc'))
         .toEqual('en-us');
     });
 
     it('should return the null entry language even if a root @language is present', async () => {
-      expect(Util.getContextValueLanguage({ 'abc': { '@language': null }, '@language': 'nl-be'  }, 'abc'))
+      expect(Util.getContextValueLanguage(
+        new JsonLdContextNormalized({ 'abc': { '@language': null }, '@language': 'nl-be'  }), 'abc'))
         .toEqual(null);
     });
   });
 
   describe('#getContextValueDirection', () => {
     it('should return null as default', async () => {
-      expect(Util.getContextValueDirection({}, 'abc')).toBe(null);
+      expect(Util.getContextValueDirection(new JsonLdContextNormalized({}), 'abc')).toBe(null);
     });
 
     it('should return @direction on root as default if available', async () => {
-      expect(Util.getContextValueDirection({ '@direction': 'rtl' }, 'abc')).toBe('rtl');
+      expect(Util.getContextValueDirection(new JsonLdContextNormalized({ '@direction': 'rtl' }), 'abc')).toBe('rtl');
     });
 
     it('should return the entry direction', async () => {
-      expect(Util.getContextValueDirection({ abc: { '@direction': 'ltr' } }, 'abc'))
+      expect(Util.getContextValueDirection(new JsonLdContextNormalized({ abc: { '@direction': 'ltr' } }), 'abc'))
         .toEqual('ltr');
     });
 
     it('should return the null entry direction even if a root @direction is present', async () => {
-      expect(Util.getContextValueDirection({ 'abc': { '@direction': null }, '@direction': 'ltr'  }, 'abc'))
+      expect(Util.getContextValueDirection(
+        new JsonLdContextNormalized({ 'abc': { '@direction': null }, '@direction': 'ltr' }), 'abc'))
         .toEqual(null);
     });
   });
 
   describe('#isContextValueReverse', () => {
     it('should return false as default', async () => {
-      expect(Util.isContextValueReverse({}, 'abc')).toBe(false);
+      expect(Util.isContextValueReverse(new JsonLdContextNormalized({}), 'abc')).toBe(false);
     });
 
     it('should return true when defined as such', async () => {
-      expect(Util.isContextValueReverse({ abc: { '@reverse': 'bla' } }, 'abc')).toBe(true);
+      expect(Util.isContextValueReverse(new JsonLdContextNormalized({ abc: { '@reverse': 'bla' } }), 'abc')).toBe(true);
     });
   });
 
   describe('#getContextValueIndex', () => {
     it('should return null as default', async () => {
-      expect(Util.getContextValueIndex({}, 'abc')).toBe(null);
+      expect(Util.getContextValueIndex(new JsonLdContextNormalized({}), 'abc')).toBe(null);
     });
 
     it('should return the value when defined as such', async () => {
-      expect(Util.getContextValueIndex({ abc: { '@index': 'bla' } }, 'abc')).toBe('bla');
+      expect(Util.getContextValueIndex(new JsonLdContextNormalized({ abc: { '@index': 'bla' } }), 'abc')).toBe('bla');
     });
   });
 
   describe('#isPropertyReverse', () => {
     it('should return false as default', async () => {
-      expect(Util.isPropertyReverse({}, 'abc', 'def')).toBe(false);
+      expect(Util.isPropertyReverse(new JsonLdContextNormalized({}), 'abc', 'def')).toBe(false);
     });
 
     it('should return true when the parent key is @reverse', async () => {
-      expect(Util.isPropertyReverse({}, 'abc', '@reverse')).toBe(true);
+      expect(Util.isPropertyReverse(new JsonLdContextNormalized({}), 'abc', '@reverse')).toBe(true);
     });
 
     it('should return true when the key has @reverse in the context', async () => {
-      expect(Util.isPropertyReverse({ abc: { '@reverse': 'bla' } }, 'abc', 'def')).toBe(true);
+      expect(Util.isPropertyReverse(
+        new JsonLdContextNormalized({ abc: { '@reverse': 'bla' } }), 'abc', 'def')).toBe(true);
     });
   });
 
@@ -202,10 +205,10 @@ describe('Util', () => {
 
     describe('#valueToTerm', () => {
 
-      let context;
+      let context: JsonLdContextNormalized;
 
       beforeEach(() => {
-        context = {};
+        context = new JsonLdContextNormalized({});
       });
 
       describe('for an unknown type', () => {
@@ -246,31 +249,31 @@ describe('Util', () => {
         });
 
         it('with a relative @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', { '@id': 'abc' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/abc')]);
         });
 
         it('with an empty @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', { '@id': '' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/')]);
         });
 
         it('with a relative @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', { '@id': '.' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/')]);
         });
 
         it('with a relative to parent @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/abc/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/abc/' });
           return expect(await util.valueToTerm(context, 'key', { '@id': '..' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/')]);
         });
 
         it('with a relative to parent with query @id with @base in context should return a named node', async () => {
-          context = { '@base': 'http://ex.org/abc/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/abc/' });
           return expect(await util.valueToTerm(context, 'key', { '@id': '..?a=b' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/?a=b')]);
         });
@@ -278,7 +281,8 @@ describe('Util', () => {
         it('with a relative @id with baseIRI should return a named node', async () => {
           util = new Util({ dataFactory, parsingContext: new ParsingContextMocked(
             { baseIRI: 'http://ex.org/', parser: null }) });
-          return expect(await util.valueToTerm(await util.parsingContext.getContext([]), 'key', { '@id': 'abc' }, 0, []))
+          return expect(await util.valueToTerm(await util.parsingContext.getContext([]),
+            'key', { '@id': 'abc' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/abc')]);
         });
 
@@ -291,48 +295,52 @@ describe('Util', () => {
 
         it('with an empty @id with baseIRI and vocabIRI should return a named node for @type = @vocab', async () => {
           util = new Util({ dataFactory, parsingContext: new ParsingContextMocked(null) });
-          context = { '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' });
           util.parsingContext.contextTree.setContext([], Promise.resolve(context));
           return expect(await util.valueToTerm(context, 'key', { '@id': '', '@type': '@vocab' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://vocab.org/')]);
         });
 
         it('with a relative @id and empty local @context with @base in parent context', async () => {
-          context = { '@base': 'http://ex.org/' };
-          util.parsingContext.contextTree.setContext([], Promise.resolve({ '@base': 'http://ex.org/' }));
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
+          util.parsingContext.contextTree.setContext([],
+            Promise.resolve(new JsonLdContextNormalized({ '@base': 'http://ex.org/' })));
           return expect(await util.valueToTerm(context, 'key', { '@context': {}, '@id': 'abc' }, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/abc')]);
         });
 
         it('with a relative @id and @base in local @context', async () => {
           const value = { '@context': { '@base': 'http://ex.org/' }, '@id': 'abc' };
-          return expect(await util.valueToTerm({}, 'key', value, 0, []))
+          return expect(await util.valueToTerm(new JsonLdContextNormalized({}), 'key', value, 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/abc')]);
         });
 
         it('with a relative @id and null local @context with @base in parent context', async () => {
-          context = { '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', { '@context': null, '@id': 'abc' }, 0, []))
             .toEqual([]);
         });
 
         it('with a relative @id and no other properties with @base in parent context should return', async () => {
-          context = { '@base': 'http://ex.do.org/' };
-          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.ignored.org/' }));
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.do.org/' });
+          util.parsingContext.contextTree.setContext(['key'],
+            Promise.resolve(new JsonLdContextNormalized({ '@base': 'http://ex.ignored.org/' })));
           return expect(await util.valueToTerm(context, 'key', { '@id': 'abc' }, 0, ['key']))
             .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
         });
 
         it('with a relative @id and other properties with @base in inner context should return', async () => {
-          context = { '@base': 'http://ex.ignored.org/' };
-          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.do.org/' }));
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.ignored.org/' });
+          util.parsingContext.contextTree.setContext(['key'],
+            Promise.resolve(new JsonLdContextNormalized({ '@base': 'http://ex.do.org/' })));
           return expect(await util.valueToTerm(context, 'key', { '@id': 'abc', 'a': 'b' }, 0, ['key']))
             .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
         });
 
         it('with a relative @id and @context with @base in inner context should return', async () => {
-          context = { '@base': 'http://ex.ignored1.org/' };
-          util.parsingContext.contextTree.setContext(['key'], Promise.resolve({ '@base': 'http://ex.ignored2.org/' }));
+          context = new JsonLdContextNormalized({ '@base': 'http://ex.ignored1.org/' });
+          util.parsingContext.contextTree.setContext(['key'],
+            Promise.resolve(new JsonLdContextNormalized({ '@base': 'http://ex.ignored2.org/' })));
           const context2 = { '@base': 'http://ex.do.org/' };
           return expect(await util.valueToTerm(context, 'key', { '@id': 'abc', '@context': context2 }, 0, ['key']))
             .toEqualRdfTermArray([namedNode('http://ex.do.org/abc')]);
@@ -376,39 +384,39 @@ describe('Util', () => {
         });
 
         it('with an @value and @type and context-@type: @none should return a typed literal', async () => {
-          context = { key: { '@type': '@none' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@none' } });
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@type': 'http://type.com' }, 0, []))
             .toEqualRdfTermArray([literal('abc', namedNode('http://type.com'))]);
         });
 
         it('with a @value value and @language in the context entry should return a language literal', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'nl-nl' }, 0, []))
             .toEqualRdfTermArray([literal('abc', 'nl-nl')]);
         });
 
         it('with a @value null should return []', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(await util.valueToTerm(context, 'key', { '@value': null }, 0, []))
             .toEqual([]);
         });
 
         it('with a @value object should throw an error', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(util.valueToTerm(context, 'key', { '@value': {} }, 0, []))
             .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'{}\'',
               ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
         it('with a @value array should throw an error', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(util.valueToTerm(context, 'key', { '@value': [] }, 0, []))
             .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'[]\'',
               ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
         it('with a @value without @language should reset the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(await util.valueToTerm(context, 'key', { '@value': 'abc' }, 0, []))
             .toEqualRdfTermArray([literal('abc')]);
         });
@@ -558,7 +566,7 @@ describe('Util', () => {
         });
 
         it('with context-based @json type', async () => {
-          context = { key: { '@type': '@json' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@json' } });
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc' }, 0, []))
             .resolves.toEqualRdfTermArray([literal('{"@value":"abc"}',
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
@@ -571,14 +579,14 @@ describe('Util', () => {
         });
 
         it('with @value-based @json type that is aliased', async () => {
-          context = { json: { '@id': '@json' } };
+          context = new JsonLdContextNormalized({ json: { '@id': '@json' } });
           return expect(util.valueToTerm(context, 'key', { '@value': { v: 'abc' }, '@type': 'json' }, 0, []))
             .resolves.toEqualRdfTermArray([literal('{"v":"abc"}',
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
         });
 
         it('with @value-based and context-based @json type', async () => {
-          context = { key: { '@type': '@json' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@json' } });
           return expect(util.valueToTerm(context, 'key', { '@value': { v: 'abc' }, '@type': '@json' }, 0, []))
             .resolves.toEqualRdfTermArray([literal('{"@type":"@json","@value":{"v":"abc"}}',
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))]);
@@ -592,96 +600,98 @@ describe('Util', () => {
         });
 
         it('with an @type: @id should return a named node', async () => {
-          context = { key: { '@type': '@id' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@id' } });
           return expect(await util.valueToTerm(context, 'key', 'http://ex.org/', 0, []))
             .toEqualRdfTermArray([namedNode('http://ex.org/')]);
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://ex.org/' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', namedNode('http://ex.org/'))]);
         });
 
         it('should consider a property-scoped context with @type: @vocab', async () => {
-          context = { key: { '@id': 'http://irrelevant', '@type': '@vocab', '@context': { abc: 'ex:abc' } } };
+          context = new JsonLdContextNormalized(
+            { key: { '@id': 'http://irrelevant', '@type': '@vocab', '@context': { abc: 'ex:abc' } } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([namedNode('ex:abc')]);
         });
 
         it('should consider a property-scoped context with @language', async () => {
-          context = { key: { '@id': 'http://irrelevant', '@context': { '@language': 'en' } } };
+          context = new JsonLdContextNormalized(
+            { key: { '@id': 'http://irrelevant', '@context': { '@language': 'en' } } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', 'en')]);
         });
 
         it('with an @language: en-us should return a literal with that language', async () => {
-          context = { key: { '@language': 'en-us' } };
+          context = new JsonLdContextNormalized({ key: { '@language': 'en-us' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', 'en-us')]);
         });
 
         it('with an @direction: rtl should return a plain literal', async () => {
-          context = { key: { '@language': 'en-us' } };
+          context = new JsonLdContextNormalized({ key: { '@language': 'en-us' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', 'en-us')]);
         });
 
         it('with an @direction: rtl and rdfDirection undefined should return a plain literal', async () => {
-          context = { key: { '@direction': 'rtl' } };
+          context = new JsonLdContextNormalized({ key: { '@direction': 'rtl' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc')]);
         });
 
         it('with an @direction: rtl, language and rdfDirection undefined should return a plain literal', async () => {
-          context = { key: { '@direction': 'rtl', '@language': 'en-us' } };
+          context = new JsonLdContextNormalized({ key: { '@direction': 'rtl', '@language': 'en-us' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', 'en-us')]);
         });
 
         it('with an @direction: rtl and rdfDirection i18n-datatype should return a plain literal', async () => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
-          context = { key: { '@direction': 'rtl' } };
+          context = new JsonLdContextNormalized({ key: { '@direction': 'rtl' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl'))]);
         });
 
         it('with an @direction: rtl, language and rdfDirection i18n-datatype should return a literal', async () => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
-          context = { key: { '@direction': 'rtl', '@language': 'en-us' } };
+          context = new JsonLdContextNormalized({ key: { '@direction': 'rtl', '@language': 'en-us' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
             .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))]);
         });
 
         describe('for language tags', () => {
           it('with a raw value and @language in the root context should return a language literal', async () => {
-            context = { '@language': 'en-us' };
+            context = new JsonLdContextNormalized({ '@language': 'en-us' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc', 'en-us')]);
           });
 
           it('with a raw value and @language in the context entry should return a language literal', async () => {
-            context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+            context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc', 'en-us')]);
           });
 
           it('with a raw value and null @language in the context entry should return a literal without language',
             async () => {
-              context = { 'key': { '@language': null }, '@language': 'nl-be' };
+              context = new JsonLdContextNormalized({ 'key': { '@language': null }, '@language': 'nl-be' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc')]);
             });
 
           it('with a raw value and @direction in the root context should return a plain literal', async () => {
-            context = { '@direction': 'rtl' };
+            context = new JsonLdContextNormalized({ '@direction': 'rtl' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc')]);
           });
 
           it('with a raw value and @direction+@language in the root context should return a language literal',
             async () => {
-              context = { '@direction': 'rtl', '@language': 'en-us' };
+              context = new JsonLdContextNormalized({ '@direction': 'rtl', '@language': 'en-us' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', 'en-us')]);
             });
@@ -689,7 +699,7 @@ describe('Util', () => {
           it('with a raw value and @direction in the root context for rdfDirection i18n-datatype ' +
             'should return a plain literal', async () => {
             util.parsingContext.rdfDirection = 'i18n-datatype';
-            context = { '@direction': 'rtl' };
+            context = new JsonLdContextNormalized({ '@direction': 'rtl' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl'))]);
           });
@@ -698,34 +708,36 @@ describe('Util', () => {
             'should return a language literal',
             async () => {
               util.parsingContext.rdfDirection = 'i18n-datatype';
-              context = { '@direction': 'rtl', '@language': 'en-us' };
+              context = new JsonLdContextNormalized({ '@direction': 'rtl', '@language': 'en-us' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))]);
             });
 
           it('with a raw value and @direction in the context entry should return a plain literal', async () => {
-            context = { 'key': { '@direction': 'rtl' }, '@direction': 'ltr' };
+            context = new JsonLdContextNormalized({ 'key': { '@direction': 'rtl' }, '@direction': 'ltr' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc')]);
           });
 
           it('with a raw value and null @direction in the context entry should return a plain literal',
             async () => {
-              context = { 'key': { '@direction': null }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized({ 'key': { '@direction': null }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc')]);
             });
 
           it('with a raw value and @direction+@language in the context entry should return a language literal',
             async () => {
-              context = { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized(
+                { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', 'en-us')]);
             });
 
           it('with a raw value and null @direction+@language in the context entry should return a language literal',
             async () => {
-              context = { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized(
+                { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', 'en-us')]);
             });
@@ -733,7 +745,7 @@ describe('Util', () => {
           it('with a raw value and @direction in the context entry should return a datatyped literal ' +
             'for rdfDirection i18n-datatype', async () => {
             util.parsingContext.rdfDirection = 'i18n-datatype';
-            context = { 'key': { '@direction': 'rtl' }, '@direction': 'ltr' };
+            context = new JsonLdContextNormalized({ 'key': { '@direction': 'rtl' }, '@direction': 'ltr' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
               .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#_rtl'))]);
           });
@@ -742,7 +754,7 @@ describe('Util', () => {
             'for rdfDirection i18n-datatype',
             async () => {
               util.parsingContext.rdfDirection = 'i18n-datatype';
-              context = { 'key': { '@direction': null }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized({ 'key': { '@direction': null }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc')]);
             });
@@ -751,7 +763,8 @@ describe('Util', () => {
             'for rdfDirection i18n-datatype',
             async () => {
               util.parsingContext.rdfDirection = 'i18n-datatype';
-              context = { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized(
+                { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))]);
             });
@@ -760,7 +773,8 @@ describe('Util', () => {
             'for rdfDirection i18n-datatype',
             async () => {
               util.parsingContext.rdfDirection = 'i18n-datatype';
-              context = { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' };
+              context = new JsonLdContextNormalized(
+                { 'key': { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
                 .toEqualRdfTermArray([literal('abc', 'en-us')]);
             });
@@ -779,25 +793,25 @@ describe('Util', () => {
         });
 
         it('with an @type: @id with baseIRI should return a boolean literal node', async () => {
-          context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ 'key': { '@type': '@id' }, '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', false, 0, []))
             .toEqualRdfTermArray([literal('false', namedNode(Util.XSD_BOOLEAN))]);
         });
 
         it('with an @type: @id should a boolean literal node', async () => {
-          context = { key: { '@type': '@id' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@id' } });
           return expect(await util.valueToTerm(context, 'key', false, 0, []))
             .toEqualRdfTermArray([literal('false', namedNode(Util.XSD_BOOLEAN))]);
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://ex.org/' } });
           return expect(await util.valueToTerm(context, 'key', false, 0, []))
             .toEqualRdfTermArray([literal('false', namedNode('http://ex.org/'))]);
         });
 
         it('should ignore the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(await util.valueToTerm(context, 'key', false, 0, []))
             .toEqualRdfTermArray([literal('false', namedNode(Util.XSD_BOOLEAN))]);
         });
@@ -815,25 +829,25 @@ describe('Util', () => {
         });
 
         it('with an @type: @id with baseIRI should return a double literal node', async () => {
-          context = { 'key': { '@type': '@id' }, '@base': 'http://ex.org/' };
+          context = new JsonLdContextNormalized({ 'key': { '@type': '@id' }, '@base': 'http://ex.org/' });
           return expect(await util.valueToTerm(context, 'key', 2.2, 0, []))
             .toEqualRdfTermArray([literal('2.2E0', namedNode(Util.XSD_DOUBLE))]);
         });
 
         it('with an @type: @id should return a double literal node', async () => {
-          context = { key: { '@type': '@id' } };
+          context = new JsonLdContextNormalized({ key: { '@type': '@id' } });
           return expect(await util.valueToTerm(context, 'key', 2.2, 0, []))
             .toEqualRdfTermArray([literal('2.2E0', namedNode(Util.XSD_DOUBLE))]);
         });
 
         it('with an @type: http://ex.org/ should return a literal with that datatype', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://ex.org/' } });
           return expect(await util.valueToTerm(context, 'key', 2.2, 0, []))
             .toEqualRdfTermArray([literal('2.2E0', namedNode('http://ex.org/'))]);
         });
 
         it('should ignore the language', async () => {
-          context = { 'key': { '@language': 'en-us' }, '@language': 'nl-be' };
+          context = new JsonLdContextNormalized({ 'key': { '@language': 'en-us' }, '@language': 'nl-be' });
           return expect(await util.valueToTerm(context, 'key', 2, 0, []))
             .toEqualRdfTermArray([literal('2', namedNode(Util.XSD_INTEGER))]);
         });
@@ -864,19 +878,19 @@ describe('Util', () => {
         });
 
         it('for 1 with double context type should return 1.0E0', async () => {
-          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#double' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://www.w3.org/2001/XMLSchema#double' } });
           return expect(await util.valueToTerm(context, 'key', 1, 0, []))
             .toEqualRdfTermArray([literal('1.0E0', namedNode(Util.XSD_DOUBLE))]);
         });
 
         it('for 1.1 with int context type should return 1.1E0', async () => {
-          context = { key: { '@type': 'http://www.w3.org/2001/XMLSchema#integer' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://www.w3.org/2001/XMLSchema#integer' } });
           return expect(await util.valueToTerm(context, 'key', 1.1, 0, []))
             .toEqualRdfTermArray([literal('1.1E0', namedNode(Util.XSD_INTEGER))]);
         });
 
         it('for 1 with dummy context type should return 1.0E0', async () => {
-          context = { key: { '@type': 'http://ex.org/' } };
+          context = new JsonLdContextNormalized({ key: { '@type': 'http://ex.org/' } });
           return expect(await util.valueToTerm(context, 'key', 1, 0, []))
             .toEqualRdfTermArray([literal('1', namedNode('http://ex.org/'))]);
         });
@@ -909,13 +923,13 @@ describe('Util', () => {
         });
 
         it('should return rdf:nil for an empty list', async () => {
-          context = { key: { '@container': { '@list': true } } };
+          context = new JsonLdContextNormalized({ key: { '@container': { '@list': true } } });
           return expect(await util.valueToTerm(context, 'key', [], 0, []))
             .toEqualRdfTermArray([namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil')]);
         });
 
         it('should return null for a list with null elements', async () => {
-          context = { key: { '@container': { '@list': true } } };
+          context = new JsonLdContextNormalized({ key: { '@container': { '@list': true } } });
           return expect(await util.valueToTerm(context, 'key', [null, null], 0, [])).toEqual([]);
         });
 
@@ -958,7 +972,8 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @reverse parent', async () => {
-        util.parsingContext.contextTree.setContext([null, 'a'], Promise.resolve({ reverse: '@reverse' }));
+        util.parsingContext.contextTree.setContext([null, 'a'],
+          Promise.resolve(new JsonLdContextNormalized({ reverse: '@reverse' })));
         expect(await util.getPropertiesDepth([null, 'a', 'reverse', 'b'], 3)).toBe(2);
       });
 
@@ -967,7 +982,8 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @nest parent', async () => {
-        util.parsingContext.contextTree.setContext([null, 'a'], Promise.resolve({ nest: '@nest' }));
+        util.parsingContext.contextTree.setContext([null, 'a'],
+          Promise.resolve(new JsonLdContextNormalized({ nest: '@nest' })));
         expect(await util.getPropertiesDepth([null, 'a', 'nest', 'b'], 3)).toBe(2);
       });
 

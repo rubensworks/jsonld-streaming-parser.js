@@ -1,4 +1,4 @@
-import {ContextParser} from "jsonld-context-parser";
+import {Util as ContextUtil} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {IEntryHandler} from "../IEntryHandler";
@@ -28,7 +28,7 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
   public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
     : Promise<boolean> {
     const key = await util.unaliasKeyword(keys[depth], keys, depth);
-    if (ContextParser.isPotentialKeyword(key)) {
+    if (ContextUtil.isPotentialKeyword(key)) {
       // Don't emit anything inside free-floating lists
       if (!inProperty) {
         if (key === '@list') {
@@ -43,7 +43,7 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
 
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
     : Promise<boolean> {
-    return ContextParser.isPotentialKeyword(key);
+    return ContextUtil.isPotentialKeyword(key);
   }
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)

@@ -11,7 +11,7 @@ export class ParsingContextMocked extends ParsingContext {
   constructor(options?: IParsingContextOptions) {
     super({
       ...options,
-      parser: null,
+      parser: <any> null,
     });
     this.emittedQuads = [];
   }

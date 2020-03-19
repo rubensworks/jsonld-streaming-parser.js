@@ -1,7 +1,8 @@
-import {ContextParser, ERROR_CODES, ErrorCoded, IJsonLdContextNormalized} from "jsonld-context-parser";
+import {ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized,
+  Util as ContextUtil} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
-import {ParsingContext} from "./ParsingContext";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
+import {ParsingContext} from "./ParsingContext";
 
 // tslint:disable-next-line:no-var-requires
 const canonicalizeJson = require('canonicalize');
@@ -40,7 +41,7 @@ export class Util {
   /**
    * Helper function to get the value of a context entry,
    * or fallback to a certain value.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} contextKey A pre-defined JSON-LD key in context entries.
    * @param {string} key A context entry key.
    * @param {string} fallback A fallback value for when the given contextKey
@@ -48,9 +49,9 @@ export class Util {
    * @return {string} The value of the given contextKey in the entry behind key in the given context,
    *                  or the given fallback value.
    */
-  public static getContextValue<FB>(context: IJsonLdContextNormalized, contextKey: string,
+  public static getContextValue<FB>(context: JsonLdContextNormalized, contextKey: string,
                                     key: string, fallback: FB): string | any | FB {
-    const entry = context[key];
+    const entry = context.getContextRaw()[key];
     if (!entry) {
       return fallback;
     }
@@ -65,22 +66,22 @@ export class Util {
    * it may be required to increase the offset from the depth at which the context is retrieved by one (to 2).
    * This is because containers act 2 levels deep.
    *
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The container type.
    */
-  public static getContextValueContainer(context: IJsonLdContextNormalized, key: string):
+  public static getContextValueContainer(context: JsonLdContextNormalized, key: string):
     { [typeName: string]: boolean } {
     return Util.getContextValue(context, '@container', key, { '@set': true });
   }
 
   /**
    * Get the value type of the given key in the context.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
-  public static getContextValueType(context: IJsonLdContextNormalized, key: string): string | null {
+  public static getContextValueType(context: JsonLdContextNormalized, key: string): string | null {
     const valueType = Util.getContextValue(context, '@type', key, null);
     if (valueType === '@none') {
       return null;
@@ -90,52 +91,52 @@ export class Util {
 
   /**
    * Get the language of the given key in the context.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
-  public static getContextValueLanguage(context: IJsonLdContextNormalized, key: string): string | null {
-    return Util.getContextValue(context, '@language', key, context['@language'] || null);
+  public static getContextValueLanguage(context: JsonLdContextNormalized, key: string): string | null {
+    return Util.getContextValue(context, '@language', key, context.getContextRaw()['@language'] || null);
   }
 
   /**
    * Get the direction of the given key in the context.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The node type.
    */
-  public static getContextValueDirection(context: IJsonLdContextNormalized, key: string): string {
-    return Util.getContextValue(context, '@direction', key, context['@direction'] || null);
+  public static getContextValueDirection(context: JsonLdContextNormalized, key: string): string {
+    return Util.getContextValue(context, '@direction', key, context.getContextRaw()['@direction'] || null);
   }
 
   /**
    * Check if the given key in the context is a reversed property.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {boolean} If the context value has a @reverse key.
    */
-  public static isContextValueReverse(context: IJsonLdContextNormalized, key: string): boolean {
+  public static isContextValueReverse(context: JsonLdContextNormalized, key: string): boolean {
     return !!Util.getContextValue(context, '@reverse', key, null);
   }
 
   /**
    * Get the @index of the given key in the context.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key A context entry key.
    * @return {string} The index.
    */
-  public static getContextValueIndex(context: IJsonLdContextNormalized, key: string): any | null {
-    return Util.getContextValue(context, '@index', key, context['@index'] || null);
+  public static getContextValueIndex(context: JsonLdContextNormalized, key: string): any | null {
+    return Util.getContextValue(context, '@index', key, context.getContextRaw()['@index'] || null);
   }
 
   /**
    * Check if the given key refers to a reversed property.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The property key.
    * @param {string} parentKey The parent key.
    * @return {boolean} If the property must be reversed.
    */
-  public static isPropertyReverse(context: IJsonLdContextNormalized, key: string, parentKey: string): boolean {
+  public static isPropertyReverse(context: JsonLdContextNormalized, key: string, parentKey: string): boolean {
     // '!==' is needed because reversed properties in a @reverse container should cancel each other out.
     return parentKey === '@reverse' !== Util.isContextValueReverse(context, key);
   }
@@ -146,7 +147,7 @@ export class Util {
    * @return {boolean} If the given IRI is valid.
    */
   public static isValidIri(iri: string | null): boolean {
-    return iri !== null && ContextParser.isValidIri(iri);
+    return iri !== null && ContextUtil.isValidIri(iri);
   }
 
   /**
@@ -193,14 +194,14 @@ export class Util {
 
   /**
    * Convert a given JSON value to an RDF term.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The current JSON key.
    * @param value A JSON value.
    * @param {number} depth The depth the value is at.
    * @param {string[]} keys The path of keys.
    * @return {Promise<RDF.Term[]>} An RDF term array.
    */
-  public async valueToTerm(context: IJsonLdContextNormalized, key: string,
+  public async valueToTerm(context: JsonLdContextNormalized, key: string,
                            value: any, depth: number, keys: string[]): Promise<RDF.Term[]> {
     // Skip further processing if we have an @type: @json
     if (Util.getContextValueType(context, key) === '@json') {
@@ -236,7 +237,7 @@ export class Util {
       // Handle local context in the value
       if ('@context' in value) {
         context = await this.parsingContext.parseContext(value['@context'],
-          await this.parsingContext.getContext(keys, 0));
+          (await this.parsingContext.getContext(keys, 0)).getContextRaw());
       }
 
       // In all other cases, we have a hash
@@ -353,7 +354,7 @@ export class Util {
           return [ this.dataFactory.literal(val, typeTerm) ];
         }
         // We don't pass the context, because context-based things like @language should be ignored
-        return await this.valueToTerm({}, key, val, depth, keys);
+        return await this.valueToTerm(new JsonLdContextNormalized({}), key, val, depth, keys);
       } else if ('@set' in value) {
         // No other entries are allow in this value
         if (Object.keys(value).length > 1) {
@@ -397,7 +398,7 @@ export class Util {
         }
         // Handle local context in the value
         if ('@context' in value) {
-          context = await this.parsingContext.parseContext(value['@context'], context);
+          context = await this.parsingContext.parseContext(value['@context'], context.getContextRaw());
         }
 
         if (value["@type"] === '@vocab') {
@@ -440,11 +441,11 @@ export class Util {
    * @param context A context.
    * @param key A JSON key.
    */
-  public async getContextSelfOrPropertyScoped(context: IJsonLdContextNormalized, key: string)
-    : Promise<IJsonLdContextNormalized> {
-    const contextKeyEntry = context[key];
+  public async getContextSelfOrPropertyScoped(context: JsonLdContextNormalized, key: string)
+    : Promise<JsonLdContextNormalized> {
+    const contextKeyEntry = context.getContextRaw()[key];
     if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-      context = await this.parsingContext.parseContext(contextKeyEntry, context, true);
+      context = await this.parsingContext.parseContext(contextKeyEntry, context.getContextRaw(), true);
     }
     return context;
   }
@@ -460,13 +461,12 @@ export class Util {
   /**
    * Convert a given JSON key to an RDF predicate term,
    * based on @vocab.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node.
    */
-  public predicateToTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
-    const expanded: string | null = ContextParser.expandTerm(key, context, true,
-      this.parsingContext.getExpandOptions());
+  public predicateToTerm(context: JsonLdContextNormalized, key: string): RDF.Term | null {
+    const expanded: string | null = context.expandTerm(key, true, this.parsingContext.getExpandOptions());
 
     // Immediately return if the predicate was disabled in the context
     if (!expanded) {
@@ -500,15 +500,15 @@ export class Util {
   /**
    * Convert a given JSON key to an RDF resource term or blank node,
    * based on @base.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node or null.
    */
-  public resourceToTerm(context: IJsonLdContextNormalized, key: string): RDF.NamedNode | RDF.BlankNode | null {
+  public resourceToTerm(context: JsonLdContextNormalized, key: string): RDF.NamedNode | RDF.BlankNode | null {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
-    const iri = ContextParser.expandTerm(key, context, false, this.parsingContext.getExpandOptions());
+    const iri = context.expandTerm(key, false, this.parsingContext.getExpandOptions());
     if (!Util.isValidIri(iri)) {
       if (iri && this.parsingContext.strictValues) {
         this.parsingContext.emitError(new Error(`Invalid resource IRI: ${iri}`));
@@ -523,18 +523,18 @@ export class Util {
    * Convert a given JSON key to an RDF resource term.
    * It will do this based on the @vocab,
    * and fallback to @base.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param key A JSON key.
    * @return {RDF.NamedNode} An RDF named node or null.
    */
-  public createVocabOrBaseTerm(context: IJsonLdContextNormalized, key: string): RDF.Term | null {
+  public createVocabOrBaseTerm(context: JsonLdContextNormalized, key: string): RDF.Term | null {
     if (key.startsWith('_:')) {
       return this.dataFactory.blankNode(key.substr(2));
     }
     const expandOptions = this.parsingContext.getExpandOptions();
-    let expanded = ContextParser.expandTerm(key, context, true, expandOptions);
+    let expanded = context.expandTerm(key, true, expandOptions);
     if (expanded === key) {
-      expanded = ContextParser.expandTerm(key, context, false, expandOptions);
+      expanded = context.expandTerm(key, false, expandOptions);
     }
     if (!Util.isValidIri(expanded)) {
       if (expanded && this.parsingContext.strictValues) {
@@ -572,13 +572,13 @@ export class Util {
   /**
    * Convert a given JSON string value to an RDF term.
    * @param {number} depth The current stack depth.
-   * @param {IJsonLdContextNormalized} context A JSON-LD context.
+   * @param {JsonLdContextNormalized} context A JSON-LD context.
    * @param {string} key The current JSON key.
    * @param {string} value A JSON value.
    * @param {NamedNode} defaultDatatype The default datatype for the given value.
    * @return {RDF.Term} An RDF term or null.
    */
-  public stringValueToTerm(depth: number, context: IJsonLdContextNormalized, key: string, value: string | number,
+  public stringValueToTerm(depth: number, context: JsonLdContextNormalized, key: string, value: string | number,
                            defaultDatatype: RDF.NamedNode | null): RDF.Term | null {
     // Check the datatype from the context
     const contextType = Util.getContextValueType(context, key);
@@ -663,12 +663,12 @@ export class Util {
    * @param {string[]} keys The path of keys.
    * @param {number} depth The depth to
    * @param {boolean} disableCache If the cache should be disabled
-   * @param {IJsonLdContextNormalized} context A context to unalias with,
+   * @param {JsonLdContextNormalized} context A context to unalias with,
    *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
   public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean,
-                              context?: IJsonLdContextNormalized): Promise<any> {
+                              context?: JsonLdContextNormalized): Promise<any> {
     // Numbers can not be an alias
     if (Number.isInteger(key)) {
       return key;
@@ -682,13 +682,13 @@ export class Util {
       }
     }
 
-    if (!ContextParser.isPotentialKeyword(key)) {
+    if (!ContextUtil.isPotentialKeyword(key)) {
       context = context || await this.parsingContext.getContext(keys);
-      let unliased = context[key];
+      let unliased = context.getContextRaw()[key];
       if (unliased && typeof unliased === 'object') {
         unliased = unliased['@id'];
       }
-      if (ContextParser.isValidKeyword(unliased)) {
+      if (ContextUtil.isValidKeyword(unliased)) {
         key = unliased;
       }
     }
@@ -712,12 +712,12 @@ export class Util {
    * @param {{[p: string]: any}} hash A hash object.
    * @param {string[]} keys The path of keys.
    * @param {number} depth The depth.
-   * @param {IJsonLdContextNormalized} context A context to unalias with,
+   * @param {JsonLdContextNormalized} context A context to unalias with,
    *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
    */
   public async unaliasKeywords(hash: {[id: string]: any}, keys: string[], depth: number,
-                               context?: IJsonLdContextNormalized): Promise<{[id: string]: any}> {
+                               context?: JsonLdContextNormalized): Promise<{[id: string]: any}> {
     const newHash: {[id: string]: any} = {};
     for (const key in hash) {
       newHash[await this.unaliasKeyword(key, keys, depth + 1, true, context)] = hash[key];

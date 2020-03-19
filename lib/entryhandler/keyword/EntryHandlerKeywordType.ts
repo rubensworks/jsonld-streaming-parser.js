@@ -1,4 +1,4 @@
-import {IJsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContext";
+import {JsonLdContextNormalized} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
@@ -35,13 +35,13 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     }
 
     // Collect type-scoped contexts if they exist
-    let scopedContext: Promise<IJsonLdContextNormalized> = Promise.resolve(context);
+    let scopedContext: Promise<JsonLdContextNormalized> = Promise.resolve(context);
     let hasTypedScopedContext = false;
     for (const element of elements.sort()) { // Spec requires lexicographical ordering
       const typeContext = Util.getContextValue(context, '@context', element, null);
       if (typeContext) {
         hasTypedScopedContext = true;
-        scopedContext = scopedContext.then((c) => parsingContext.parseContext(typeContext, c));
+        scopedContext = scopedContext.then((c) => parsingContext.parseContext(typeContext, c.getContextRaw()));
       }
     }
     // If at least least one type-scoped context applies, set them in the tree.
@@ -55,15 +55,15 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
 
       // Do not propagate by default
       scopedContext = scopedContext.then((c) => {
-        if (!('@propagate' in c)) {
-          c['@propagate'] = false;
+        if (!('@propagate' in c.getContextRaw())) {
+          c.getContextRaw()['@propagate'] = false;
         }
 
         // Set the original context at this depth as a fallback
         // This is needed when a context was already defined at the given depth,
         // and this context needs to remain accessible from child nodes when propagation is disabled.
-        if (c['@propagate'] === false) {
-          c['@__propagateFallback'] = context;
+        if (c.getContextRaw()['@propagate'] === false) {
+          c.getContextRaw()['@__propagateFallback'] = context.getContextRaw();
         }
 
         return c;

@@ -1,4 +1,4 @@
-import {IJsonLdContextNormalized} from "jsonld-context-parser";
+import {JsonLdContextNormalized} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
@@ -27,10 +27,10 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     // Find the parent context to inherit from.
     // We actually request a context for the current depth (with fallback to parent)
     // because we want to take into account any property-scoped contexts that are defined for this depth.
-    const parentContext: Promise<IJsonLdContextNormalized> = parsingContext.getContext(keys);
+    const parentContext: Promise<JsonLdContextNormalized> = parsingContext.getContext(keys);
 
     // Set the context for this scope
-    const context = parsingContext.parseContext(value, await parentContext);
+    const context = parsingContext.parseContext(value, (await parentContext).getContextRaw());
     parsingContext.contextTree.setContext(keys.slice(0, -1), context);
     parsingContext.emitContext(value);
     await parsingContext.validateContext(await context);

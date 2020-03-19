@@ -1,4 +1,5 @@
 import {ContextTree} from "../lib/ContextTree";
+import {JsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContextNormalized";
 
 describe('ContextTree', () => {
 
@@ -16,29 +17,29 @@ describe('ContextTree', () => {
     });
 
     it('should should set a context at depth 1', async () => {
-      const c = Promise.resolve({});
+      const c = Promise.resolve(new JsonLdContextNormalized({}));
       tree.setContext(['a'], c);
       expect(await tree.getContext(['a'])).toEqual({ context: await c, depth: 1 });
       expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 1 });
     });
 
     it('should should set a context at depth 1 for an undefined key', async () => {
-      const c = Promise.resolve({ a: 'b' });
+      const c = Promise.resolve(new JsonLdContextNormalized({ a: 'b' }));
       tree.setContext([undefined], c);
       expect(await tree.getContext([undefined])).toEqual({ context: await c, depth: 1 });
       expect(await tree.getContext([undefined, 'b'])).toEqual({ context: await c, depth: 1 });
     });
 
     it('should should set a context at depth 2', async () => {
-      const c = Promise.resolve({});
+      const c = Promise.resolve(new JsonLdContextNormalized({}));
       tree.setContext(['a', 'b'], c);
       expect(tree.getContext(['a'])).toBeFalsy();
       expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 2 });
     });
 
     it('should allow branched context setting', async () => {
-      const c1 = Promise.resolve({});
-      const c2 = Promise.resolve({});
+      const c1 = Promise.resolve(new JsonLdContextNormalized({}));
+      const c2 = Promise.resolve(new JsonLdContextNormalized({}));
       tree.setContext(['a', 'b'], c1);
       tree.setContext(['a', 'c'], c2);
 
@@ -48,8 +49,8 @@ describe('ContextTree', () => {
     });
 
     it('should not allow overriding contexts', async () => {
-      const c1 = Promise.resolve({});
-      const c2 = Promise.resolve({});
+      const c1 = Promise.resolve(new JsonLdContextNormalized({}));
+      const c2 = Promise.resolve(new JsonLdContextNormalized({}));
       tree.setContext(['a', 'b'], c1);
       tree.setContext(['a', 'b'], c2);
 
@@ -60,7 +61,7 @@ describe('ContextTree', () => {
 
   describe('an instance with a root context', () => {
     let tree;
-    const root = Promise.resolve({});
+    const root = Promise.resolve(new JsonLdContextNormalized({}));
 
     beforeEach(() => {
       tree = new ContextTree();

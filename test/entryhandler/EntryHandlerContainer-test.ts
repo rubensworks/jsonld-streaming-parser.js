@@ -1,3 +1,4 @@
+import {JsonLdContextNormalized} from "jsonld-context-parser";
 import {EntryHandlerContainer} from "../../lib/entryhandler/EntryHandlerContainer";
 import {Util} from "../../lib/Util";
 import {ParsingContextMocked} from "../../mocks/ParsingContextMocked";
@@ -150,7 +151,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toMatchObject({
           containers: { '@id': true },
@@ -161,7 +162,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @index container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@index": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@index": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toMatchObject({
           containers: { '@index': true },
@@ -172,7 +173,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @language container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@language": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@language": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toMatchObject({
           containers: { '@language': true },
@@ -183,7 +184,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @type container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@type": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@type": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toMatchObject({
           containers: { '@type': true },
@@ -194,7 +195,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth in an unknown container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@bla": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@bla": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
         .toMatchObject({
           containers: { '@set': true },
@@ -205,7 +206,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth within one array in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true  } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", 0, "subSubKey"], 4))
         .toMatchObject({
@@ -217,7 +218,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth within two arrays in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true  } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", 0, 1, "subSubKey"], 4))
         .toMatchObject({
@@ -229,7 +230,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth within an object in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toMatchObject({
@@ -241,7 +242,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @graph container', async () => {
       parsingContext.contextTree.setContext(["a"],
-        Promise.resolve({ container: { "@container": { "@graph": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
         .toMatchObject({
           containers: { '@graph': true },
@@ -252,7 +253,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth in an @graph @set container', async () => {
       parsingContext.contextTree.setContext(["a"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@set": true } } }));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@set": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
         .toMatchObject({
           containers: { '@graph': true, '@set': true },
@@ -263,7 +265,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth above an @graph container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 1))
         .toMatchObject({
           containers: { '@set': true },
@@ -274,7 +276,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth below an @graph container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "keyDeeper"], 3))
         .toMatchObject({
           containers: { '@set': true },
@@ -285,7 +287,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth within a graph index container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toMatchObject({
@@ -297,7 +300,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth within a graph id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toMatchObject({
@@ -309,7 +312,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth of a graph index container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toMatchObject({
@@ -321,7 +325,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return when targeting a depth of a graph id container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toMatchObject({
@@ -333,7 +337,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth of a graph type container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@type": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@type": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toMatchObject({
@@ -345,7 +350,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth of a graph language container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@language": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@language": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toMatchObject({
@@ -357,7 +363,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth below a graph index container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
         .toMatchObject({
@@ -369,7 +376,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return fallback when targeting a depth below a graph id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
         .toMatchObject({
@@ -398,7 +405,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(true);
@@ -406,7 +413,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an @index container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@index": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@index": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(true);
@@ -414,7 +421,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an @language container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@language": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@language": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(true);
@@ -422,7 +429,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an @type container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@type": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@type": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(true);
@@ -430,7 +437,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth in an unknown container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@bla": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@bla": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(false);
@@ -438,7 +445,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth within one array in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true  } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", 0, "subSubKey"], 4))
         .toBe(true);
@@ -446,7 +453,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth within two arrays in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true  } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", 0, 1, "subSubKey"], 4))
         .toBe(true);
@@ -454,7 +461,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth within an object in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toBe(false);
@@ -462,7 +469,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth in an @graph container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 2))
         .toBe(false);
@@ -470,7 +477,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return true when targeting a depth below an @graph container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true } } }));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey"], 3))
         .toBe(false);
@@ -478,7 +485,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth within a graph index container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toBe(false);
@@ -486,7 +494,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth within a graph id container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 4))
         .toBe(false);
@@ -494,7 +502,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth of a graph index container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toBe(false);
@@ -502,7 +511,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth of a graph id container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey"], 3))
         .toBe(false);
@@ -510,7 +519,8 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth below a graph index container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@index": true } }}));
+        Promise.resolve(new JsonLdContextNormalized(
+          { container: { "@container": { "@graph": true, "@index": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
         .toBe(false);
@@ -518,7 +528,7 @@ describe('EntryHandlerContainer', () => {
 
     it('should return false when targeting a depth below a graph id container in an @id container', async () => {
       parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve({ container: { "@container": { "@graph": true, "@id": true } }}));
+        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
       expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
         ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
         .toBe(false);

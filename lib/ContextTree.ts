@@ -1,4 +1,4 @@
-import {IJsonLdContextNormalized} from "jsonld-context-parser";
+import {JsonLdContextNormalized} from "jsonld-context-parser";
 
 /**
  * A tree structure that holds all contexts,
@@ -9,9 +9,9 @@ import {IJsonLdContextNormalized} from "jsonld-context-parser";
 export class ContextTree {
 
   private readonly subTrees: {[key: string]: ContextTree} = {};
-  private context: Promise<IJsonLdContextNormalized> | null;
+  private context: Promise<JsonLdContextNormalized> | null;
 
-  public getContext(keys: string[]): Promise<{ context: IJsonLdContextNormalized, depth: number }> | null {
+  public getContext(keys: string[]): Promise<{ context: JsonLdContextNormalized, depth: number }> | null {
     if (keys.length > 0) {
       const [head, ...tail] = keys;
       const subTree = this.subTrees[head];
@@ -25,7 +25,7 @@ export class ContextTree {
     return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
   }
 
-  public setContext(keys: any[], context: Promise<IJsonLdContextNormalized> | null) {
+  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null) {
     if (keys.length === 0) {
       this.context = context;
     } else {

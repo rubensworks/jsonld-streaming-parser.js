@@ -5,7 +5,7 @@ import * as dataFactory from "@rdfjs/data-model";
 import {blankNode, defaultGraph, literal, namedNode, quad, triple} from "@rdfjs/data-model";
 import each from 'jest-each';
 import "jest-rdf";
-import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 
@@ -23,7 +23,7 @@ describe('JsonLdParser', () => {
     });
 
     it('should have a default root context', async () => {
-      expect(await parser.parsingContext.rootContext).toEqual({ '@base': undefined });
+      expect(await parser.parsingContext.rootContext).toEqual(new JsonLdContextNormalized({ '@base': undefined }));
     });
   });
 
@@ -39,7 +39,8 @@ describe('JsonLdParser', () => {
     });
 
     it('should have no root context', async () => {
-      expect(await parser.parsingContext.rootContext).toEqual({ SomeTerm: 'http://example.org/' });
+      expect(await parser.parsingContext.rootContext).toEqual(
+        new JsonLdContextNormalized({ SomeTerm: 'http://example.org/' }));
     });
   });
 
