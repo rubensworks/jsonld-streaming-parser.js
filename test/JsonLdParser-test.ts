@@ -9336,19 +9336,6 @@ describe('JsonLdParser', () => {
 
       describe('@nest properties', () => {
 
-        it('with @id and no sub-properties', async () => {
-          const stream = streamifyString(`
-{
-  "@context": {
-    "ex": "http://ex.org/",
-    "nested": "@nest"
-  },
-  "@id": "http://ex.org/myid",
-  "nested": "This value will be ignored"
-}`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
-        });
-
         it('(unaliased) with @id and one valid sub-property', async () => {
           const stream = streamifyString(`
 {
@@ -9552,6 +9539,82 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/p1'),
               literal('V1')),
           ]);
+        });
+
+        it('should error on a string value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": "invalid"
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Found invalid @nest entry for \'@nest\': \'invalid\'',
+            ERROR_CODES.INVALID_NEST_VALUE));
+        });
+
+        it('should error on a number value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": 10
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Found invalid @nest entry for \'@nest\': \'10\'',
+            ERROR_CODES.INVALID_NEST_VALUE));
+        });
+
+        it('should error on a boolean value', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": true
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Found invalid @nest entry for \'@nest\': \'true\'',
+            ERROR_CODES.INVALID_NEST_VALUE));
+        });
+
+        it('should error on a value node', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": { "@value": true }
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Found an invalid @value node for \'@nest\'',
+            ERROR_CODES.INVALID_NEST_VALUE));
+        });
+
+        it('should error on an aliased value node', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p1": "ex:p1",
+    "v": "@value"
+  },
+  "@id": "http://ex.org/myid",
+  "@nest": { "v": true }
+}`);
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Found an invalid @value node for \'@nest\'',
+            ERROR_CODES.INVALID_NEST_VALUE));
         });
 
       });

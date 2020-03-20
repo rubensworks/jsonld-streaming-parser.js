@@ -11,12 +11,13 @@ import {IEntryHandler} from "./entryhandler/IEntryHandler";
 import {EntryHandlerKeywordContext} from "./entryhandler/keyword/EntryHandlerKeywordContext";
 import {EntryHandlerKeywordGraph} from "./entryhandler/keyword/EntryHandlerKeywordGraph";
 import {EntryHandlerKeywordId} from "./entryhandler/keyword/EntryHandlerKeywordId";
+import EventEmitter = NodeJS.EventEmitter;
+import {EntryHandlerKeywordNest} from "./entryhandler/keyword/EntryHandlerKeywordNest";
 import {EntryHandlerKeywordType} from "./entryhandler/keyword/EntryHandlerKeywordType";
 import {EntryHandlerKeywordUnknownFallback} from "./entryhandler/keyword/EntryHandlerKeywordUnknownFallback";
 import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywordValue";
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
-import EventEmitter = NodeJS.EventEmitter;
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -29,6 +30,7 @@ export class JsonLdParser extends Transform {
     new EntryHandlerKeywordContext(),
     new EntryHandlerKeywordId(),
     new EntryHandlerKeywordGraph(),
+    new EntryHandlerKeywordNest(),
     new EntryHandlerKeywordType(),
     new EntryHandlerKeywordValue(),
     new EntryHandlerContainer(),
