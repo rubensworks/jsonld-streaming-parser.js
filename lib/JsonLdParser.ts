@@ -11,6 +11,7 @@ import {IEntryHandler} from "./entryhandler/IEntryHandler";
 import {EntryHandlerKeywordContext} from "./entryhandler/keyword/EntryHandlerKeywordContext";
 import {EntryHandlerKeywordGraph} from "./entryhandler/keyword/EntryHandlerKeywordGraph";
 import {EntryHandlerKeywordId} from "./entryhandler/keyword/EntryHandlerKeywordId";
+import {EntryHandlerKeywordIncluded} from "./entryhandler/keyword/EntryHandlerKeywordIncluded";
 import EventEmitter = NodeJS.EventEmitter;
 import {EntryHandlerKeywordNest} from "./entryhandler/keyword/EntryHandlerKeywordNest";
 import {EntryHandlerKeywordType} from "./entryhandler/keyword/EntryHandlerKeywordType";
@@ -29,6 +30,7 @@ export class JsonLdParser extends Transform {
     new EntryHandlerArrayValue(),
     new EntryHandlerKeywordContext(),
     new EntryHandlerKeywordId(),
+    new EntryHandlerKeywordIncluded(),
     new EntryHandlerKeywordGraph(),
     new EntryHandlerKeywordNest(),
     new EntryHandlerKeywordType(),

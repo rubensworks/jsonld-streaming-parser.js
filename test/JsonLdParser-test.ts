@@ -11200,6 +11200,36 @@ describe('JsonLdParser', () => {
           .toThrow(new ErrorCoded('Found illegal @type \'true\'',
             ERROR_CODES.INVALID_TYPE_VALUE));
       });
+
+      it('@included with a raw value', async () => {
+        const stream = streamifyString(`
+{
+  "@included": "bla"
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found illegal @included \'bla\'',
+            ERROR_CODES.INVALID_INCLUDED_VALUE));
+      });
+
+      it('@included with an @value', async () => {
+        const stream = streamifyString(`
+{
+  "@included": { "@value": "bla" }
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found an illegal @included @value node \'{"@value":"bla"}\'',
+            ERROR_CODES.INVALID_INCLUDED_VALUE));
+      });
+
+      it('@included with an @list', async () => {
+        const stream = streamifyString(`
+{
+  "@included": { "@list": [ "bla" ] }
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found an illegal @included @list node \'{"@list":["bla"]}\'',
+            ERROR_CODES.INVALID_INCLUDED_VALUE));
+      });
     });
   });
 
