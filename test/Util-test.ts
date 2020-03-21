@@ -429,7 +429,8 @@ describe('Util', () => {
         it('with a boolean @value and valid @language should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': true, '@language': 'en-us' }, 0, []))
             .rejects.toThrow(
-              new Error('When an \'@language\' is set, the value of \'@value\' must be a string, got \'true\''));
+              new ErrorCoded('When an \'@language\' is set, the value of \'@value\' must be a string, got \'true\'',
+                ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
         });
 
         it('with a @value and invalid @language should return []', async () => {

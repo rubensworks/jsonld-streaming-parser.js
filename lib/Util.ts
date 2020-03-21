@@ -294,8 +294,9 @@ export class Util {
         // Validate @language and @direction
         if (valueLanguage) {
           if (typeof val !== 'string') {
-            throw new Error(
-              `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
+            throw new ErrorCoded(
+              `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`,
+              ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE);
           }
 
           if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictValues,
