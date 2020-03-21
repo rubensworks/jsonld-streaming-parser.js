@@ -11132,7 +11132,20 @@ describe('JsonLdParser', () => {
     "@reverse": true
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          'Invalid value type for \'@reverse\' with value \'true\'',
+          ERROR_CODES.INVALID_REVERSE_VALUE));
+      });
+      it('@index: true', async () => {
+        const stream = streamifyString(`
+{
+  "http://example/prop": {
+    "@index": true
+  }
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          'Invalid value type for \'@index\' with value \'true\'',
+          ERROR_CODES.INVALID_INDEX_VALUE));
       });
       it('a list in a reversed property', async () => {
         const stream = streamifyString(`
