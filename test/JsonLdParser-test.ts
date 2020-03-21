@@ -1544,7 +1544,8 @@ describe('JsonLdParser', () => {
 }`);
           parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, allowSubjectList: false });
           return expect(arrayifyStream(stream.pipe(parser))).rejects
-            .toThrow(new Error('Found illegal list value in subject position at term'));
+            .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
+              ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
         });
 
         it('with a list as @reverse value, with allowSubjectList true', async () => {
@@ -11157,7 +11158,8 @@ describe('JsonLdParser', () => {
   "term": {"@list": ["http://example/bar"]}
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects
-          .toThrow(new Error('Found illegal list value in subject position at term'));
+          .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
+            ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
       it('a singular list in a reversed property', async () => {
         const stream = streamifyString(`
@@ -11169,7 +11171,8 @@ describe('JsonLdParser', () => {
   "term": {"@list": "http://example/bar"}
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects
-          .toThrow(new Error('Found illegal list value in subject position at term'));
+          .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
+            ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
       it('an empty list in a reversed property', async () => {
         const stream = streamifyString(`
@@ -11181,7 +11184,8 @@ describe('JsonLdParser', () => {
   "term": {"@list": []}
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects
-          .toThrow(new Error('Found illegal list value in subject position at term'));
+          .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
+            ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
 
       it('an @id with a non-string value', async () => {

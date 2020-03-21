@@ -1,3 +1,4 @@
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
@@ -135,7 +136,8 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
 
               // Lists are not allowed in @reverse'd properties
               if (reverse && !parsingContext.allowSubjectList) {
-                throw new Error(`Found illegal list value in subject position at ${key}`);
+                throw new ErrorCoded(`Found illegal list value in subject position at ${key}`,
+                  ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE);
               }
             }
           }
