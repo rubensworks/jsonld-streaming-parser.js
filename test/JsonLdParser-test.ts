@@ -11110,7 +11110,9 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          'Found the @id \'http://ex.org/myid\' inside an @reverse property',
+          ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
       });
       it('an @graph inside an @reverse', async () => {
         const stream = streamifyString(`
