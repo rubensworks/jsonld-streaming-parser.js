@@ -1,3 +1,4 @@
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
 import {IContainerHandler} from "./IContainerHandler";
@@ -20,8 +21,14 @@ export class ContainerHandlerLanguage implements IContainerHandler {
     const language = await util.getContainerKey(keys[depth], keys, depth);
 
     if (Array.isArray(value)) {
+      // No type-checking needed, will be handled on each value when this handler is called recursively.
       value = value.map((subValue) => ({ '@value': subValue, '@language': language }));
     } else {
+      if (typeof value !== 'string') {
+        throw new ErrorCoded(
+          `Got invalid language map value, got '${JSON.stringify(value)}', but expected string`,
+          ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE);
+      }
       value = { '@value': value, '@language': language };
     }
     await parsingContext.newOnValueJob(keys.slice(0, keys.length - 1), value, depth - 1, true);

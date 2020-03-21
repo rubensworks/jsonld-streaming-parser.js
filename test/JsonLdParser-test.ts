@@ -6692,6 +6692,42 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('with @id and language map containing an invalid value', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@language" },
+    "none": "@none"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": true
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+              'Got invalid language map value, got \'true\', but expected string',
+              ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
+          });
+
+          it('with @id and language map containing an invalid value in an array', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "ex": "http://ex.org/",
+    "p": { "@id": "http://ex.org/pred1", "@container": "@language" },
+    "none": "@none"
+  },
+  "@id": "http://ex.org/myid",
+  "p": {
+    "ja": [ true, false ]
+  }
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+              'Got invalid language map value, got \'true\', but expected string',
+              ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
+          });
+
         });
 
         describe('for indexes', () => {
