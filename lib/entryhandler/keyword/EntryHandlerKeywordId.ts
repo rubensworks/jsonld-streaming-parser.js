@@ -1,6 +1,8 @@
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
+import {ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
+import {ERROR_CODES} from "jsonld-context-parser";
 
 /**
  * Handles @id entries.
@@ -23,8 +25,8 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
 
     // Error if an @id for this node already existed.
     if (parsingContext.idStack[depthProperties] !== undefined) {
-      parsingContext.emitError(new Error(`Found duplicate @ids '${parsingContext
-        .idStack[depthProperties][0].value}' and '${value}'`));
+      parsingContext.emitError(new ErrorCoded(`Found duplicate @ids '${parsingContext
+        .idStack[depthProperties][0].value}' and '${value}'`, ERROR_CODES.COLLIDING_KEYWORDS));
     }
 
     // Save our @id on the stack

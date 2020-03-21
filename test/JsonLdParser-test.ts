@@ -9498,7 +9498,8 @@ describe('JsonLdParser', () => {
   }
 }`);
           return expect(arrayifyStream(stream.pipe(parser))).rejects
-            .toThrow(new Error('Found duplicate @ids \'http://ex.org/myid\' and \'http://ex.org/conflictingid\''));
+            .toThrow(new ErrorCoded('Found duplicate @ids \'http://ex.org/myid\' and \'http://ex.org/conflictingid\'',
+              ERROR_CODES.COLLIDING_KEYWORDS));
         });
 
         it('with inner @id and one valid sub-property', async () => {
