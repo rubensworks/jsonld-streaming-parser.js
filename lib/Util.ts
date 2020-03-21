@@ -356,7 +356,8 @@ export class Util {
               ERROR_CODES.INVALID_TYPED_VALUE);
           }
           if (typeTerm.termType !== 'NamedNode') {
-            throw new Error(`Illegal value type (${typeTerm.termType}): ${valueType}`);
+            throw new ErrorCoded(`Illegal value type (${typeTerm.termType}): ${valueType}`,
+              ERROR_CODES.INVALID_TYPED_VALUE);
           }
           return [ this.dataFactory.literal(val, typeTerm) ];
         }

@@ -568,7 +568,8 @@ describe('Util', () => {
 
         it('with a @value and blank node @type', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': '_:b' }, 0, []))
-            .rejects.toThrow(new Error('Illegal value type (BlankNode): _:b'));
+            .rejects.toThrow(new ErrorCoded('Illegal value type (BlankNode): _:b',
+              ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
         it('with context-based @json type', async () => {
