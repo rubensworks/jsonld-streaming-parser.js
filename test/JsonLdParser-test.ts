@@ -11180,6 +11180,26 @@ describe('JsonLdParser', () => {
           .toThrow(new ErrorCoded('Found illegal @id \'true\'',
             ERROR_CODES.INVALID_ID_VALUE));
       });
+
+      it('an @type with a non-string value', async () => {
+        const stream = streamifyString(`
+{
+  "@type": true
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found illegal @type \'true\'',
+            ERROR_CODES.INVALID_TYPE_VALUE));
+      });
+
+      it('an @type with a non-string value in an array', async () => {
+        const stream = streamifyString(`
+{
+  "@type": [ true ]
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found illegal @type \'true\'',
+            ERROR_CODES.INVALID_TYPE_VALUE));
+      });
     });
   });
 

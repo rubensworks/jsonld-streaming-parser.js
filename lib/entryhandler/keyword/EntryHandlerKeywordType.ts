@@ -1,4 +1,4 @@
-import {JsonLdContextNormalized} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
@@ -27,6 +27,9 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // Handle multiple values if the value is an array
     const elements = Array.isArray(value) ? value : [ value ];
     for (const element of elements) {
+      if (typeof element !== 'string') {
+        parsingContext.emitError(new ErrorCoded(`Found illegal @type '${element}'`, ERROR_CODES.INVALID_TYPE_VALUE));
+      }
       const type = util.createVocabOrBaseTerm(context, element);
       if (type) {
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
