@@ -11170,6 +11170,16 @@ describe('JsonLdParser', () => {
         return expect(arrayifyStream(stream.pipe(parser))).rejects
           .toThrow(new Error('Found illegal list value in subject position at term'));
       });
+
+      it('an @id with a non-string value', async () => {
+        const stream = streamifyString(`
+{
+  "@id": true
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded('Found illegal @id \'true\'',
+            ERROR_CODES.INVALID_ID_VALUE));
+      });
     });
   });
 

@@ -1,8 +1,7 @@
+import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
-import {ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
-import {ERROR_CODES} from "jsonld-context-parser";
 
 /**
  * Handles @id entries.
@@ -19,6 +18,10 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
+    if (typeof value !== 'string') {
+      parsingContext.emitError(new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE));
+    }
+
     // Determine the canonical place for this id.
     // For example, @nest parents should be ignored.
     const depthProperties: number = await util.getPropertiesDepth(keys, depth);
