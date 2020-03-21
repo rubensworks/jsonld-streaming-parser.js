@@ -11307,7 +11307,8 @@ describe('JsonLdParser', () => {
   }
 }`);
       return expect(arrayifyStream(stream.pipe(parser))).rejects
-        .toEqual(new Error('Found illegal literal in subject position: Name'));
+        .toEqual(new ErrorCoded('Found illegal literal in subject position: Name',
+          ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
     });
 
     it('should error on conflicting indexes in the root when validateValueIndexes is false', async () => {

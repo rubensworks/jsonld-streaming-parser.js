@@ -773,7 +773,8 @@ export class Util {
    */
   public validateReverseSubject(subject: RDF.Term) {
     if (subject.termType === 'Literal') {
-      throw new Error(`Found illegal literal in subject position: ${subject.value}`);
+      throw new ErrorCoded(`Found illegal literal in subject position: ${subject.value}`,
+        ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE);
     }
   }
 
