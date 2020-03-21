@@ -297,7 +297,8 @@ export class Util {
               `When an '@language' is set, the value of '@value' must be a string, got '${JSON.stringify(val)}'`);
           }
 
-          if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictValues)) {
+          if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictValues,
+            ERROR_CODES.INVALID_LANGUAGE_TAGGED_STRING)) {
             return [];
           }
 
