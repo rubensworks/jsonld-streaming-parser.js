@@ -537,29 +537,33 @@ describe('Util', () => {
 
         it('with a @value and @id should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@id': 'abc' }, 0, []))
-            .rejects.toThrow(new Error('Unknown value entry \'@id\' in @value: {"@value":"abc","@id":"abc"}'));
+            .rejects.toThrow(new ErrorCoded('Unknown value entry \'@id\' in @value: {"@value":"abc","@id":"abc"}',
+              ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
         it('with a @value, @language and @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en', '@type': 'abc' }, 0, []))
-            .rejects.toThrow(new Error('Can not have both \'@language\' and \'@type\' in a value: ' +
-              '\'{"@value":"abc","@language":"en","@type":"abc"}\''));
+            .rejects.toThrow(new ErrorCoded('Can not have both \'@language\' and \'@type\' in a value: ' +
+              '\'{"@value":"abc","@language":"en","@type":"abc"}\'',
+              ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
         it('with a @value, @direction and @type should throw an error', async () => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl', '@type': 'abc' },
             0, []))
-            .rejects.toThrow(new Error('Can not have both \'@direction\' and \'@type\' in a value: ' +
-              '\'{"@value":"abc","@direction":"rtl","@type":"abc"}\''));
+            .rejects.toThrow(new ErrorCoded('Can not have both \'@direction\' and \'@type\' in a value: ' +
+              '\'{"@value":"abc","@direction":"rtl","@type":"abc"}\'',
+              ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
         it('with a @value, @language, @direction and @type should throw an error', async () => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
           return expect(util.valueToTerm(context, 'key',
             { '@value': 'abc', '@language': 'en', '@direction': 'rtl', '@type': 'abc' }, 0, []))
-            .rejects.toThrow(new Error('Can not have \'@language\', \'@direction\' and \'@type\' in a value: \'\n' +
-              '            {"@value":"abc","@language":"en","@direction":"rtl","@type":"abc"}\''));
+            .rejects.toThrow(new ErrorCoded('Can not have \'@language\', \'@direction\' ' +
+              'and \'@type\' in a value: \'{"@value":"abc","@language":"en","@direction":"rtl","@type":"abc"}\'',
+              ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
         it('with a @value and blank node @type', async () => {

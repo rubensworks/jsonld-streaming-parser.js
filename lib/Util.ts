@@ -267,7 +267,8 @@ export class Util {
             valueIndex = subValue;
             break;
           default:
-            throw new Error(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`);
+            throw new ErrorCoded(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`,
+              ERROR_CODES.INVALID_VALUE_OBJECT);
           }
         }
 
@@ -323,21 +324,24 @@ export class Util {
         // Check @language and @direction
         if (valueLanguage && valueDirection && this.parsingContext.rdfDirection) {
           if (valueType) {
-            throw new Error(`Can not have '@language', '@direction' and '@type' in a value: '
-            ${JSON.stringify(value)}'`);
+            throw new ErrorCoded(`Can not have '@language', '@direction' and '@type' in a value: '${JSON
+                .stringify(value)}'`,
+              ERROR_CODES.INVALID_VALUE_OBJECT);
           }
 
           return this.nullableTermToArray(this
             .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
         } else if (valueLanguage) { // Check @language
           if (valueType) {
-            throw new Error(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`);
+            throw new ErrorCoded(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`,
+              ERROR_CODES.INVALID_VALUE_OBJECT);
           }
 
           return [ this.dataFactory.literal(val, valueLanguage) ];
         } else if (valueDirection && this.parsingContext.rdfDirection) { // Check @direction
           if (valueType) {
-            throw new Error(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`);
+            throw new ErrorCoded(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`,
+              ERROR_CODES.INVALID_VALUE_OBJECT);
           }
 
           return this.nullableTermToArray(this
