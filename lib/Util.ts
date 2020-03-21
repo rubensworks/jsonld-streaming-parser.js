@@ -287,7 +287,8 @@ export class Util {
 
         // Validate @index
         if (this.parsingContext.validateValueIndexes && valueIndex && typeof valueIndex !== 'string') {
-          throw new Error(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`);
+          throw new ErrorCoded(`The value of an '@index' must be a string, got '${JSON.stringify(valueIndex)}'`,
+            ERROR_CODES.INVALID_INDEX_VALUE);
         }
 
         // Validate @language and @direction

@@ -494,7 +494,8 @@ describe('Util', () => {
         it('with a @value and boolean @index should throw an error when validateValueIndexes is true', async () => {
           util.parsingContext.validateValueIndexes = true;
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0, []))
-            .rejects.toThrow(new Error('The value of an \'@index\' must be a string, got \'true\''));
+            .rejects.toThrow(new ErrorCoded('The value of an \'@index\' must be a string, got \'true\'',
+              ERROR_CODES.INVALID_INDEX_VALUE));
         });
 
         it('with conflicting @index values should not throw an error', async () => {
