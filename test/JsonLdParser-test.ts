@@ -11283,6 +11283,28 @@ describe('JsonLdParser', () => {
           .toThrow(new ErrorCoded('Found an illegal @included @list node \'{"@list":["bla"]}\'',
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
+
+      it('@list with @id', async () => {
+        const stream = streamifyString(`
+{
+  "http://example/prop": {"@list": ["foo"], "@id": "http://example/bar"}
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded(
+            'Found illegal neighbouring entries next to @list for key: \'http://example/prop\'',
+            ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
+      });
+
+      it('@id with @list', async () => {
+        const stream = streamifyString(`
+{
+  "http://example/prop": {"@id": "http://example/bar", "@list": ["foo"]}
+}`);
+        return expect(arrayifyStream(stream.pipe(parser))).rejects
+          .toThrow(new ErrorCoded(
+            'Found illegal neighbouring entries next to @list for key: \'http://example/prop\'',
+            ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
+      });
     });
   });
 

@@ -126,6 +126,7 @@ export class JsonLdParser extends Transform {
         }
 
         // Add the list id to the id stack, so it can be used higher up in the stack
+        (<any> listPointer.listId).listHead = true;
         this.parsingContext.idStack[listPointer.listRootDepth + 1] = [ listPointer.listId ];
 
         this.parsingContext.listPointerStack.splice(this.lastDepth, 1);

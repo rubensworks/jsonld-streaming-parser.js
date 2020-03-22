@@ -28,8 +28,16 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
 
     // Error if an @id for this node already existed.
     if (parsingContext.idStack[depthProperties] !== undefined) {
-      parsingContext.emitError(new ErrorCoded(`Found duplicate @ids '${parsingContext
-        .idStack[depthProperties][0].value}' and '${value}'`, ERROR_CODES.COLLIDING_KEYWORDS));
+      if ((<any> parsingContext.idStack[depthProperties][0]).listHead) {
+        // Error if an @list was already defined for this node
+        parsingContext.emitError(new ErrorCoded(
+          `Found illegal neighbouring entries next to @list for key: '${keys[depth - 1]}'`,
+          ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
+      } else {
+        // Otherwise, the previous id was just because of an @id entry.
+        parsingContext.emitError(new ErrorCoded(`Found duplicate @ids '${parsingContext
+          .idStack[depthProperties][0].value}' and '${value}'`, ERROR_CODES.COLLIDING_KEYWORDS));
+      }
     }
 
     // Save our @id on the stack

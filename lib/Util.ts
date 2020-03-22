@@ -366,7 +366,8 @@ export class Util {
       } else if ('@set' in value) {
         // No other entries are allow in this value
         if (Object.keys(value).length > 1) {
-          throw new Error(`Found illegal neighbouring entries next to @set in value: ${JSON.stringify(value)}`);
+          throw new ErrorCoded(`Found illegal neighbouring entries next to @set for key: '${key}'`,
+            ERROR_CODES.INVALID_SET_OR_LIST_OBJECT);
         }
 
         // No need to do anything here, this is handled at the deeper level.
@@ -374,7 +375,8 @@ export class Util {
       } else if ('@list' in value) {
         // No other entries are allowed in this value
         if (Object.keys(value).length > 1) {
-          throw new Error(`Found illegal neighbouring entries next to @set in value: ${JSON.stringify(value)}`);
+          throw new ErrorCoded(`Found illegal neighbouring entries next to @list for key: '${key}'`,
+            ERROR_CODES.INVALID_SET_OR_LIST_OBJECT);
         }
 
         const listValue = value["@list"];

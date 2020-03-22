@@ -942,12 +942,14 @@ describe('Util', () => {
 
         it('should error when other entries are present', async () => {
           return expect(util.valueToTerm(context, 'key', { '@list': [1, 2], 'a': 'b' }, 0, [])).rejects
-            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@list":[1,2],"a":"b"}'));
+            .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @list for key: \'key\'',
+              ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
 
         it('should error when @id is present', async () => {
           return expect(util.valueToTerm(context, 'key', { '@list': [1, 2], '@id': 'b' }, 0, [])).rejects
-            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@list":[1,2],"@id":"b"}'));
+            .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @list for key: \'key\'',
+              ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
       });
 
@@ -958,7 +960,8 @@ describe('Util', () => {
 
         it('should error when other entries are present', async () => {
           return expect(util.valueToTerm(context, 'key', { '@set': [1, 2], 'a': 'b' }, 0, [])).rejects
-            .toThrow(new Error('Found illegal neighbouring entries next to @set in value: {"@set":[1,2],"a":"b"}'));
+            .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @set for key: \'key\'',
+              ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
       });
 
