@@ -1,4 +1,4 @@
-import {JsonLdContextNormalized} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
@@ -20,8 +20,8 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     : Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
     if (parsingContext.streamingProfile && parsingContext.processingStack[depth]) {
-      parsingContext.emitError(new Error('Found an out-of-order context, while streaming is enabled.' +
-        '(disable `streamingProfile`)'));
+      parsingContext.emitError(new ErrorCoded('Found an out-of-order context, while streaming is enabled.' +
+        '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
     }
 
     // Find the parent context to inherit from.

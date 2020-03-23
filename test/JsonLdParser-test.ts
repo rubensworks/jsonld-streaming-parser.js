@@ -5466,8 +5466,9 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a context, predicate and non-contexted-type', async () => {
@@ -5545,8 +5546,9 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a predicate, context and non-contexted-type', async () => {
@@ -5561,8 +5563,9 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a predicate, contexted-type and context', async () => {
@@ -5580,8 +5583,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a predicate, non-contexted-type and context', async () => {
@@ -5596,8 +5600,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a contexted-type, predicate and context', async () => {
@@ -5615,8 +5620,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a non-contexted-type, predicate and context', async () => {
@@ -5631,8 +5637,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a contexted-type, context and predicate', async () => {
@@ -5650,8 +5657,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a non-contexted-type, context and predicate', async () => {
@@ -5666,8 +5674,9 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
           it('with a context, predicate and inner id and inner type', async () => {
@@ -5689,8 +5698,9 @@ describe('JsonLdParser', () => {
     "@type": "Type"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)'));
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
+              ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
         });
 

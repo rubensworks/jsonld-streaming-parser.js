@@ -53,8 +53,8 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       if (parsingContext.streamingProfile
         && (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
         parsingContext.emitError(
-          new Error('Found an out-of-order type-scoped context, while streaming is enabled.' +
-          '(disable `streamingProfile`)'));
+          new ErrorCoded('Found an out-of-order type-scoped context, while streaming is enabled.' +
+          '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
       }
 
       // Do not propagate by default
