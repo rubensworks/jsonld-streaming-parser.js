@@ -19,7 +19,8 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
-    if (parsingContext.streamingProfile && parsingContext.processingStack[depth]) {
+    if (parsingContext.streamingProfile
+      && (parsingContext.processingStack[depth] || parsingContext.idStack[depth] !== undefined)) {
       parsingContext.emitError(new ErrorCoded('Found an out-of-order context, while streaming is enabled.' +
         '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
     }
