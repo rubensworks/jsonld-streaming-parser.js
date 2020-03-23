@@ -46,11 +46,11 @@ export class JsonLdParser extends Transform {
   private readonly util: Util;
 
   private readonly jsonParser: any;
-  // Jobs that are not started yet that process a @context (only used if allowOutOfOrderContext is true)
+  // Jobs that are not started yet that process a @context (only used if streamingProfile is false)
   private readonly contextJobs: (() => Promise<void>)[][];
-  // Jobs that are not started yet that process a @type (only used if allowOutOfOrderContext is true)
+  // Jobs that are not started yet that process a @type (only used if streamingProfile is false)
   private readonly typeJobs: { job: () => Promise<void>, keys: string[] }[];
-  // Jobs that are not started yet because of a missing @context or @type (only used if allowOutOfOrderContext is true)
+  // Jobs that are not started yet because of a missing @context or @type (only used if streamingProfile is false)
   private readonly contextAwaitingJobs: { job: () => Promise<void>, keys: string[] }[];
 
   // The last depth that was processed.
@@ -344,7 +344,7 @@ export class JsonLdParser extends Transform {
 
       if (!this.isParsingContextInner(depth)) { // Don't parse inner nodes inside @context
         const valueJobCb = () => this.newOnValueJob(keys, value, depth, true);
-        if (this.parsingContext.allowOutOfOrderContext
+        if (!this.parsingContext.streamingProfile
           && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
           // If an out-of-order context is allowed,
           // we have to buffer everything.
@@ -370,7 +370,7 @@ export class JsonLdParser extends Transform {
         }
 
         // Execute all buffered jobs on deeper levels
-        if (this.parsingContext.allowOutOfOrderContext && depth === 0) {
+        if (!this.parsingContext.streamingProfile && depth === 0) {
           this.lastOnValueJob = this.lastOnValueJob
             .then(() => this.executeBufferedJobs());
         }
@@ -466,16 +466,17 @@ export interface IJsonLdParserOptions {
    */
   baseIRI?: string;
   /**
-   * If @context definitions should be allowed as non-first object entries,
-   * and @type definitions not as next next entries.
-   * When enabled, streaming results may not come as soon as possible,
-   * and will be buffered until the end when no context/type is defined at all.
-   * Defaults to false.
+   * If this parser can assume that parsed documents follow the streaming JSON-LD profile.
+   * If true, and a non-streaming document is detected, an error may be thrown.
+   * If false, non-streaming documents will be handled by preemptively buffering entries,
+   * which will lose many of the streaming benefits of this parser.
    *
-   * Spec-compliance: to be fully spec-compliant,
-   * this must be explicitly set to true.
+   * Concretely, if true, @context definitions must come as first object entries,
+   * followed by @type (if they define a type-scoped context).
+   *
+   * Defaults to false for spec-compliance.
    */
-  allowOutOfOrderContext?: boolean;
+  streamingProfile?: boolean;
   /**
    * Loader for remote contexts.
    */

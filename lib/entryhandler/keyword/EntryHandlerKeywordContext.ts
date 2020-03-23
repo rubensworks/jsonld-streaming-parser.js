@@ -19,9 +19,9 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
-    if (!parsingContext.allowOutOfOrderContext && parsingContext.processingStack[depth]) {
-      parsingContext.emitError(new Error('Found an out-of-order context, while support is not enabled.' +
-        '(enable with `allowOutOfOrderContext`)'));
+    if (parsingContext.streamingProfile && parsingContext.processingStack[depth]) {
+      parsingContext.emitError(new Error('Found an out-of-order context, while streaming is enabled.' +
+        '(disable `streamingProfile`)'));
     }
 
     // Find the parent context to inherit from.

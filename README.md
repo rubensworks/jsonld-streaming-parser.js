@@ -4,10 +4,13 @@
 [![Coverage Status](https://coveralls.io/repos/github/rubensworks/jsonld-streaming-parser.js/badge.svg?branch=master)](https://coveralls.io/github/rubensworks/jsonld-streaming-parser.js?branch=master)
 [![npm version](https://badge.fury.io/js/jsonld-streaming-parser.svg)](https://www.npmjs.com/package/jsonld-streaming-parser)
 
-A fast and lightweight _streaming_ and 100% _spec-compliant_ [JSON-LD](https://json-ld.org/) parser,
+A fast and lightweight _streaming_ and 100% _spec-compliant_ [JSON-LD 1.1](https://json-ld.org/) parser,
 with [RDFJS](https://github.com/rdfjs/representation-task-force/) representations of RDF terms, quads and triples.
 
 The streaming nature allows triples to be emitted _as soon as possible_, and documents _larger than memory_ to be parsed.
+
+Make sure to enable the `streamingProfile` flag when parsing a JSON-LD document with a streaming profile
+to exploit the streaming capabilities of this parser, as this is disabled by default.
 
 ## Installation
 
@@ -118,7 +121,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `dataFactory`: A custom [RDFJS DataFactory](http://rdf.js.org/#datafactory-interface) to construct terms and triples. _(Default: `require('@rdfjs/data-model')`)_
 * `context`: An optional root context to use while parsing. This can by anything that is accepted by [jsonld-context-parser](https://github.com/rubensworks/jsonld-context-parser.js), such as a URL, object or array. _(Default: `{}`)_
 * `baseIRI`: An initial default base IRI. _(Default: `''`)_
-* `allowOutOfOrderContext`: If @context definitions should be allowed as non-first object entries. When enabled, streaming results may not come as soon as possible, and will be buffered until the end when no context is defined at all. _(Default: `false`)_
+* `streamingProfile`: If this parser can assume that parsed documents follow the streaming JSON-LD profile. If true, and a non-streaming document is detected, an error may be thrown. If false, non-streaming documents will be handled by preemptively buffering entries, which will lose many of the streaming benefits of this parser. _(Default: `true`)_
 * `documentLoader` A custom loader for fetching remote contexts. This can be set to anything that implements [`IDocumentLoader`](https://github.com/rubensworks/jsonld-context-parser.js/blob/master/lib/IDocumentLoader.ts) _(Default: [`FetchDocumentLoader`](https://github.com/rubensworks/jsonld-context-parser.js/blob/master/lib/FetchDocumentLoader.ts))_
 * `produceGeneralizedRdf`: If blank node predicates should be allowed, they will be ignored otherwise. _(Default: `false`)_
 * `processingMode`: The maximum JSON-LD version that should be processable by this parser. _(Default: `1.0`)_
@@ -134,7 +137,7 @@ new JsonLdParser({
   dataFactory: require('@rdfjs/data-model'),
   context: 'https://schema.org/',
   baseIRI: 'http://example.org/',
-  allowOutOfOrderContext: false,
+  streamingProfile: true,
   documentLoader: new FetchDocumentLoader(),
   produceGeneralizedRdf: false,
   processingMode: '1.0',
@@ -202,27 +205,30 @@ For example:
 As such, JSON-LD documents that meet these requirements will be parsed very efficiently.
 Other documents will still be parsed correctly as well, with a slightly lower efficiency.
 
-## Specification Compliance
+## Streaming Profile
 
-By default, this parser is not 100% spec-compliant.
-The main reason for this being the fact that this is a _streaming_ parser,
-and some edge-cases are really inefficient with the streaming-nature of this parser.
+This parser adheres to both the [JSON-LD 1.1](https://www.w3.org/TR/json-ld/) specification
+and the [JSON-LD 1.1 Streaming specification](https://w3c.github.io/json-ld-streaming/).
 
-However, by changing a couple of settings, it can easily be made **fully spec-compliant**.
-The downside of this is that the whole document will essentially be loaded in memory before results are emitted,
-which will void the main benefit of this parser.
+By default, this parser assumes that JSON-LD document
+are *not* in the [streaming document form](https://w3c.github.io/json-ld-streaming/#streaming-document-form).
+This means that the parser may buffer large parts of the document before quads are produced,
+to make sure that the document is interpreted correctly.
 
-```javascript
-const mySpecCompliantParser = new JsonLdParser({
-  allowOutOfOrderContext: true,
-  validateValueIndexes: true,
-});
-```
+Since this buffering neglects the streaming benefits of this parser,
+the `streamingProfile` flag *should* be enabled when a [streaming JSON-LD document](https://w3c.github.io/json-ld-streaming/#streaming-document-form)
+is being parsed.
 
-Concretely, this parser implements the following [JSON-LD specifications](https://json-ld.org/test-suite/):
+If non-streaming JSON-LD documents are encountered when the `streamingProfile` flag is enabled,
+an error may be thrown.
 
-* JSON-LD 1.0 - Transform JSON-LD to RDF
-* JSON-LD 1.0 - Error handling
+## Specification compliance
+
+This parser implements the following [JSON-LD specifications](https://json-ld.org/test-suite/):
+
+* JSON-LD 1.1 - Transform JSON-LD to RDF
+* JSON-LD 1.1 - Error handling
+* JSON-LD 1.1 - Streaming Transform JSON-LD to RDF
 
 ## Performance
 

@@ -68,16 +68,16 @@ describe('JsonLdParser', () => {
   });
 
   (<any> each ([
-    [false],
     [true],
-  ])).describe('when instantiated with a data factory and allowOutOfOrderContext %s', (allowOutOfOrderContext) => {
+    [false],
+  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
-  /*describe('when instantiated with a data factory and allowOutOfOrderContext %s', () => {
-    const allowOutOfOrderContext = false;*/
+  /*describe('when instantiated with a data factory and streamingProfile %s', () => {
+    const streamingProfile = true;*/
     let parser;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext });
+      parser = new JsonLdParser({ dataFactory, streamingProfile });
     });
 
     describe('should parse', () => {
@@ -479,7 +479,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, normalizeLanguageTags: true });
+          parser = new JsonLdParser({ dataFactory, streamingProfile, normalizeLanguageTags: true });
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
               literal('my value', 'en-us')),
@@ -611,7 +611,7 @@ describe('JsonLdParser', () => {
           describe('rdfDirection: i18n-datatype', () => {
 
             beforeEach(() => {
-              parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, rdfDirection: 'i18n-datatype' });
+              parser = new JsonLdParser({ dataFactory, streamingProfile, rdfDirection: 'i18n-datatype' });
             });
 
             it('with @id and a context-direction literal', async () => {
@@ -720,7 +720,7 @@ describe('JsonLdParser', () => {
           describe('rdfDirection: compound-literal', () => {
 
             beforeEach(() => {
-              parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, rdfDirection: 'compound-literal' });
+              parser = new JsonLdParser({ dataFactory, streamingProfile, rdfDirection: 'compound-literal' });
             });
 
             it('with @id and a context-direction literal', async () => {
@@ -1542,7 +1542,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": ["http://example/bar"]}
 }`);
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, allowSubjectList: false });
+          parser = new JsonLdParser({ dataFactory, streamingProfile, allowSubjectList: false });
           return expect(arrayifyStream(stream.pipe(parser))).rejects
             .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
               ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
@@ -1557,7 +1557,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": ["http://example/bar"]}
 }`);
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, allowSubjectList: true });
+          parser = new JsonLdParser({ dataFactory, streamingProfile, allowSubjectList: true });
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(blankNode('b1'), namedNode('http://example/reverse'),
               namedNode('http://example/foo')),
@@ -1867,7 +1867,7 @@ describe('JsonLdParser', () => {
           describe('rdfDirection: i18n-datatype', () => {
 
             beforeEach(() => {
-              parser = new JsonLdParser({dataFactory, allowOutOfOrderContext, rdfDirection: 'i18n-datatype'});
+              parser = new JsonLdParser({dataFactory, streamingProfile, rdfDirection: 'i18n-datatype'});
             });
 
             it('with @id and a language+direction literal', async () => {
@@ -1908,7 +1908,7 @@ describe('JsonLdParser', () => {
         describe('rdfDirection: compound-literal', () => {
 
           beforeEach(() => {
-            parser = new JsonLdParser({dataFactory, allowOutOfOrderContext, rdfDirection: 'compound-literal'});
+            parser = new JsonLdParser({dataFactory, streamingProfile, rdfDirection: 'compound-literal'});
           });
 
           it('with @id and a language+direction literal', async () => {
@@ -4292,7 +4292,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             parser = new JsonLdParser({
-              allowOutOfOrderContext,
+              streamingProfile,
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory,
             });
@@ -4339,7 +4339,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             parser = new JsonLdParser({
-              allowOutOfOrderContext,
+              streamingProfile,
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory,
             });
@@ -4380,7 +4380,7 @@ describe('JsonLdParser', () => {
   ]
 }`);
             parser = new JsonLdParser({
-              allowOutOfOrderContext,
+              streamingProfile,
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory,
             });
@@ -4727,10 +4727,10 @@ describe('JsonLdParser', () => {
         ]);
       });
 
-      describe('allowing an out-of-order context', () => {
+      describe('allowing non-streaming profiles', () => {
 
         beforeEach(() => {
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext: true });
+          parser = new JsonLdParser({ dataFactory, streamingProfile: false });
         });
 
         describe('an out-of-order context', () => {
@@ -4793,7 +4793,7 @@ describe('JsonLdParser', () => {
 
           it('with a context entry referring to itself, should ignore the base', async () => {
             parser = new JsonLdParser(
-              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+              { dataFactory, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
 {
   "@context": {
@@ -4810,7 +4810,7 @@ describe('JsonLdParser', () => {
 
           it('with context-based @type based on @vocab', async () => {
             parser = new JsonLdParser(
-              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+              { dataFactory, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
 {
   "@context": {
@@ -4828,7 +4828,7 @@ describe('JsonLdParser', () => {
 
           it('with inline @type based on @vocab', async () => {
             parser = new JsonLdParser(
-              { dataFactory, allowOutOfOrderContext, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+              { dataFactory, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
 {
   "@context": {
@@ -5338,10 +5338,10 @@ describe('JsonLdParser', () => {
 
       });
 
-      describe('not allowing an out-of-order context', () => {
+      describe('only allowing streaming profiles', () => {
 
         beforeEach(() => {
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext: false });
+          parser = new JsonLdParser({ dataFactory, streamingProfile: true });
         });
 
         describe('an out-of-order context', () => {
@@ -5467,7 +5467,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo"
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'type-scoped context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a context, predicate and non-contexted-type', async () => {
@@ -5546,7 +5546,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo"
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a predicate, context and non-contexted-type', async () => {
@@ -5562,7 +5562,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo"
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a predicate, contexted-type and context', async () => {
@@ -5581,7 +5581,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a predicate, non-contexted-type and context', async () => {
@@ -5597,7 +5597,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a contexted-type, predicate and context', async () => {
@@ -5616,7 +5616,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a non-contexted-type, predicate and context', async () => {
@@ -5632,7 +5632,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a contexted-type, context and predicate', async () => {
@@ -5651,7 +5651,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a non-contexted-type, context and predicate', async () => {
@@ -5667,7 +5667,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'context, while streaming is enabled.(disable `streamingProfile`)'));
           });
 
           it('with a context, predicate and inner id and inner type', async () => {
@@ -5690,7 +5690,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new Error('Found an out-of-order ' +
-              'type-scoped context, while support is not enabled.(enable with `allowOutOfOrderContext`)'));
+              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)'));
           });
         });
 
@@ -6225,7 +6225,7 @@ describe('JsonLdParser', () => {
   "url": "/myid",
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, baseIRI: 'http://ex.org/' });
+          parser = new JsonLdParser({ dataFactory, streamingProfile, baseIRI: 'http://ex.org/' });
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
               literal('Bob')),
@@ -6242,7 +6242,7 @@ describe('JsonLdParser', () => {
   "url": "/myid",
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
-          parser = new JsonLdParser({ dataFactory, allowOutOfOrderContext, baseIRI: 'http://ex.org/' });
+          parser = new JsonLdParser({ dataFactory, streamingProfile, baseIRI: 'http://ex.org/' });
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'), namedNode('http://xmlns.com/foaf/0.1/name'),
               literal('Bob')),
@@ -11601,12 +11601,12 @@ describe('JsonLdParser', () => {
   });
 
   // The following tests check the parser via stateful .write() calls.
-  describe('for step-by-step streaming with default settings', () => {
+  describe('for step-by-step streaming', () => {
     describe('without context', () => {
       let parser;
 
       beforeAll(() => {
-        parser = new JsonLdParser({ dataFactory });
+        parser = new JsonLdParser({ dataFactory, streamingProfile: true });
       });
 
       it('should emit nothing when nothing has been pushed', () => {
@@ -11685,7 +11685,7 @@ describe('JsonLdParser', () => {
       let parser;
 
       beforeAll(() => {
-        parser = new JsonLdParser({ dataFactory });
+        parser = new JsonLdParser({ dataFactory, streamingProfile: true });
       });
 
       it('should emit nothing when nothing has been pushed', () => {
@@ -11771,7 +11771,7 @@ describe('JsonLdParser', () => {
       let parser;
 
       beforeAll(() => {
-        parser = new JsonLdParser({ dataFactory });
+        parser = new JsonLdParser({ dataFactory, streamingProfile: true });
       });
 
       it('should emit nothing when nothing has been pushed', () => {

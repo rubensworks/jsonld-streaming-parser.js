@@ -24,7 +24,7 @@ export class ParsingContext {
   };
 
   public readonly contextParser: ContextParser;
-  public readonly allowOutOfOrderContext: boolean;
+  public readonly streamingProfile: boolean;
   public readonly baseIRI?: string;
   public readonly produceGeneralizedRdf: boolean;
   public readonly allowSubjectList: boolean;
@@ -78,7 +78,7 @@ export class ParsingContext {
   constructor(options: IParsingContextOptions) {
     // Initialize settings
     this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
-    this.allowOutOfOrderContext = !!options.allowOutOfOrderContext;
+    this.streamingProfile = !!options.streamingProfile;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = !!options.produceGeneralizedRdf;
     this.allowSubjectList = !!options.allowSubjectList;

@@ -14,7 +14,6 @@ module.exports = {
     return require('arrayify-stream')(require('streamify-string')(data)
       .pipe(new JsonLdParser(Object.assign({
         baseIRI,
-        allowOutOfOrderContext: true,
         validateValueIndexes: true,
         normalizeLanguageTags: true, // To simplify testing
       }, options))));
