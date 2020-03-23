@@ -28,7 +28,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
-    const parentKey = await util.unaliasKeywordParent(keys, depth);
+    let parentKey = await util.unaliasKeywordParent(keys, depth);
 
     // Check if we have an anonymous list
     if (parentKey === '@list') {
@@ -66,12 +66,23 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     } else if (parentKey !== undefined && parentKey !== '@type') {
       // Buffer our value using the parent key as predicate
 
+      // Determine the first parent key that is *not* an array key
+      // This is needed in case we have an @list container with nested arrays,
+      // where each of them should produce nested RDF lists.
+      for (let i = depth - 1; i > 0; i--) {
+        if (typeof keys[i] !== 'number') {
+          parentKey = await util.unaliasKeyword(keys[i], keys, i);
+          break;
+        }
+      }
+
       // Check if the predicate is marked as an @list in the context
       const parentContext = await parsingContext.getContext(keys.slice(0, -1));
       if ('@list' in Util.getContextValueContainer(parentContext, parentKey)) {
         // Our value is part of an array
         // Emit the given objects as list elements
         const values = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
+
         for (const object of values) {
           await this.handleListElement(parsingContext, util, object, depth, keys.slice(0, -1), depth - 1);
         }

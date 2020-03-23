@@ -2819,6 +2819,100 @@ describe('JsonLdParser', () => {
           });
         });
 
+        describe('a list container', () => {
+          it('with a nested array with one inner element', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [["baz"]]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), blankNode('l1')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1'), namedNode(Util.RDF + 'first'), literal('baz')),
+              triple(blankNode('l1'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(namedNode('ex:id'), namedNode('http://example.com/foo'), blankNode('l0')),
+            ]);
+          });
+
+          it('with a nested array with two inner elements', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [["baz1", "baz2"]]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l0'), namedNode(Util.RDF + 'first'), blankNode('l1.1')),
+              triple(blankNode('l0'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'first'), literal('baz1')),
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'rest'), blankNode('l1.2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'first'), literal('baz2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(namedNode('ex:id'), namedNode('http://example.com/foo'), blankNode('l0')),
+            ]);
+          });
+
+          it('with a nested array with two outer elements having one inner element', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [["baz1.1"],["baz2.1"]]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'first'), blankNode('l1.1.1')),
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'rest'), blankNode('l1.2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'first'), blankNode('l1.1.2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1.1.1'), namedNode(Util.RDF + 'first'), literal('baz1.1')),
+              triple(blankNode('l1.1.1'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1.1.2'), namedNode(Util.RDF + 'first'), literal('baz2.1')),
+              triple(blankNode('l1.1.2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(namedNode('ex:id'), namedNode('http://example.com/foo'), blankNode('l1.1')),
+            ]);
+          });
+
+          it('with a nested array with two outer elements having two inner elements', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [["baz1.1","baz1.2"],["baz2.1","baz2.2"]]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'first'), blankNode('l1.1.1')),
+              triple(blankNode('l1.1'), namedNode(Util.RDF + 'rest'), blankNode('l1.2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'first'), blankNode('l1.1.2')),
+              triple(blankNode('l1.2'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1.1.1'), namedNode(Util.RDF + 'first'), literal('baz1.1')),
+              triple(blankNode('l1.1.1'), namedNode(Util.RDF + 'rest'), blankNode('l1.1.1-')),
+              triple(blankNode('l1.1.1-'), namedNode(Util.RDF + 'first'), literal('baz1.2')),
+              triple(blankNode('l1.1.1-'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(blankNode('l1.1.2'), namedNode(Util.RDF + 'first'), literal('baz2.1')),
+              triple(blankNode('l1.1.2'), namedNode(Util.RDF + 'rest'), blankNode('l1.1.2-')),
+              triple(blankNode('l1.1.2-'), namedNode(Util.RDF + 'first'), literal('baz2.2')),
+              triple(blankNode('l1.1.2-'), namedNode(Util.RDF + 'rest'), namedNode(Util.RDF + 'nil')),
+
+              triple(namedNode('ex:id'), namedNode('http://example.com/foo'), blankNode('l1.1')),
+            ]);
+          });
+        });
+
       });
 
       describe('a nested array', () => {
