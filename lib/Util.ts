@@ -183,7 +183,7 @@ export class Util {
           if (id && index) {
             const existingIndexValue = indexHashes[id];
             if (existingIndexValue && existingIndexValue !== index) {
-              throw new Error(`Conflicting @index value for ${id}`);
+              throw new ErrorCoded(`Conflicting @index value for ${id}`, ERROR_CODES.CONFLICTING_INDEXES);
             }
             indexHashes[id] = index;
           }

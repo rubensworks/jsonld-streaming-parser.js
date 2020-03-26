@@ -519,7 +519,7 @@ describe('Util', () => {
             { '@id': 'abd', '@index': 'b' },
           ];
           return expect(util.valueToTerm(context, 'key', value, 0, []))
-            .rejects.toThrow(new Error('Conflicting @index value for abc'));
+            .rejects.toThrow(new ErrorCoded('Conflicting @index value for abc', ERROR_CODES.CONFLICTING_INDEXES));
         });
 
         it('without conflicting @index values when validateValueIndexes is true', async () => {

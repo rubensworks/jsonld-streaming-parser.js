@@ -11491,7 +11491,7 @@ describe('JsonLdParser', () => {
 ]`);
       parser = new JsonLdParser({ strictValues: true, validateValueIndexes: true });
       return expect(arrayifyStream(stream.pipe(parser))).rejects
-        .toEqual(new Error('Conflicting @index value for http://example/foo'));
+        .toEqual(new ErrorCoded('Conflicting @index value for http://example/foo', ERROR_CODES.CONFLICTING_INDEXES));
     });
 
     it('should not error on conflicting indexes in the root when validateValueIndexes is true', async () => {
