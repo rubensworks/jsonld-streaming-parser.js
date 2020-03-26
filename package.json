@@ -91,10 +91,12 @@
     "validate": "npm ls",
     "prepare": "npm run build",
     "version": "manual-git-changelog onversion",
-    "spec": "npm run spec-tordf",
-    "spec-earl": "npm run spec-earl-tordf",
+    "spec": "npm run spec-tordf && npm run spec-stream-tordf",
+    "spec-earl": "npm run spec-earl-tordf && npm run spec-earl-stream-tordf",
     "spec-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -e",
     "spec-earl-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-tordf.ttl",
+    "spec-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -e",
+    "spec-earl-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-stream-tordf.ttl",
     "spec-clean": "rm -r .rdf-test-suite-cache/"
   }
 }

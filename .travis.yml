@@ -8,7 +8,8 @@ script:
   - npm run build
   - npm run lint
   - npm test
-  - npm run spec
+  - npm run spec-tordf
+  - npm run spec-stream-tordf
 after_success:
   - npm run coveralls
 cache:
