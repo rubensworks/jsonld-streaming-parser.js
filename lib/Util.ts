@@ -18,7 +18,7 @@ export class Util {
   public static readonly XSD_DOUBLE: string = Util.XSD + 'double';
   public static readonly RDF: string = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 
-  public readonly dataFactory: RDF.DataFactory;
+  public readonly dataFactory: RDF.DataFactory<RDF.BaseQuad>;
   public readonly rdfFirst: RDF.NamedNode;
   public readonly rdfRest: RDF.NamedNode;
   public readonly rdfNil: RDF.NamedNode;
@@ -27,7 +27,7 @@ export class Util {
 
   private readonly parsingContext: ParsingContext;
 
-  constructor(options: { parsingContext: ParsingContext, dataFactory?: RDF.DataFactory }) {
+  constructor(options: { parsingContext: ParsingContext, dataFactory?: RDF.DataFactory<RDF.BaseQuad> }) {
     this.parsingContext = options.parsingContext;
     this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
 

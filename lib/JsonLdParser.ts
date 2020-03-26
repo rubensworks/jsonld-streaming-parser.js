@@ -23,7 +23,7 @@ import {Util} from "./Util";
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
  */
-export class JsonLdParser extends Transform {
+export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RDF.Stream> {
 
   public static readonly DEFAULT_PROCESSING_MODE: string = '1.1';
   public static readonly ENTRY_HANDLERS: IEntryHandler<any>[] = [
@@ -82,9 +82,9 @@ export class JsonLdParser extends Transform {
   /**
    * Parses the given text stream into a quad stream.
    * @param {NodeJS.EventEmitter} stream A text stream.
-   * @return {NodeJS.EventEmitter} A quad stream.
+   * @return {RDF.Stream} A quad stream.
    */
-  public import(stream: EventEmitter): EventEmitter {
+  public import(stream: EventEmitter): RDF.Stream {
     const output = new PassThrough({ objectMode: true });
     stream.on('error', (error) => parsed.emit('error', error));
     stream.on('data', (data) => output.write(data));
@@ -456,7 +456,7 @@ export interface IJsonLdParserOptions {
   /**
    * A data factory.
    */
-  dataFactory?: RDF.DataFactory;
+  dataFactory?: RDF.DataFactory<RDF.BaseQuad>;
   /**
    * The root context.
    */
