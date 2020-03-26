@@ -16,5 +16,6 @@
   "reportUri": null,
   "specificationUris": [
     "https://www.w3.org/TR/json-ld/"
-  ]
+  ],
+  "version": "2.0.0"
 }
