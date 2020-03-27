@@ -348,7 +348,8 @@ export class Util {
             .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
-            throw new Error(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`);
+            throw new ErrorCoded(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`,
+              ERROR_CODES.INVALID_TYPE_VALUE);
           }
           const typeTerm = this.createVocabOrBaseTerm(context, valueType);
           if (!typeTerm) {
