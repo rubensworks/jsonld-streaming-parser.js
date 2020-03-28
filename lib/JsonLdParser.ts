@@ -127,9 +127,20 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       }
     }
 
+    // Check if the streaming profile is present
+    let streamingProfile: boolean | undefined;
+    if (headers && headers.has('Content-Type')) {
+      const contentType = <string> headers.get('Content-Type');
+      const match = /; *profile=([^"]*)/.exec(contentType);
+      if (match && match[1] === 'http://www.w3.org/ns/json-ld#streaming') {
+        streamingProfile = true;
+      }
+    }
+
     return new JsonLdParser({
       baseIRI,
       context,
+      streamingProfile,
       ... options ? options : {},
     });
   }

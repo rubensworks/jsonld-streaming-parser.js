@@ -138,7 +138,9 @@ const myParser = JsonLdParser.fromHttpResponse(
 const quads = myParser.import(response.body);
 ```
 
-The `Headers` object must implement the [Headers interface from the WHATWG Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Headers). 
+The `Headers` object must implement the [Headers interface from the WHATWG Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Headers).
+
+This function will automatically detect the `http://www.w3.org/ns/json-ld#streaming` profile and set the `streamingProfile` flag.
 
 ## Configuration
 

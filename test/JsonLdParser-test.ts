@@ -55,6 +55,14 @@ describe('JsonLdParser', () => {
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
 
+    it('should handle on a JSON response with non-escaped link header', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
+        new Headers({ 'link': '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' }));
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context.jsonld');
+    });
+
     it('should handle on a JSON extension type with link header', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
@@ -98,6 +106,14 @@ describe('JsonLdParser', () => {
       (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context1.jsonld');
+    });
+
+    it('should handle a JSON-LD response with a streaming profile', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', new Headers({
+        'content-type': 'application/ld+json; profile=http://www.w3.org/ns/json-ld#streaming'
+      }));
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.streamingProfile).toEqual(true);
     });
   });
 
