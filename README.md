@@ -114,6 +114,32 @@ myParser.import(myTextStream)
   .on('end', () => console.log('All triples were parsed!'));
 ```
 
+### Parse from HTTP responses
+
+Usually, JSON-LD is published via the `application/ld+json` media type.
+However, when a JSON-LD context is attached via a link header,
+then it can also be published via `application/json` and `+json` extension types.
+
+This library exposes the `JsonLdParser.fromHttpResponse`
+function to abstract these cases,
+so that you can call it for any HTTP response,
+and it will return an appropriate parser
+which may or may not contain a custom header-defined context:
+
+```javascript
+const myParser = JsonLdParser.fromHttpResponse(
+  'http://example.org/my-file.json', // For example: response.url
+  'application/json', // For example: headers.get('content-type')
+  new Headers({ 'Link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }), // Optional: WHATWG Headers 
+  {}, // Optional: Any options you want to pass to the parser
+);
+
+// Parse anything with myParser like usual
+const quads = myParser.import(response.body);
+```
+
+The `Headers` object must implement the [Headers interface from the WHATWG Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Headers). 
+
 ## Configuration
 
 Optionally, the following parameters can be set in the `JsonLdParser` constructor:

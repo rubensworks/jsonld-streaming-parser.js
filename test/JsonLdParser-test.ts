@@ -11,6 +11,96 @@ import {Util} from "../lib/Util";
 
 describe('JsonLdParser', () => {
 
+  describe('#fromHttpResponse', () => {
+    it('should handle a JSON-LD response', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json');
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
+    it('should handle a JSON-LD response and allow option overrides', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', undefined, { baseIRI: 'base2' });
+      expect((<any> parser).options.baseIRI).toEqual('base2');
+    });
+
+    it('should error on a non-JSON response without link header', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle'))
+        .toThrow(new ErrorCoded(`Unsupported JSON-LD media type text/turtle`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
+    it('should error on a plain JSON response without link header', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'application/json'))
+        .toThrow(new ErrorCoded(`Missing context link header for media type application/json on BASE`,
+        ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
+    it('should error on a JSON extension type without link header', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json'))
+        .toThrow(new ErrorCoded(`Missing context link header for media type text/turtle+json on BASE`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
+    it('should error on a non-JSON response with link header', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle',
+        new Headers({ 'link': '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' })))
+        .toThrow(new ErrorCoded(`Unsupported JSON-LD media type text/turtle`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
+    it('should handle on a JSON response with link header', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
+        new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context.jsonld');
+    });
+
+    it('should handle on a JSON extension type with link header', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json',
+        new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context.jsonld');
+    });
+
+    it('should handle on a JSON response with link header and other headers', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
+        new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"', 'a': 'b' }));
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context.jsonld');
+    });
+
+    it('should error on a JSON response with multiple valid link headers', () => {
+      const headers = new Headers();
+      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      headers.append('Link', '<my-context2.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'application/json', headers))
+        .toThrow(new ErrorCoded(`Multiple JSON-LD context link headers were found on BASE`,
+          ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS))
+    });
+
+    it('should error on a JSON extension type with multiple valid link headers', () => {
+      const headers = new Headers();
+      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      headers.append('Link', '<my-context2.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', headers))
+        .toThrow(new ErrorCoded(`Multiple JSON-LD context link headers were found on BASE`,
+          ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS))
+    });
+
+    it('should handle on a JSON response with one JSON-LD context link header and other link headers', () => {
+      const headers = new Headers();
+      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      headers.append('Link', '<my-context2.jsonld>; rel=\"SOMETHING ELSE\"');
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', headers);
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context1.jsonld');
+    });
+  });
+
   describe('when instantiated without a data factory and context', () => {
     let parser;
 

@@ -19,6 +19,7 @@ import {EntryHandlerKeywordUnknownFallback} from "./entryhandler/keyword/EntryHa
 import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywordValue";
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
+import {parse as parseLinkHeader} from "http-link-header";
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -77,6 +78,60 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     this.lastOnValueJob = Promise.resolve();
 
     this.attachJsonParserListeners();
+  }
+
+  /**
+   * Construct a JsonLdParser from the given HTTP response.
+   *
+   * This will throw an error if no valid JSON response is received
+   * (application/ld+json, application/json, or something+json).
+   *
+   * For raw JSON responses, exactly one link header pointing to a JSON-LD context is required.
+   *
+   * This method is not responsible for handling redirects.
+   *
+   * @param baseIRI The URI of the received response.
+   * @param mediaType The received content type.
+   * @param headers Optional HTTP headers.
+   * @param options Optional parser options.
+   */
+  public static fromHttpResponse(baseIRI: string, mediaType: string,
+                                 headers?: Headers, options?: IJsonLdParserOptions): JsonLdParser {
+    let context: JsonLdContext | undefined;
+    // Special cases when receiving something else than the JSON-LD media type
+    if (mediaType !== 'application/ld+json') {
+      // Only accept JSON or JSON extension types
+      if (mediaType !== 'application/json' && !mediaType.endsWith('+json')) {
+        throw new ErrorCoded(`Unsupported JSON-LD media type ${mediaType}`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED);
+      }
+
+      // We need exactly one JSON-LD context in the link header
+      if (headers && headers.has('Link')) {
+        headers.forEach((value, key) => {
+          if (key === 'link') {
+            const linkHeader = parseLinkHeader(value);
+            for (const link of linkHeader.get('rel', 'http://www.w3.org/ns/json-ld#context')) {
+              if (context) {
+                throw new ErrorCoded('Multiple JSON-LD context link headers were found on ' + baseIRI,
+                  ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS);
+              }
+              context = link.uri;
+            }
+          }
+        });
+      }
+      if (!context) {
+        throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED);
+      }
+    }
+
+    return new JsonLdParser({
+      baseIRI,
+      context,
+      ... options ? options : {},
+    });
   }
 
   /**
