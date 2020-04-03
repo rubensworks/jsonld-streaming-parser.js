@@ -115,6 +115,22 @@ describe('JsonLdParser', () => {
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.streamingProfile).toEqual(true);
     });
+
+    it('should handle a JSON-LD response with a non-streaming profile', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', new Headers({
+        'content-type': 'application/ld+json; profile=http://www.w3.org/ns/json-ld#compacted'
+      }));
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.streamingProfile).not.toEqual(true);
+    });
+
+    it('should handle a JSON-LD response with a non-profile', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', new Headers({
+        'content-type': 'application/ld+json; bla=http://www.w3.org/ns/json-ld#compacted'
+      }));
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.streamingProfile).not.toEqual(true);
+    });
   });
 
   describe('when instantiated without a data factory and context', () => {
