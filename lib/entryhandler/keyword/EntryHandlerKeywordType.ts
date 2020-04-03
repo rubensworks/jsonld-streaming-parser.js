@@ -47,16 +47,18 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
         scopedContext = scopedContext.then((c) => parsingContext.parseContext(typeContext, c.getContextRaw()));
       }
     }
+
+    // Error if an out-of-order type-scoped context was found when support is not enabled.
+    if (parsingContext.streamingProfile
+      && (hasTypedScopedContext || !parsingContext.streamingProfileAllowOutOfOrderPlainType)
+      && (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
+      parsingContext.emitError(
+        new ErrorCoded('Found an out-of-order type-scoped context, while streaming is enabled.' +
+          '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
+    }
+
     // If at least least one type-scoped context applies, set them in the tree.
     if (hasTypedScopedContext) {
-      // Error if an out-of-order type-scoped context was found when support is not enabled.
-      if (parsingContext.streamingProfile
-        && (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
-        parsingContext.emitError(
-          new ErrorCoded('Found an out-of-order type-scoped context, while streaming is enabled.' +
-          '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
-      }
-
       // Do not propagate by default
       scopedContext = scopedContext.then((c) => {
         if (!('@propagate' in c.getContextRaw())) {

@@ -366,8 +366,8 @@ describe('JsonLdParser', () => {
         it('with blank node @type', async () => {
           const stream = streamifyString(`
 {
-  "@id": "http://ex.org/myid",
-  "@type": "_:type"
+  "@type": "_:type",
+  "@id": "http://ex.org/myid"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
             triple(namedNode('http://ex.org/myid'),
@@ -1717,8 +1717,8 @@ describe('JsonLdParser', () => {
         it('with @type, with @id', async () => {
           const stream = streamifyString(`
 {
-  "@id": "http://ex.org/sub1",
   "@type": "http://ex.org/obj1",
+  "@id": "http://ex.org/sub1",
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -3322,8 +3322,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/myid",
   "@graph": {
-    "@id": "http://ex.org/myinnerid",
-    "@type": "http://ex.org/obj1"
+    "@type": "http://ex.org/obj1",
+    "@id": "http://ex.org/myinnerid"
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -3338,8 +3338,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/myid",
   "@graph": {
-    "@id": "http://ex.org/myinnerid",
-    "@type": "http://ex.org/ obj1"
+    "@type": "http://ex.org/ obj1",
+    "@id": "http://ex.org/myinnerid"
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
@@ -4004,8 +4004,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/mygraph",
   "@graph": [{
-    "@id": "http://ex.org/myid",
-    "@type": "http://ex.org/mytype"
+    "@type": "http://ex.org/mytype",
+    "@id": "http://ex.org/myid"
   }]
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -4021,8 +4021,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/mygraph",
   "@graph": [{
-    "@id": "http://ex.org/myid",
-    "@type": [ "http://ex.org/mytype1", "http://ex.org/mytype2" ]
+    "@type": [ "http://ex.org/mytype1", "http://ex.org/mytype2" ],
+    "@id": "http://ex.org/myid"
   }]
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -4042,8 +4042,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://ex.org/mygraph",
   "@graph": [{
-    "@id": "http://ex.org/myid",
-    "@type": [ "http://ex.org/ mytype1", "http://ex.org/mytype2" ]
+    "@type": [ "http://ex.org/ mytype1", "http://ex.org/mytype2" ],
+    "@id": "http://ex.org/myid"
   }]
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -4448,6 +4448,7 @@ describe('JsonLdParser', () => {
               streamingProfile,
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory,
+              streamingProfileAllowOutOfOrderPlainType: true,
             });
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
               triple(namedNode('http://example.org/document-base-overwritten'),
@@ -4564,8 +4565,8 @@ describe('JsonLdParser', () => {
     "@base": "http://example.org/",
     "@vocab": null
   },
-  "@id": "",
-  "@type": "bla"
+  "@type": "bla",
+  "@id": ""
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/'),
@@ -4651,8 +4652,8 @@ describe('JsonLdParser', () => {
     "@base": "http://example/document",
     "@vocab": "#"
   },
-  "@id": "http://example.org/places#BrewEats",
   "@type": "Restaurant",
+  "@id": "http://example.org/places#BrewEats",
   "name": "Brew Eats"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -5577,7 +5578,27 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a context, predicate and non-contexted-type', async () => {
+          it('with a context, predicate and non-contexted-type without streamingProfileAllowOutOfOrderPlainType', async () => {
+            parser = new JsonLdParser(
+              { dataFactory, streamingProfile: true });
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://vocab.org/",
+    "Foo": {
+      "@id": "http://example.org/Foo"
+    }
+  },
+  "pred1": "http://ex.org/obj1",
+  "@type": "Foo"
+}`);
+            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+              'Found an out-of-order type-scoped context, while streaming is enabled.' +
+              '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
+          });
+
+          it('with a context, predicate and non-contexted-type with streamingProfileAllowOutOfOrderPlainType', async () => {
+            parser = new JsonLdParser({ dataFactory, streamingProfile: true, streamingProfileAllowOutOfOrderPlainType: true });
             const stream = streamifyString(`
 {
   "@context": {
@@ -5677,8 +5698,8 @@ describe('JsonLdParser', () => {
           it('with a predicate, contexted-type and context', async () => {
             const stream = streamifyString(`
 {
-  "pred1": "http://ex.org/obj1",
   "@type": "Foo",
+  "pred1": "http://ex.org/obj1",
   "@context": {
     "@vocab": "http://vocab.org/",
     "Foo": {
@@ -5707,7 +5728,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
-              'context, while streaming is enabled.(disable `streamingProfile`)',
+              'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5827,8 +5848,8 @@ describe('JsonLdParser', () => {
         it('on a named node', async () => {
           const stream = streamifyString(`
 {
-  "@id": "http://example.org/node",
-  "@type": "http://example.org/abc"
+  "@type": "http://example.org/abc",
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -5843,8 +5864,8 @@ describe('JsonLdParser', () => {
   "@context": {
     "@vocab": "http://example.org/"
   },
-  "@id": "http://example.org/node",
-  "@type": "abc"
+  "@type": "abc",
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -5859,8 +5880,8 @@ describe('JsonLdParser', () => {
   "@context": {
     "ex": "http://example.org/"
   },
-  "@id": "http://example.org/node",
-  "@type": "ex:abc"
+  "@type": "ex:abc",
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -5876,8 +5897,8 @@ describe('JsonLdParser', () => {
     "ex": "http://example.org/",
     "t": { "@id": "@type", "@type": "@id" }
   },
-  "@id": "http://example.org/node",
-  "t": "ex:abc"
+  "t": "ex:abc",
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -5891,8 +5912,8 @@ describe('JsonLdParser', () => {
 {
   "@id": "http://example.org/myGraph",
   "@graph": {
-    "@id": "http://example.org/node",
-    "@type": "http://example.org/abc"
+    "@type": "http://example.org/abc",
+    "@id": "http://example.org/node"
   }
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
@@ -5907,8 +5928,8 @@ describe('JsonLdParser', () => {
           const stream = streamifyString(`
 {
   "@graph": {
-    "@id": "http://example.org/node",
-    "@type": "http://example.org/abc"
+    "@type": "http://example.org/abc",
+    "@id": "http://example.org/node"
   },
   "@id": "http://example.org/myGraph"
 }`);
@@ -5939,12 +5960,12 @@ describe('JsonLdParser', () => {
   "@context": {
     "@vocab": "http://example.org/"
   },
-  "@id": "http://example.org/node",
   "@type": [
     "abc1",
     "abc2",
     "abc3"
-  ]
+  ],
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -5962,12 +5983,12 @@ describe('JsonLdParser', () => {
         it('on a named node with multiple @types', async () => {
           const stream = streamifyString(`
 {
-  "@id": "http://example.org/node",
   "@type": [
     "http://example.org/abc1",
     "http://example.org/abc2",
     "http://example.org/abc3"
-  ]
+  ],
+  "@id": "http://example.org/node"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://example.org/node'),
@@ -6386,8 +6407,8 @@ describe('JsonLdParser', () => {
   "@context": {
     "a": "@type"
   },
-  "@id": "http://ex.org/myid",
   "a": "http://ex.org/bla",
+  "@id": "http://ex.org/myid"
 }`);
           return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
             triple(namedNode('http://ex.org/myid'),

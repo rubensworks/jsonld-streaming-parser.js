@@ -35,6 +35,7 @@ export class ParsingContext {
   public readonly defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
   public readonly normalizeLanguageTags?: boolean;
+  public readonly streamingProfileAllowOutOfOrderPlainType?: boolean;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -88,6 +89,7 @@ export class ParsingContext {
     this.defaultGraph = options.defaultGraph;
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;
+    this.streamingProfileAllowOutOfOrderPlainType = options.streamingProfileAllowOutOfOrderPlainType;
 
     this.topLevelProperties = false;
     this.activeProcessingMode = parseFloat(this.processingMode);

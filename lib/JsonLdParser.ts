@@ -606,4 +606,11 @@ export interface IJsonLdParserOptions {
    * but false by default for all following versions.
    */
   normalizeLanguageTags?: boolean;
+  /**
+   * When the streaming profile flag is enabled,
+   * `@type` entries MUST come before other properties since they may defined a type-scoped context.
+   * However, when this flag is enabled, `@type` entries that do NOT
+   * define a type-scoped context may appear anywhere just like a regular property.
+   */
+  streamingProfileAllowOutOfOrderPlainType?: boolean;
 }
