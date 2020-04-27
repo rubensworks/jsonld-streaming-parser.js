@@ -5789,7 +5789,6 @@ describe('JsonLdParser', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
-  "pred1": "http://ex.org/obj1",
   "@context": {
     "@vocab": "http://vocab.org/",
     "Foo": {
@@ -5798,7 +5797,8 @@ describe('JsonLdParser', () => {
         "@vocab": "http://vocab.1.org/"
       }
     }
-  }
+  },
+  "pred1": "http://ex.org/obj1"
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
@@ -5809,13 +5809,13 @@ describe('JsonLdParser', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
-  "pred1": "http://ex.org/obj1",
   "@context": {
     "@vocab": "http://vocab.org/",
     "Foo": {
       "@id": "http://example.org/Foo"
     }
-  }
+  },
+  "pred1": "http://ex.org/obj1"
 }`);
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
@@ -6016,6 +6016,28 @@ describe('JsonLdParser', () => {
             triple(namedNode('http://example.org/node'),
               namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               namedNode('http://example.org/abc3')),
+          ]);
+        });
+
+        it('on a named node with multiple aliased @type entries', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "http://example.org/",
+    "type1": "@type",
+    "type2": "@type"
+  },
+  "type1": "Type1",
+  "type2": "Type2",
+  "@id": "http://example.org/node"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/Type1')),
+            triple(namedNode('http://example.org/node'),
+              namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              namedNode('http://example.org/Type2')),
           ]);
         });
       });

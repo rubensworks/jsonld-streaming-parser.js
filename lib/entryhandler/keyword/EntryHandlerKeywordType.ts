@@ -13,6 +13,10 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     super('@type');
   }
 
+  public isStackProcessor(): boolean {
+    return false;
+  }
+
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     const keyOriginal = keys[depth];
@@ -78,6 +82,9 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       // Set the new context in the context tree
       parsingContext.contextTree.setContext(keys.slice(0, keys.length - 1), scopedContext);
     }
+
+    // Flag that type has been processed at this depth
+    parsingContext.processingType[depth] = true;
   }
 
 }

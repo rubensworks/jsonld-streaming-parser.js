@@ -39,6 +39,8 @@ export class ParsingContext {
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
+  // Stack of indicating if a type has been processed.
+  public readonly processingType: boolean[];
   // Stack of indicating if triples have been emitted (or will be emitted) at each depth.
   public readonly emittedStack: boolean[];
   // Stack of identified ids (each entry can have multiple ids), tail can be null if unknown
@@ -96,6 +98,7 @@ export class ParsingContext {
 
     // Initialize stacks
     this.processingStack = [];
+    this.processingType = [];
     this.emittedStack = [];
     this.idStack = [];
     this.graphStack = [];

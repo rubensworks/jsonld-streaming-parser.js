@@ -20,7 +20,9 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     : Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
     if (parsingContext.streamingProfile
-      && (parsingContext.processingStack[depth] || parsingContext.idStack[depth] !== undefined)) {
+      && (parsingContext.processingStack[depth]
+        || parsingContext.processingType[depth]
+        || parsingContext.idStack[depth] !== undefined)) {
       parsingContext.emitError(new ErrorCoded('Found an out-of-order context, while streaming is enabled.' +
         '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
     }

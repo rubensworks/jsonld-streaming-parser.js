@@ -284,6 +284,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    */
   public flushStacks(depth: number) {
     this.parsingContext.processingStack.splice(depth, 1);
+    this.parsingContext.processingType.splice(depth, 1);
     this.parsingContext.emittedStack.splice(depth, 1);
     this.parsingContext.idStack.splice(depth, 1);
     this.parsingContext.graphStack.splice(depth + 1, 1);

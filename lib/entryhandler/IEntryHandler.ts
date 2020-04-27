@@ -13,7 +13,7 @@ export interface IEntryHandler<T> {
 
   /**
    * @return {boolean} If this handler should flag {@link ParsingContext#processingStack} for the given depth.
-   *                   Handlers for things like @id, @context and return false, while property handlers return true.
+   *                   Handlers for things like @id, @context and @type return false, while prop handlers return true.
    */
   isStackProcessor(): boolean;
 
