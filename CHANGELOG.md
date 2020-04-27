@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.0.1"></a>
+## [v2.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.0...v2.0.1) - 2020-04-27
+
+### Fixed
+* [Fix multiple aliased type entries causing a stream key order error](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/bab4d7de1a1d6fc4e40308191929eff158ec019f)
+
 <a name="v2.0.0"></a>
 ## [v2.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v1.1.2...v2.0.0) - 2020-04-03
 
