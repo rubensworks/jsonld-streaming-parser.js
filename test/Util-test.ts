@@ -478,7 +478,8 @@ describe('Util', () => {
 
         it('with a @value and boolean @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0, []))
-            .rejects.toThrow(new Error('The value of an \'@type\' must be a string, got \'true\''));
+            .rejects.toThrow(new ErrorCoded('The value of an \'@type\' must be a string, got \'true\'',
+              ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
         it('with a @value and invalid string @type should throw an error', async () => {

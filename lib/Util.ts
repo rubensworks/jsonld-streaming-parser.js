@@ -349,7 +349,7 @@ export class Util {
         } else if (valueType) { // Validate @type
           if (typeof valueType !== 'string') {
             throw new ErrorCoded(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`,
-              ERROR_CODES.INVALID_TYPE_VALUE);
+              ERROR_CODES.INVALID_TYPED_VALUE);
           }
           const typeTerm = this.createVocabOrBaseTerm(context, valueType);
           if (!typeTerm) {
