@@ -2570,6 +2570,57 @@ describe('JsonLdParser', () => {
                 namedNode(Util.RDF + 'nil')),
             ]);
           });
+
+          it('with a null value should be optimized', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@type": "http://ex.org/datatype" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ null ] }
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            expect(output).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode(Util.RDF + 'nil')),
+            ]);
+          });
+
+          it('with a null @value should be optimized', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "p": { "@id": "http://ex.org/pred1", "@type": "http://ex.org/datatype" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ { "@value": null } ] }
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            expect(output).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                namedNode(Util.RDF + 'nil')),
+            ]);
+          });
+
+          it('with a bad base should not be optimized, but empty first should be skipped', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "@base": "http://invalid/<>/",
+    "p": { "@id": "http://ex.org/pred1", "@type": "@id" }
+  },
+  "@id": "http://ex.org/myid",
+  "p": { "@list": [ "test" ] }
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            expect(output).toBeRdfIsomorphic([
+              triple(namedNode('http://ex.org/myid'), namedNode('http://ex.org/pred1'),
+                blankNode('l')),
+              triple(blankNode('l'), namedNode(Util.RDF + 'rest'),
+                namedNode(Util.RDF + 'nil')),
+            ]);
+          });
         });
 
         describe('a triple with an anonymous list array, in an array', () => {
