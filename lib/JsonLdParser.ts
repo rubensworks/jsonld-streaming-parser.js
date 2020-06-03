@@ -62,7 +62,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   private lastOnValueJob: Promise<void>;
 
   constructor(options?: IJsonLdParserOptions) {
-    super({ objectMode: true });
+    super({ readableObjectMode: true });
     options = options || {};
     this.options = options;
     this.parsingContext = new ParsingContext({ parser: this, ...options });
@@ -151,7 +151,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @return {RDF.Stream} A quad stream.
    */
   public import(stream: EventEmitter): RDF.Stream {
-    const output = new PassThrough({ objectMode: true });
+    const output = new PassThrough({ readableObjectMode: true });
     stream.on('error', (error) => parsed.emit('error', error));
     stream.on('data', (data) => output.write(data));
     stream.on('end', () => output.emit('end'));
