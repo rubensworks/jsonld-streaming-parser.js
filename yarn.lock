@@ -2607,6 +2607,19 @@ jsonld-context-parser@^2.0.0:
     isomorphic-fetch "^2.2.1"
     relative-to-absolute-iri "^1.0.5"
 
+jsonld-context-parser@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-2.0.1.tgz#de0cd46e40e18c208e4031e931c0dbebfc7e921a"
+  integrity sha512-age80EkLq3sGWvf4UBfbHr2M6geOvrMvD1EnkliHeaFzln2a4ZdB7/1gQ4yMt0VjjlqudmvJtffA7YYQ2mx6ug==
+  dependencies:
+    "@types/http-link-header" "^1.0.1"
+    "@types/isomorphic-fetch" "^0.0.35"
+    "@types/node" "^13.1.0"
+    canonicalize "^1.0.1"
+    http-link-header "^1.0.2"
+    isomorphic-fetch "^2.2.1"
+    relative-to-absolute-iri "^1.0.5"
+
 jsonld-streaming-parser@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/jsonld-streaming-parser/-/jsonld-streaming-parser-2.0.1.tgz#4bf8165628200cd9ab62506e6356d9e89049e0d7"
