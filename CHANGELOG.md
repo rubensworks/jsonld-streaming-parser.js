@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.0.2"></a>
+## [v2.0.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.1...v2.0.2) - 2020-06-03
+
+### Fixed
+* [Fix rdf:first not being omitted on invalid values](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/035bff554823ac721afc99f212478c22b6ff536c)
+* [Fix incorrect error code on invalid @type value](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/151e463ce376fcf1488586e29bfe5f91743d4276)
+
+### Changed
+* [Update dependency @types/rdf-js to v3, Closes #61](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/eff162fd98c163a0cd803e9eeb869c3224451def)
+* [Bump jsonld-context-parser to 2.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/a98e5665b78cb666de63199a49c35652fb3bd703)
+
 <a name="v2.0.1"></a>
 ## [v2.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.0...v2.0.1) - 2020-04-27
 
