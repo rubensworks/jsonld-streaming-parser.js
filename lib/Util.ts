@@ -1,6 +1,7 @@
 import {ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized,
   Util as ContextUtil} from "jsonld-context-parser";
 import * as RDF from "rdf-js";
+import {DataFactory} from "rdf-data-factory";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 import {ParsingContext} from "./ParsingContext";
 
@@ -29,7 +30,7 @@ export class Util {
 
   constructor(options: { parsingContext: ParsingContext, dataFactory?: RDF.DataFactory<RDF.BaseQuad> }) {
     this.parsingContext = options.parsingContext;
-    this.dataFactory = options.dataFactory || require('@rdfjs/data-model');
+    this.dataFactory = options.dataFactory || new DataFactory();
 
     this.rdfFirst = this.dataFactory.namedNode(Util.RDF + 'first');
     this.rdfRest = this.dataFactory.namedNode(Util.RDF + 'rest');
