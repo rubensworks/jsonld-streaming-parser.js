@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.1.0"></a>
+## [v2.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.2...v2.1.0) - 2020-09-15
+
+### Changed
+* [Update to @types/rdf-js 4.x](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/c2293ecce10502eef0cc746eb248562790ab8977)
+
+### Fixed
+* [Fix import method sometimes failing on large streams](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/4d4ca956a4695a0f36e363d4e11011d014c04aa2)
+* [Fix incompatibility with WhatWG streams](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/f7318415a100d4de29f40d8216dd12a80d0f96f6)
+
 <a name="v2.0.2"></a>
 ## [v2.0.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.1...v2.0.2) - 2020-06-03
 
