@@ -4428,6 +4428,27 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('arrays in a graph', () => {
+        it('with a predicate in predicate with anonymous bnode in array', async () => {
+          const stream = streamifyString(`
+{
+  "@graph": [
+    {
+      "@id": "ex:s",
+      "ex:p1": {
+        "ex:p2": [{}]
+      }
+    }
+  ]
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.namedNode('ex:s'), DF.namedNode('ex:p1'), DF.blankNode('b0')),
+            DF.quad(DF.blankNode('b0'), DF.namedNode('ex:p2'), DF.blankNode('b1')),
+          ]);
+        });
+      });
+
       describe('a top-level context', () => {
         it('without other triples', async () => {
           const stream = streamifyString(`

@@ -145,9 +145,6 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
             predicate, object, reverse);
         }
-      } else {
-        // An invalid value was encountered, so we ignore it higher in the stack.
-        parsingContext.emittedStack[depth] = false;
       }
     }
   }
