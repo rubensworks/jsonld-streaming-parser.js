@@ -3086,6 +3086,153 @@ describe('JsonLdParser', () => {
               DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.blankNode('l1.1')),
             ]);
           });
+
+          it('with an inner predicate with array with one element', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [{
+    "ex:p": ["a"]
+  }]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('b0'), DF.namedNode('ex:p'), DF.literal('a')),
+
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.blankNode('l0')),
+            ]);
+          });
+
+          it('with an inner predicate with array with zero elements', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [{
+    "ex:p": []
+  }]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.blankNode('l0')),
+            ]);
+          });
+
+          it('with an empty inner node', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": [{}]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.blankNode('l0')),
+            ]);
+          });
+
+          it('without inner node', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "foo": []
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
+            ]);
+          });
+        });
+
+        describe('a list container inside a node', () => {
+          it('with one inner element', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "ex:p": {
+    "foo": ["baz"]
+  }
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.blankNode('l0')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
+            ]);
+          });
+
+          it('with zero inner elements', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "ex:p": {
+    "foo": []
+  }
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
+            ]);
+          });
+        });
+
+        describe('a list container inside a normal array', () => {
+          it('with one inner element', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "ex:p": [
+    {
+      "foo": ["baz"]
+    }
+  ]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
+              DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.blankNode('l0')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
+            ]);
+          });
+
+          it('with zero inner elements', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
+  "@id": "ex:id",
+  "ex:p": [{
+    "foo": []
+  }]
+}`);
+            const output = await arrayifyStream(stream.pipe(parser));
+            return expect(output).toBeRdfIsomorphic([
+              DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
+
+              DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
+            ]);
+          });
         });
 
       });

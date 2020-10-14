@@ -81,6 +81,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       if ('@list' in Util.getContextValueContainer(parentContext, parentKey)) {
         // Our value is part of an array
         // Emit the given objects as list elements
+        parsingContext.emittedStack[depth + 1] = true; // Ensure the creation of bnodes for empty nodes
         const values = await util.valueToTerm(await parsingContext.getContext(keys), parentKey, value, depth, keys);
 
         for (const object of values) {
