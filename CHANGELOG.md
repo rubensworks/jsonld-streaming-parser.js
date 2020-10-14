@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.1.1"></a>
+## [v2.1.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.1.0...v2.1.1) - 2020-10-14
+
+### Fixed
+* [Fix anonymous bnodes in nested predicate inside graph being voided](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/2302014dba538a590e6d1f5ad7e9b9d09cb37690)
+* [Fix missing bnode generation for empty nodes](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/dd8022e2a465ffdab638fcc4a50e12913411be45)
+* [Fix some bnodes being skipped inside list containers](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/830da2189f764959059cb3666956a92907d8a9d8)
+
 <a name="v2.1.0"></a>
 ## [v2.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.0.2...v2.1.0) - 2020-09-15
 
