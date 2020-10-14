@@ -332,6 +332,16 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('without @id and anonymous blank node value', async () => {
+          const stream = streamifyString(`
+{
+  "http://ex.org/pred1": {}
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
+          ]);
+        });
+
         it('with @id', async () => {
           const stream = streamifyString(`
 {

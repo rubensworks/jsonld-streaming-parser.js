@@ -221,9 +221,9 @@ describe('Util', () => {
       });
 
       describe('for an object', () => {
-        it('without an @id should return []', async () => {
+        it('without an @id should return a bnode', async () => {
           return expect(await util.valueToTerm(context, 'key', {}, 0, []))
-            .toEqual([]);
+            .toEqualRdfTermArray([DF.blankNode()]);
         });
 
         it('without an @id should return a blank node when a value was emitted at a deeper depth', async () => {

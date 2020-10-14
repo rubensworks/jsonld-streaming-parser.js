@@ -420,7 +420,8 @@ export class Util {
         }
       } else {
         // Only make a blank node if at least one triple was emitted at the value's level.
-        if (this.parsingContext.emittedStack[depth + 1]) {
+        if (this.parsingContext.emittedStack[depth + 1]
+          || (value && typeof value === 'object' && Object.keys(value).length === 0)) {
           return (this.parsingContext.idStack[depth + 1]
             || (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
         } else {
