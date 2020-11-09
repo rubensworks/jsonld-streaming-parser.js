@@ -106,24 +106,29 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
           ERROR_CODES.LOADING_DOCUMENT_FAILED);
       }
 
-      // We need exactly one JSON-LD context in the link header
-      if (headers && headers.has('Link')) {
-        headers.forEach((value, key) => {
-          if (key === 'link') {
-            const linkHeader = parseLinkHeader(value);
-            for (const link of linkHeader.get('rel', 'http://www.w3.org/ns/json-ld#context')) {
-              if (context) {
-                throw new ErrorCoded('Multiple JSON-LD context link headers were found on ' + baseIRI,
-                  ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS);
+      // If we can skip checking for the context in the Link headers
+      const skipJSON = mediaType === 'application/json' && !!options?.ignoreJSONMediaType
+
+      if (!skipJSON) {
+        // We need exactly one JSON-LD context in the link header
+        if (headers && headers.has('Link')) {
+          headers.forEach((value, key) => {
+            if (key === 'link') {
+              const linkHeader = parseLinkHeader(value);
+              for (const link of linkHeader.get('rel', 'http://www.w3.org/ns/json-ld#context')) {
+                if (context) {
+                  throw new ErrorCoded('Multiple JSON-LD context link headers were found on ' + baseIRI,
+                    ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS);
+                }
+                context = link.uri;
               }
-              context = link.uri;
             }
-          }
-        });
-      }
-      if (!context) {
-        throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`,
-          ERROR_CODES.LOADING_DOCUMENT_FAILED);
+          });
+        }
+        if (!context) {
+          throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`,
+            ERROR_CODES.LOADING_DOCUMENT_FAILED);
+        }
       }
     }
 
@@ -548,6 +553,12 @@ export interface IJsonLdParserOptions {
    * Loader for remote contexts.
    */
   documentLoader?: IDocumentLoader;
+  /**
+   * Allows {@link JsonLdParser.fromHttpResponse} to treat responses with
+   * Content-Type: application/json as JSON-LD and not error if they
+   * don't contain a Link header. 
+   */
+  ignoreJSONMediaType?: boolean
   /**
    * If blank node predicates should be allowed,
    * they will be ignored otherwise.

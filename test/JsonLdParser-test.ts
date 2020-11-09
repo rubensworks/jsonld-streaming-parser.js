@@ -36,6 +36,18 @@ describe('JsonLdParser', () => {
         ERROR_CODES.LOADING_DOCUMENT_FAILED))
     });
 
+    it('should handle a plain JSON response when ignoreJSONMediaType is true', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', undefined, { ignoreJSONMediaType: true });
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
+
+    it('should error on a JSON extension type even with ignoreJSONMediaType', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', undefined, { ignoreJSONMediaType: true }))
+        .toThrow(new ErrorCoded(`Missing context link header for media type text/turtle+json on BASE`,
+          ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
     it('should error on a JSON extension type without link header', () => {
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json'))
         .toThrow(new ErrorCoded(`Missing context link header for media type text/turtle+json on BASE`,
