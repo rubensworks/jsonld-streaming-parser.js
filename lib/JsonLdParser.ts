@@ -121,7 +121,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
           }
         });
       }
-      if (!context) {
+      if (!context && !options?.ignoreMissingContextLinkHeader) {
         throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`,
           ERROR_CODES.LOADING_DOCUMENT_FAILED);
       }
@@ -548,6 +548,11 @@ export interface IJsonLdParserOptions {
    * Loader for remote contexts.
    */
   documentLoader?: IDocumentLoader;
+  /**
+   * If the lack of JSON-LD context link headers on raw JSON documents should NOT result in an error.
+   * If true, raw JSON documents can be considered first-class JSON-LD documents.
+   */
+  ignoreMissingContextLinkHeader?: boolean;
   /**
    * If blank node predicates should be allowed,
    * they will be ignored otherwise.

@@ -151,6 +151,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `baseIRI`: An initial default base IRI. _(Default: `''`)_
 * `streamingProfile`: If this parser can assume that parsed documents follow the streaming JSON-LD profile. If true, and a non-streaming document is detected, an error may be thrown. If false, non-streaming documents will be handled by preemptively buffering entries, which will lose many of the streaming benefits of this parser. _(Default: `true`)_
 * `documentLoader` A custom loader for fetching remote contexts. This can be set to anything that implements [`IDocumentLoader`](https://github.com/rubensworks/jsonld-context-parser.js/blob/master/lib/IDocumentLoader.ts) _(Default: [`FetchDocumentLoader`](https://github.com/rubensworks/jsonld-context-parser.js/blob/master/lib/FetchDocumentLoader.ts))_
+* `ignoreMissingContextLinkHeader`: If the lack of JSON-LD context link headers on raw JSON documents should NOT result in an error. If true, raw JSON documents can be considered first-class JSON-LD documents. _(Default: `false`)_
 * `produceGeneralizedRdf`: If blank node predicates should be allowed, they will be ignored otherwise. _(Default: `false`)_
 * `processingMode`: The maximum JSON-LD version that should be processable by this parser. _(Default: `1.0`)_
 * `strictValues`: By default, JSON-LD requires that all properties (or @id's) that are not URIs, are unknown keywords, and do not occur in the context should be silently dropped. When setting this value to true, an error will be thrown when such properties occur. This also applies to invalid values such as language tags. This is useful for debugging JSON-LD documents. _(Default: `false`)_
@@ -168,6 +169,7 @@ new JsonLdParser({
   baseIRI: 'http://example.org/',
   streamingProfile: true,
   documentLoader: new FetchDocumentLoader(),
+  ignoreMissingContextLinkHeader: false,
   produceGeneralizedRdf: false,
   processingMode: '1.0',
   errorOnInvalidIris: false,

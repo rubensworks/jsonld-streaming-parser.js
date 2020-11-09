@@ -42,6 +42,16 @@ describe('JsonLdParser', () => {
           ERROR_CODES.LOADING_DOCUMENT_FAILED))
     });
 
+    it('should handle a plain JSON response without link header when ignoreMissingContextLinkHeader is true', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', undefined, { ignoreMissingContextLinkHeader: true });
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
+    it('should handle a JSON extension type without link header when ignoreMissingContextLinkHeader is true', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', undefined, { ignoreMissingContextLinkHeader: true });
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
     it('should error on a non-JSON response with link header', () => {
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle',
         new Headers({ 'link': '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' })))
@@ -50,6 +60,14 @@ describe('JsonLdParser', () => {
     });
 
     it('should handle on a JSON response with link header', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
+        new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+      expect((<any> parser).options.context).toEqual('my-context.jsonld');
+    });
+
+    it('should handle on a JSON response with link header when ignoreMissingContextLinkHeader is true', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
       (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
