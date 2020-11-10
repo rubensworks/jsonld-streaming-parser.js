@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.2.0"></a>
+## [v2.2.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.1.1...v2.2.0) - 2020-11-10
+
+### Added
+* [Add option to ignore missing context link headers](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/2a097c6da0bb8e66dbb0ad4945fa2e29edde1448)
+
 <a name="v2.1.1"></a>
 ## [v2.1.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.1.0...v2.1.1) - 2020-10-14
 
