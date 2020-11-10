@@ -8,12 +8,22 @@ import "jest-rdf";
 import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
+import { ParsingContext } from '../lib/ParsingContext';
 
 const DF = new DataFactory<RDF.BaseQuad>();
 
 describe('JsonLdParser', () => {
 
   describe('#fromHttpResponse', () => {
+    const parseContextSpy = jest.spyOn(ParsingContext.prototype, 'parseContext');
+    beforeEach(() => {
+      parseContextSpy.mockReturnValue(Promise.resolve(new JsonLdContextNormalized({})));
+    });
+
+    afterAll(() => {
+      parseContextSpy.mockRestore();
+    });
+
     it('should handle a JSON-LD response', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json');
       expect((<any> parser).options.baseIRI).toEqual('BASE');
@@ -62,7 +72,6 @@ describe('JsonLdParser', () => {
     it('should handle on a JSON response with link header', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
@@ -70,7 +79,6 @@ describe('JsonLdParser', () => {
     it('should handle on a JSON response with link header when ignoreMissingContextLinkHeader is true', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
@@ -78,7 +86,6 @@ describe('JsonLdParser', () => {
     it('should handle on a JSON response with non-escaped link header', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
         new Headers({ 'link': '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' }));
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
@@ -86,7 +93,6 @@ describe('JsonLdParser', () => {
     it('should handle on a JSON extension type with link header', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
@@ -94,7 +100,6 @@ describe('JsonLdParser', () => {
     it('should handle on a JSON response with link header and other headers', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json',
         new Headers({ 'link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"', 'a': 'b' }));
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context.jsonld');
     });
@@ -122,8 +127,6 @@ describe('JsonLdParser', () => {
       headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
       headers.append('Link', '<my-context2.jsonld>; rel=\"SOMETHING ELSE\"');
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', headers);
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
-      (<any> parser).parsingContext.rootContext.catch(() => { return; }); // Ignore context parsing errors
       expect((<any> parser).options.baseIRI).toEqual('BASE');
       expect((<any> parser).options.context).toEqual('my-context1.jsonld');
     });
