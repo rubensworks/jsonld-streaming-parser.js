@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.2.1"></a>
+## [v2.2.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.2.0...v2.2.1) - 2021-02-16
+
+### Fixed
+* [Bump jsonld-context-parser with schema.org workaround](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/f3b1b62113cd45adcf0a5df4d6da42c17a9b3733)
+
 <a name="v2.2.0"></a>
 ## [v2.2.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.1.1...v2.2.0) - 2020-11-10
 
