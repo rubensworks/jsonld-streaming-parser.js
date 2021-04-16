@@ -80,7 +80,7 @@ export class ParsingContext {
 
   constructor(options: IParsingContextOptions) {
     // Initialize settings
-    this.contextParser = new ContextParser({ documentLoader: options.documentLoader });
+    this.contextParser = new ContextParser({ documentLoader: options.documentLoader, skipValidation: options.skipContextValidation });
     this.streamingProfile = !!options.streamingProfile;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = !!options.produceGeneralizedRdf;

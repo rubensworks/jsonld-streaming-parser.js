@@ -161,6 +161,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `rdfDirection`: The [mode](https://w3c.github.io/json-ld-api/#dom-jsonldoptions-rdfdirection) under which `@direction` should be handled. If undefined, `@direction` is ignored. Alternatively, it can be set to either `'i18n-datatype'` or `'compound-literal'` _(Default: `undefined`)_
 * `normalizeLanguageTags`: Whether or not language tags should be normalized to lowercase. _(Default: `false` for JSON-LD 1.1 (and higher), `true` for JSON-LD 1.0)_
 * `streamingProfileAllowOutOfOrderPlainType`: When the streaming profile flag is enabled, `@type` entries MUST come before other properties since they may defined a type-scoped context. However, when this flag is enabled, `@type` entries that do NOT define a type-scoped context may appear anywhere just like a regular property.. _(Default: `false`)_
+* `skipContextValidation`: If JSON-LD context validation should be skipped. This is useful when parsing large contexts that are known to be valid. _(Default: `false`)_
 
 ```javascript
 new JsonLdParser({

@@ -619,4 +619,10 @@ export interface IJsonLdParserOptions {
    * define a type-scoped context may appear anywhere just like a regular property.
    */
   streamingProfileAllowOutOfOrderPlainType?: boolean;
+  /**
+   * If JSON-LD context validation should be skipped.
+   *
+   * This is useful when parsing large contexts that are known to be valid.
+   */
+  skipContextValidation?: boolean;
 }
