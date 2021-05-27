@@ -132,7 +132,7 @@ describe('Util', () => {
     });
 
     it('should return false for undefined', async () => {
-      expect(Util.isValidIri(undefined)).toBe(false);
+      expect(Util.isValidIri(<any>undefined)).toBe(false);
     });
 
     it('should return false for false', async () => {
@@ -198,10 +198,10 @@ describe('Util', () => {
 
   describe('instance', () => {
 
-    let util;
+    let util: any;
 
     beforeEach(() => {
-      util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked({ parser: null }) });
+      util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked({ parser: <any>null }) });
     });
 
     describe('#valueToTerm', () => {
@@ -281,7 +281,7 @@ describe('Util', () => {
 
         it('with a relative @id with baseIRI should return a named node', async () => {
           util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked(
-            { baseIRI: 'http://ex.org/', parser: null }) });
+            { baseIRI: 'http://ex.org/', parser: <any>null }) });
           return expect(await util.valueToTerm(await util.parsingContext.getContext([]),
             'key', { '@id': 'abc' }, 0, []))
             .toEqualRdfTermArray([DF.namedNode('http://ex.org/abc')]);
@@ -289,13 +289,13 @@ describe('Util', () => {
 
         it('with an empty @id with baseIRI should return a named node', async () => {
           util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked(
-              { baseIRI: 'http://ex.org/', parser: null }) });
+              { baseIRI: 'http://ex.org/', parser: <any>null }) });
           return expect(await util.valueToTerm(await util.parsingContext.getContext([]), 'key', { '@id': '' }, 0, []))
             .toEqualRdfTermArray([DF.namedNode('http://ex.org/')]);
         });
 
         it('with an empty @id with baseIRI and vocabIRI should return a named node for @type = @vocab', async () => {
-          util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked(null) });
+          util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked(<any>null) });
           context = new JsonLdContextNormalized({ '@base': 'http://base.org/', '@vocab': 'http://vocab.org/' });
           util.parsingContext.contextTree.setContext([], Promise.resolve(context));
           return expect(await util.valueToTerm(context, 'key', { '@id': '', '@type': '@vocab' }, 0, []))

@@ -157,7 +157,7 @@ describe('JsonLdParser', () => {
   });
 
   describe('when instantiated without a data factory and context', () => {
-    let parser;
+    let parser: any;
 
     beforeEach(() => {
       parser = new JsonLdParser();
@@ -173,7 +173,7 @@ describe('JsonLdParser', () => {
   });
 
   describe('when instantiated without a data factory and with a context', () => {
-    let parser;
+    let parser: any;
 
     beforeEach(() => {
       parser = new JsonLdParser({ context: { SomeTerm: 'http://example.org/' } });
@@ -190,7 +190,7 @@ describe('JsonLdParser', () => {
   });
 
   describe('when instantiated with a custom default graph', () => {
-    let parser;
+    let parser: any;
 
     beforeEach(() => {
       parser = new JsonLdParser({ defaultGraph: DF.namedNode('http://ex.org/g') });
@@ -215,11 +215,11 @@ describe('JsonLdParser', () => {
   (<any> each ([
     [true],
     [false],
-  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile) => {
+  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
   /*describe('when instantiated with a data factory and streamingProfile %s', () => {
     const streamingProfile = true;*/
-    let parser;
+    let parser: any;
 
     beforeEach(() => {
       parser = new JsonLdParser({ dataFactory: DF, streamingProfile });
@@ -11830,7 +11830,7 @@ describe('JsonLdParser', () => {
   });
 
   describe('when instantiated with strictValues true', () => {
-    let parser;
+    let parser: any;
 
     beforeEach(() => {
       parser = new JsonLdParser({ strictValues: true });
@@ -11973,8 +11973,8 @@ describe('JsonLdParser', () => {
   });
 
   describe('with a context event listener', () => {
-    let parser;
-    let contextListener;
+    let parser: any;
+    let contextListener: any;
 
     beforeEach(() => {
       parser = new JsonLdParser({strictValues: true});
@@ -12030,7 +12030,7 @@ describe('JsonLdParser', () => {
   // The following tests check the parser via stateful .write() calls.
   describe('for step-by-step streaming', () => {
     describe('without context', () => {
-      let parser;
+      let parser: any;
 
       beforeAll(() => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
@@ -12109,7 +12109,7 @@ describe('JsonLdParser', () => {
     });
 
     describe('with array values', () => {
-      let parser;
+      let parser: any;
 
       beforeAll(() => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
@@ -12195,7 +12195,7 @@ describe('JsonLdParser', () => {
     });
 
     describe('with context', () => {
-      let parser;
+      let parser: any;
 
       beforeAll(() => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
@@ -12282,7 +12282,7 @@ describe('JsonLdParser', () => {
   });
 
   describe('#import', () => {
-    let parser;
+    let parser: any;
 
     beforeAll(() => {
       parser = new JsonLdParser();

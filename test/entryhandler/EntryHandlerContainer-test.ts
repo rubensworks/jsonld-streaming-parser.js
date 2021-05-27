@@ -2,15 +2,16 @@ import {JsonLdContextNormalized} from "jsonld-context-parser";
 import {EntryHandlerContainer} from "../../lib/entryhandler/EntryHandlerContainer";
 import {Util} from "../../lib/Util";
 import {ParsingContextMocked} from "../../mocks/ParsingContextMocked";
+import { ParsingContext } from '../../lib/ParsingContext';
 
 describe('EntryHandlerContainer', () => {
   const handler = new EntryHandlerContainer();
 
-  let parsingContext;
-  let util;
+  let parsingContext: ParsingContext;
+  let util: Util;
 
   beforeEach(() => {
-    parsingContext = new ParsingContextMocked({ parser: null });
+    parsingContext = new ParsingContextMocked({ parser: <any>null });
     util = new Util({ parsingContext });
   });
 

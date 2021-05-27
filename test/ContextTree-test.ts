@@ -4,7 +4,7 @@ import {JsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContextNo
 describe('ContextTree', () => {
 
   describe('an empty instance', () => {
-    let tree;
+    let tree: ContextTree;
 
     beforeEach(() => {
       tree = new ContextTree();
@@ -26,8 +26,8 @@ describe('ContextTree', () => {
     it('should should set a context at depth 1 for an undefined key', async () => {
       const c = Promise.resolve(new JsonLdContextNormalized({ a: 'b' }));
       tree.setContext([undefined], c);
-      expect(await tree.getContext([undefined])).toEqual({ context: await c, depth: 1 });
-      expect(await tree.getContext([undefined, 'b'])).toEqual({ context: await c, depth: 1 });
+      expect(await tree.getContext([<any>undefined])).toEqual({ context: await c, depth: 1 });
+      expect(await tree.getContext([<any>undefined, 'b'])).toEqual({ context: await c, depth: 1 });
     });
 
     it('should should set a context at depth 2', async () => {
@@ -60,7 +60,7 @@ describe('ContextTree', () => {
   });
 
   describe('an instance with a root context', () => {
-    let tree;
+    let tree: any;
     const root = Promise.resolve(new JsonLdContextNormalized({}));
 
     beforeEach(() => {

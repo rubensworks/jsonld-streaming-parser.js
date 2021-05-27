@@ -3,11 +3,12 @@ import "jest-rdf";
 import {EntryHandlerArrayValue} from "../../lib/entryhandler/EntryHandlerArrayValue";
 import {Util} from "../../lib/Util";
 import {ParsingContextMocked} from "../../mocks/ParsingContextMocked";
+import { ParsingContext } from '../../lib/ParsingContext';
 
 const DF = new DataFactory();
 
 describe('EntryHandlerArrayValue', () => {
-  let handler;
+  let handler: EntryHandlerArrayValue;
 
   beforeEach(() => {
     handler = new EntryHandlerArrayValue();
@@ -20,11 +21,11 @@ describe('EntryHandlerArrayValue', () => {
   });
 
   describe('should handle', () => {
-    let parsingContext;
-    let util;
+    let parsingContext: any;
+    let util: Util;
 
     beforeEach(() => {
-      parsingContext = new ParsingContextMocked({ parser: null });
+      parsingContext = new ParsingContextMocked({ parser: <any>null });
       util = new Util({ parsingContext });
     });
 
