@@ -50,7 +50,7 @@
     "arrayify-stream": "^1.0.0",
     "coveralls": "^3.0.0",
     "jest": "^27.0.1",
-    "jest-each": "^26.0.0",
+    "jest-each": "^27.0.0",
     "jest-rdf": "^1.6.0",
     "manual-git-changelog": "^1.0.1",
     "pre-commit": "^1.2.2",
