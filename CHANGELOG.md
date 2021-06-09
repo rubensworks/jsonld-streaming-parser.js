@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.3.1"></a>
+## [v2.3.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.0...v2.3.1) - 2021-06-09
+
+### Fixed
+* [Fix link to anonymous reverse properties being ignored](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/45e9a83eec863f96b0c0c29b1b2004abe610f0ed)
+
 <a name="v2.3.0"></a>
 ## [v2.3.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.2.1...v2.3.0) - 2021-04-16
 
