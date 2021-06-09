@@ -1724,6 +1724,28 @@ describe('JsonLdParser', () => {
         });
       });
 
+      describe('a reversed triple within a regular triple', () => {
+        it('with @id\'s', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "ex:root",
+  "ex:p1": {
+    "@id": "ex:connector",
+    "@reverse": {
+      "ex:p2": {
+        "@id": "ex:reversed"
+      }
+    }
+  }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:p1'), DF.namedNode('ex:connector')),
+            DF.quad(DF.namedNode('ex:reversed'), DF.namedNode('ex:p2'), DF.namedNode('ex:connector')),
+          ]);
+        });
+      });
+
       describe('two triples', () => {
         it('without @id', async () => {
           const stream = streamifyString(`

@@ -395,7 +395,7 @@ export class Util {
           return await this.valueToTerm(await this.parsingContext.getContext(keys),
             key, listValue, depth - 1, keys.slice(0, -1));
         }
-      } else if ('@reverse' in value) {
+      } else if ('@reverse' in value && typeof value['@reverse'] === 'boolean') {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
         return [];
