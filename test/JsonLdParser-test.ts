@@ -7030,6 +7030,40 @@ describe('JsonLdParser', () => {
               DF.literal('{"a":["a",true]}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
           ]);
         });
+
+        it('with a JSON object with a would-be-invalid predicate in strict mode', async () => {
+          parser = new JsonLdParser({ strictValues: true });
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "a": true }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.blankNode(''),
+              DF.namedNode('http://example.com/vocab/json'),
+              DF.literal('{"a":true}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
+
+        it('with a JSON object with a would-be-invalid predicate with array value in strict mode', async () => {
+          parser = new JsonLdParser({ strictValues: true });
+          const stream = streamifyString(`
+{
+  "@context": {
+    "e": {"@id": "http://example.com/vocab/json", "@type": "@json"}
+  },
+  "e": { "a": [ true ] }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.blankNode(''),
+              DF.namedNode('http://example.com/vocab/json'),
+              DF.literal('{"a":[true]}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
       });
 
       describe('containers', () => {

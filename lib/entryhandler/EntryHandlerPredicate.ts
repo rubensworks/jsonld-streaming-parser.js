@@ -90,7 +90,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     const key = keys[depth];
     if (key) {
       const context = await parsingContext.getContext(keys);
-      if (await util.predicateToTerm(context, keys[depth])) {
+      if (!parsingContext.jsonLiteralStack[depth] && await util.predicateToTerm(context, keys[depth])) {
         // If this valid predicate is of type @json, mark it so in the stack so that no deeper handling of nodes occurs.
         if (Util.getContextValueType(context, key) === '@json') {
           parsingContext.jsonLiteralStack[depth + 1] = true;
