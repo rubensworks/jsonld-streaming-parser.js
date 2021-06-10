@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.3.2"></a>
+## [v2.3.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.1...v2.3.2) - 2021-06-10
+
+### Fixed
+* [Fix predicate validity incorrectly being checked within @json values](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/5a0750b46d003e1db5a380c123671df7c32f3238)
+
 <a name="v2.3.1"></a>
 ## [v2.3.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.0...v2.3.1) - 2021-06-09
 
