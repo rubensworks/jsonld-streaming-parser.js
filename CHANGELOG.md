@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.3.3"></a>
+## [v2.3.3](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.2...v2.3.3) - 2021-07-29
+
+### Fixed
+* [Add test case for solid/community-server#865](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/3650b5faeca2ca117b283789d9dae302d50a1506)
+
 <a name="v2.3.2"></a>
 ## [v2.3.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.1...v2.3.2) - 2021-06-10
 
