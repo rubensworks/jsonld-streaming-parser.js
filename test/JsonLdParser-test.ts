@@ -11638,6 +11638,30 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('should not error when overriding with a compacted term', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@protected": true,
+    "foo": "http://ex.org/foo",
+    "Type": {
+      "@id": "http://ex.org/Type",
+      "@context": {
+        "ex": "http://ex.org/",
+        "foo": "ex:foo"
+      }
+    }
+  },
+  "@type": "Type",
+  "foo": "value"
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              DF.namedNode('http://ex.org/Type')),
+            DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/foo'),
+              DF.literal('value')),
+          ]);
+        });
       });
 
       describe('array values', () => {
