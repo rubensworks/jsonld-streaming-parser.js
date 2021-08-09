@@ -1,7 +1,0 @@
-import: rubensworks/travis-presets:node.yml@master
-script:
-  - npm run spec-tordf
-  - npm run spec-stream-tordf
-cache:
-  - directories:
-    - .rdf-test-suite-cache

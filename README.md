@@ -1,6 +1,6 @@
 # JSON-LD Streaming Parser
 
-[![Build Status](https://travis-ci.org/rubensworks/jsonld-streaming-parser.js.svg?branch=master)](https://travis-ci.org/rubensworks/jsonld-streaming-parser.js)
+[![Build status](https://github.com/rubensworks/jsonld-streaming-parser.js/workflows/CI/badge.svg)](https://github.com/rubensworks/jsonld-streaming-parser.js/actions?query=workflow%3ACI)
 [![Coverage Status](https://coveralls.io/repos/github/rubensworks/jsonld-streaming-parser.js/badge.svg?branch=master)](https://coveralls.io/github/rubensworks/jsonld-streaming-parser.js?branch=master)
 [![npm version](https://badge.fury.io/js/jsonld-streaming-parser.svg)](https://www.npmjs.com/package/jsonld-streaming-parser)
 
