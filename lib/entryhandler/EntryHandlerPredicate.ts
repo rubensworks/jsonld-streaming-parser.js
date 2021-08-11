@@ -1,5 +1,5 @@
 import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
-import * as RDF from "rdf-js";
+import * as RDF from "@rdfjs/types";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
 import {IEntryHandler} from "./IEntryHandler";

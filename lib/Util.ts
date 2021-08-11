@@ -1,6 +1,6 @@
 import {ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized,
   Util as ContextUtil} from "jsonld-context-parser";
-import * as RDF from "rdf-js";
+import * as RDF from "@rdfjs/types";
 import {DataFactory} from "rdf-data-factory";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 import {ParsingContext} from "./ParsingContext";

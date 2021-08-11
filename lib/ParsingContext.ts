@@ -1,7 +1,7 @@
 import {ContextParser, IExpandOptions, IJsonLdContextNormalizedRaw, JsonLdContext,
   JsonLdContextNormalized} from "jsonld-context-parser";
 import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser/lib/ErrorCoded";
-import * as RDF from "rdf-js";
+import * as RDF from "@rdfjs/types";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
 
