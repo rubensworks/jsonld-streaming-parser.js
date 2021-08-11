@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.4.0"></a>
+## [v2.4.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.3...v2.4.0) - 2021-08-11
+
+### Changed
+* [Migrate to @rdfjs/types](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/683e40593f9976dc777d731b3d22cd2947f7f6e5)
+
 <a name="v2.3.3"></a>
 ## [v2.3.3](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.2...v2.3.3) - 2021-07-29
 
