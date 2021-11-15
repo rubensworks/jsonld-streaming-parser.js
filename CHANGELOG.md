@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.4.1"></a>
+## [v2.4.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.0...v2.4.1) - 2021-11-15
+
+### Fixed
+* [Fix @value-based @json nodes failing with strictValues](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/741eda02bf6365b2b752083a1f4b0342056e2500)
+
 <a name="v2.4.0"></a>
 ## [v2.4.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.3.3...v2.4.0) - 2021-08-11
 
