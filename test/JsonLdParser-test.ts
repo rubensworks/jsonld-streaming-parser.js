@@ -7064,6 +7064,23 @@ describe('JsonLdParser', () => {
               DF.literal('{"a":[true]}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
           ]);
         });
+
+        it('with a JSON object in @value with strict values', async () => {
+          parser = new JsonLdParser({ dataFactory: DF, streamingProfile, strictValues: true });
+          const stream = streamifyString(`
+{
+  "ex:p": {
+    "@type": "@json",
+    "@value": { "a": true },
+  }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.blankNode(''),
+              DF.namedNode('ex:p'),
+              DF.literal('{"a":true}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
+          ]);
+        });
       });
 
       describe('containers', () => {

@@ -550,7 +550,7 @@ export class Util {
       expanded = context.expandTerm(key, false, expandOptions);
     }
     if (!Util.isValidIri(expanded)) {
-      if (expanded && this.parsingContext.strictValues) {
+      if (expanded && this.parsingContext.strictValues && !expanded.startsWith('@')) {
         this.parsingContext.emitError(new Error(`Invalid term IRI: ${expanded}`));
       } else {
         return null;

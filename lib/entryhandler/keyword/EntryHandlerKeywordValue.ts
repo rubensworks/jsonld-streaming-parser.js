@@ -11,6 +11,16 @@ export class EntryHandlerKeywordValue extends EntryHandlerKeyword {
     super('@value');
   }
 
+  async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
+    // If this is @value, mark it so in the stack so that no deeper handling of nodes occurs.
+    const key = keys[depth];
+    if (key && !parsingContext.literalStack[depth] && await this.test(parsingContext, util, key, keys, depth)) {
+      parsingContext.literalStack[depth] = true;
+    }
+
+    return super.validate(parsingContext, util, keys, depth, inProperty);
+  }
+
   public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
     : Promise<boolean> {
     return await util.unaliasKeyword(keys[depth], keys.slice(0, keys.length - 1), depth - 1, true) === '@value';
