@@ -1723,7 +1723,21 @@ describe('JsonLdParser', () => {
           ]);
         });
       });
-
+      describe('a reversed triple with context', () => {
+        it('@context is added to predicate in reverse', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "http://ex.org/obj1",
+  "@reverse": {
+    "@context": { "@vocab" : "https://cdn.jsdelivr.net/gh/treecg/specification@master/tree.ttl#" },
+    "view": {"@id": "http://ex.org/obj2" }
+  }
+}`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(DF.namedNode('http://ex.org/obj2'), DF.namedNode('https://cdn.jsdelivr.net/gh/treecg/specification@master/tree.ttl#view'), DF.namedNode('http://ex.org/obj1')),
+          ]);
+        });
+      });
       describe('a reversed triple within a regular triple', () => {
         it('with @id\'s', async () => {
           const stream = streamifyString(`
