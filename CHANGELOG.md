@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.4.2"></a>
+## [v2.4.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.1...v2.4.2) - 2021-11-19
+
+### Fixed
+* [Allow @context in @reverse nodes](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/3757e005c5b9611ec67df68c65d0631aeb5de882)
+
 <a name="v2.4.1"></a>
 ## [v2.4.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.0...v2.4.1) - 2021-11-15
 
