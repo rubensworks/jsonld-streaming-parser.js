@@ -214,10 +214,10 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     this.parsingContext.emittedStack[depth] = true;
     let handleKey = true;
 
-    // Keywords inside @reverse is not allowed
-    if (ContextUtil.isValidKeyword(key) && parentKey === '@reverse') {
+    // Keywords inside @reverse is not allowed apart from @context
+    if (ContextUtil.isValidKeyword(key) && parentKey === '@reverse' && key !== '@context') {
       this.emit('error', new ErrorCoded(`Found the @id '${value}' inside an @reverse property`,
-        ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
+          ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
     }
 
     // Skip further processing if one of the parent nodes are invalid.
