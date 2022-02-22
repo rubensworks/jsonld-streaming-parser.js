@@ -11937,6 +11937,12 @@ describe('JsonLdParser', () => {
             'Found illegal neighbouring entries next to @list for key: \'http://example/prop\'',
             ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
       });
+
+      it('unclosed JSON document', async () => {
+        const stream = streamifyString(`{`)
+
+        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(/Unclosed document/)
+      })
     });
   });
 
