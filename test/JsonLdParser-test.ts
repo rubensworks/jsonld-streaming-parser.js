@@ -7796,6 +7796,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": {
     "Value1": []
+  }
 }`);
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
           });
