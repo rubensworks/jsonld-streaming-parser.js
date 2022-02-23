@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v2.4.3"></a>
+## [v2.4.3](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.2...v2.4.3) - 2022-02-23
+
+### Fixed
+* [Emit error when JSON is not closed properly, Closes #83](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/ab7582ad2d5b2102517b8c9df4d0a5171c778c42)
+
 <a name="v2.4.2"></a>
 ## [v2.4.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.1...v2.4.2) - 2021-11-19
 
