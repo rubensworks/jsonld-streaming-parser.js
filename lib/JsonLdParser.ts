@@ -78,6 +78,12 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     this.lastOnValueJob = Promise.resolve();
 
     this.attachJsonParserListeners();
+
+    this.on('end', () => {
+      if (typeof this.jsonParser.mode !== 'undefined') {
+        this.emit('error', new Error('Unclosed document'))
+      }
+    })
   }
 
   /**
