@@ -2,7 +2,7 @@ import * as RDF from "@rdfjs/types";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
 import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil} from "jsonld-context-parser";
-import {PassThrough, Transform, TransformCallback} from "stream";
+import {PassThrough, Transform} from "readable-stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 import {EntryHandlerInvalidFallback} from "./entryhandler/EntryHandlerInvalidFallback";
@@ -165,7 +165,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     return parsed;
   }
 
-  public _transform(chunk: any, encoding: string, callback: TransformCallback): void {
+  public _transform(chunk: any, encoding: string, callback: (error?: Error | null, data?: any) => void): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
       .then(() => callback(), (error) => callback(error));

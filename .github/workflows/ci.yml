@@ -90,3 +90,17 @@ jobs:
         run: yarn run build
       - run: yarn run spec-tordf
       - run: yarn run spec-stream-tordf
+
+  webpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-webpack-modules-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      - run: yarn install
+      - run: npx webpack
