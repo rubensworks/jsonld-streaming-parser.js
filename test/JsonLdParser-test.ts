@@ -1,5 +1,5 @@
 import {JsonLdParser} from "../index";
-const arrayifyStream = require('arrayify-stream');
+import arrayifyStream from 'arrayify-stream';
 const streamifyString = require('streamify-string');
 import * as RDF from "@rdfjs/types";
 import {DataFactory} from "rdf-data-factory";
