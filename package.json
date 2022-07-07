@@ -100,5 +100,6 @@
     "spec-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/",
     "spec-earl-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-stream-tordf.ttl",
     "spec-clean": "rm -r .rdf-test-suite-cache/"
-  }
+  },
+  "sideEffects": false
 }
