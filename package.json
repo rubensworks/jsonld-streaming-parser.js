@@ -1,6 +1,6 @@
 {
   "name": "jsonld-streaming-parser",
-  "version": "2.4.3",
+  "version": "3.0.0",
   "description": "A fast and lightweight streaming JSON-LD parser",
   "keywords": [
     "json",
@@ -31,7 +31,7 @@
   "dependencies": {
     "@rdfjs/types": "*",
     "@types/http-link-header": "^1.0.1",
-    "@types/readable-stream":  "^2.3.13",
+    "@types/readable-stream": "^2.3.13",
     "buffer": "^6.0.3",
     "canonicalize": "^1.0.1",
     "http-link-header": "^1.0.2",

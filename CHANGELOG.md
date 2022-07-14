@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.0.0"></a>
+## [v3.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.3...v3.0.0) - 2022-07-14
+
+This release has been marked as a major change due to the transition from Node's internal `stream` API to `readable-stream`.
+Most users should experience not breakages with this change.
+
+### Changed
+* [Move away from Node.js built-ins](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/334339a800fff7feb6ce90f73b93c04bf5ac1c74)
+* [Enable tree shaking in package.json](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/a3461c4fe1d1f0983d2b6734bf94dc9132ccbcc6)
+
 <a name="v2.4.3"></a>
 ## [v2.4.3](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.2...v2.4.3) - 2022-02-23
 
