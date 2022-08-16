@@ -2,7 +2,7 @@ import * as RDF from "@rdfjs/types";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('jsonparse');
 import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil} from "jsonld-context-parser";
-import {PassThrough, Transform} from "readable-stream";
+import {PassThrough, Transform, Readable} from "readable-stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
 import {EntryHandlerInvalidFallback} from "./entryhandler/EntryHandlerInvalidFallback";
@@ -157,12 +157,18 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @return {RDF.Stream} A quad stream.
    */
   public import(stream: EventEmitter): RDF.Stream {
-    const output = new PassThrough({ readableObjectMode: true });
-    stream.on('error', (error) => parsed.emit('error', error));
-    stream.on('data', (data) => output.push(data));
-    stream.on('end', () => output.push(null));
-    const parsed = output.pipe(new JsonLdParser(this.options));
-    return parsed;
+    if('pipe' in stream) {
+      stream.on('error', (error) => parsed.emit('error', error));
+      const parsed = (<Readable>stream).pipe(new JsonLdParser(this.options));
+      return parsed;
+    } else {
+      const output = new PassThrough({ readableObjectMode: true });
+      stream.on('error', (error) => parsed.emit('error', error));
+      stream.on('data', (data) => output.push(data));
+      stream.on('end', () => output.push(null));
+      const parsed = output.pipe(new JsonLdParser(this.options));
+      return parsed;
+    }
   }
 
   public _transform(chunk: any, encoding: string, callback: (error?: Error | null, data?: any) => void): void {

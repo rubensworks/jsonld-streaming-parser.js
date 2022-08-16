@@ -2,6 +2,7 @@ import {JsonLdParser} from "../index";
 import arrayifyStream from 'arrayify-stream';
 const streamifyString = require('streamify-string');
 import * as RDF from "@rdfjs/types";
+import { EventEmitter } from 'events';
 import {DataFactory} from "rdf-data-factory";
 import each from 'jest-each';
 import "jest-rdf";
@@ -12445,10 +12446,34 @@ describe('JsonLdParser', () => {
       ]);
     });
 
+
+    it('should parse a bad stream', async () => {
+      const stream = new EventEmitter();
+      const result = parser.import(stream);
+      stream.emit("data", `
+        {
+          "@id": "http://example.org/node",
+          "http://example.org/p": "def"
+        }`);
+      stream.emit("end");
+      return expect(await arrayifyStream(result)).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode('http://example.org/node'),
+            DF.namedNode('http://example.org/p'),
+            DF.literal('def')),
+      ]);
+    });
+
     it('should forward error events', async () => {
       const stream = new PassThrough();
       stream._read = () => stream.emit('error', new Error('my error'));
       return expect(arrayifyStream(parser.import(stream))).rejects.toThrow(new Error('my error'));
+    });
+
+    it('should forward error events with a bad stream', async () => {
+      const stream = new EventEmitter();
+      const result = parser.import(stream);
+      stream.emit('error', new Error('my error'));
+      return expect(arrayifyStream(result)).rejects.toThrow(new Error('my error'));
     });
   });
 });
