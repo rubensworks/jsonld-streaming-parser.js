@@ -193,7 +193,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       if (listPointer) {
         // Terminate the list if the had at least one value
         if (listPointer.value) {
-          this.emit('data', this.util.dataFactory.quad(listPointer.value, this.util.rdfRest, this.util.rdfNil,
+          this.push(this.util.dataFactory.quad(listPointer.value, this.util.rdfRest, this.util.rdfNil,
             this.util.getDefaultGraph()));
         }
 
