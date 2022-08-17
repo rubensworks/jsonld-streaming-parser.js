@@ -12475,5 +12475,29 @@ describe('JsonLdParser', () => {
       stream.emit('error', new Error('my error'));
       return expect(arrayifyStream(result)).rejects.toThrow(new Error('my error'));
     });
+
+    it('should not flow before being requested', () => {
+      const stream = parser.import(streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "http://example.org/p": "def"
+}`));
+      expect(stream.readableFlowing).toBeNull();
+    });
+  });
+
+  describe('flow control', () => {
+    (<any> each ([
+      [true],
+      [false],
+    ])).it('should not flow before being requested', (streamingProfile: boolean) => {
+      const stream = streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "http://example.org/p": "def"
+}`).pipe(new JsonLdParser({streamingProfile}));
+      expect(stream.readableFlowing).toBeNull();
+    })
   });
 });
+
