@@ -8,10 +8,10 @@ import {JsonLdContextNormalized} from "jsonld-context-parser";
  */
 export class ContextTree {
 
-  private readonly subTrees: {[key: string]: ContextTree} = {};
+  private readonly subTrees: {[key: string | number]: ContextTree} = {};
   private context: Promise<JsonLdContextNormalized> | null;
 
-  public getContext(keys: string[]): Promise<{ context: JsonLdContextNormalized, depth: number }> | null {
+  public getContext(keys: (string | number)[]): Promise<{ context: JsonLdContextNormalized, depth: number }> | null {
     if (keys.length > 0) {
       const [head, ...tail] = keys;
       const subTree = this.subTrees[head];
@@ -25,7 +25,7 @@ export class ContextTree {
     return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
   }
 
-  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null) {
+  public setContext(keys: (string | number)[], context: Promise<JsonLdContextNormalized> | null) {
     if (keys.length === 0) {
       this.context = context;
     } else {

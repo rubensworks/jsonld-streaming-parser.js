@@ -2462,6 +2462,14 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
+json-event-parser@1.0.0-beta.1:
+  version "1.0.0-beta.1"
+  resolved "https://registry.yarnpkg.com/json-event-parser/-/json-event-parser-1.0.0-beta.1.tgz#08ca3dc6c13184012754a8ff2b7e78a0e99bd95f"
+  integrity sha512-Ylf8GZNH2ftqvzVxOv7AdZ/+hf7Wy29JWvFe2g8wAmgKfyQDlP+H10dGOgwbGmeoPVhx19WDHWq+W8bLs5a1wg==
+  dependencies:
+    buffer "^6.0.3"
+    readable-stream "^4.0.0"
+
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"

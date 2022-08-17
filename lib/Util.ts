@@ -156,7 +156,7 @@ export class Util {
    * @param needle An array to check if it is a prefix.
    * @param haystack An array to look in.
    */
-  public static isPrefixArray(needle: string[], haystack: string[]): boolean {
+  public static isPrefixArray(needle: any[], haystack: any[]): boolean {
     if (needle.length > haystack.length) {
       return false;
     }
