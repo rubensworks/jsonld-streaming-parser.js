@@ -12484,13 +12484,25 @@ describe('JsonLdParser', () => {
 }`));
       expect(stream.readableFlowing).toBeNull();
     });
+
+    it('should not start flowing when read step by step', () => {
+      const stream = parser.import(streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "http://example.org/p": "def"
+}`));
+      stream.on('readable', () => {
+        stream.read();
+        expect(stream.readableFlowing).toEqual(false);
+      });
+    });
   });
 
-  describe('flow control', () => {
-    (<any> each ([
-      [true],
-      [false],
-    ])).it('should not flow before being requested', (streamingProfile: boolean) => {
+  (<any> each ([
+    [true],
+    [false],
+  ])).describe('flow control', (streamingProfile: boolean) => {
+    it('should not flow before being requested', () => {
       const stream = streamifyString(`
 {
   "@id": "http://example.org/node",
@@ -12498,6 +12510,18 @@ describe('JsonLdParser', () => {
 }`).pipe(new JsonLdParser({streamingProfile}));
       expect(stream.readableFlowing).toBeNull();
     })
+
+    it('should not start flowing when read step by step', () => {
+      const stream = streamifyString(`
+{
+  "@id": "http://example.org/node",
+  "http://example.org/p": "def"
+}`).pipe(new JsonLdParser({streamingProfile}));
+      stream.on('readable', () => {
+        stream.read();
+        expect(stream.readableFlowing).toEqual(false);
+      });
+    });
   });
 });
 
