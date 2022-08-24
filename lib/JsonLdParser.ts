@@ -62,7 +62,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   // A promise representing the last job
   private lastOnValueJob: Promise<void>;
   // The keys inside of the JSON tree
-  private readonly jsonKeyStack: (string | number)[];
+  private readonly jsonKeyStack: (string | number | undefined)[];
   // The value inside of the JSON tree
   private readonly jsonValueStack: any[];
 
@@ -410,78 +410,70 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * This should only be called once.
    */
   protected onJsonEvent(event: JsonEvent) {
-    let key: any;
-    let value: any;
     switch (event.type) {
     case 'open-object':
-      this.insertInStack(event.key, {}, true);
-      return;
+      this.jsonKeyStack.push(event.key);
+      this.insertContainerInValueStack(event.key, {});
+      break;
     case 'open-array':
-      this.insertInStack(event.key, [], true);
-      return;
+      this.jsonKeyStack.push(event.key);
+      this.insertContainerInValueStack(event.key, []);
+      break;
     case 'value':
-      this.insertInStack(event.key, event.value, false);
-      key = event.key;
-      value = event.value;
+      if (!this.jsonKeyStack.includes('@context')) { // Don't parse inner nodes inside @context
+        this.onValue(event.key, event.value, this.jsonKeyStack);
+      }
+      if (typeof event.key === 'string') {
+        this.jsonValueStack[this.jsonValueStack.length - 1][event.key] = event.value;
+      } else if (typeof event.key === 'number') {
+        this.jsonValueStack[this.jsonValueStack.length - 1].push(event.value);
+      }
       break;
     case 'close-object':
     case 'close-array':
-      key = this.jsonKeyStack[this.jsonKeyStack.length - 1];
-      value = this.jsonValueStack[this.jsonValueStack.length - 1];
-    }
-
-    const depth = this.jsonKeyStack.length;
-    const keys = <string[]><any[]>[undefined, ...this.jsonKeyStack];
-
-    if (!this.isParsingContextInner()) { // Don't parse inner nodes inside @context
-      const valueJobCb = () => this.newOnValueJob(keys, value, depth, true);
-      if (!this.parsingContext.streamingProfile
-          && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
-          // If an out-of-order context is allowed,
-          // we have to buffer everything.
-          // We store jobs for @context's and @type's separately,
-          // because at the end, we have to process them first.
-          // We also handle @type because these *could* introduce a type-scoped context.
-        if (key === '@context') {
-          let jobs = this.contextJobs[depth];
-          if (!jobs) {
-            jobs = this.contextJobs[depth] = [];
-          }
-          jobs.push(valueJobCb);
-        } else if (key === '@type'
-            || typeof key === 'number' && this.jsonKeyStack[this.jsonKeyStack.length - 2] === '@type') { // Also capture @type with array values
-            // Remove @type from keys, because we want it to apply to parent later on
-          this.typeJobs.push({ job: valueJobCb, keys: keys.slice(0, keys.length - 1) });
-        } else {
-          this.contextAwaitingJobs.push({ job: valueJobCb, keys });
-        }
-      } else {
-          // Make sure that our value jobs are chained synchronously
-        this.lastOnValueJob = this.lastOnValueJob.then(valueJobCb);
+      const key = this.jsonKeyStack.pop();
+      const value = this.jsonValueStack.pop();
+      if (!this.jsonKeyStack.includes('@context')) { // Don't parse inner nodes inside @context
+        this.onValue(key, value, this.jsonKeyStack);
       }
-
-        // Execute all buffered jobs on deeper levels
-      if (!this.parsingContext.streamingProfile && depth === 0) {
-        this.lastOnValueJob = this.lastOnValueJob
-            .then(() => this.executeBufferedJobs());
-      }
-    }
-
-    switch (event.type) {
-    case 'close-object':
-    case 'close-array':
-      this.jsonValueStack.pop();
-    case "value":
-      this.jsonKeyStack.pop();
     }
   }
 
-  /**
-   * Check if the parser is currently parsing an element that is part of an @context entry.
-   * @return {boolean} A boolean.
-   */
-  protected isParsingContextInner() {
-    return this.jsonKeyStack.slice(0, -1).includes('@context');
+  protected onValue(key: string | number | undefined, value: any, keyStack: (string | number | undefined)[]) {
+    const depth = keyStack.length;
+    const keys = <string[]><any[]>[...keyStack, key];
+
+    const valueJobCb = () => this.newOnValueJob(keys, value, depth, true);
+    if (!this.parsingContext.streamingProfile
+          && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
+        // If an out-of-order context is allowed,
+        // we have to buffer everything.
+        // We store jobs for @context's and @type's separately,
+        // because at the end, we have to process them first.
+        // We also handle @type because these *could* introduce a type-scoped context.
+      if (key === '@context') {
+        let jobs = this.contextJobs[depth];
+        if (!jobs) {
+          jobs = this.contextJobs[depth] = [];
+        }
+        jobs.push(valueJobCb);
+      } else if (key === '@type'
+            || typeof key === 'number' && keys[keys.length - 2] === '@type') { // Also capture @type with array values
+          // Remove @type from keys, because we want it to apply to parent later on
+        this.typeJobs.push({ job: valueJobCb, keys: keys.slice(0, keys.length - 1) });
+      } else {
+        this.contextAwaitingJobs.push({ job: valueJobCb, keys });
+      }
+    } else {
+        // Make sure that our value jobs are chained synchronously
+      this.lastOnValueJob = this.lastOnValueJob.then(valueJobCb);
+    }
+
+      // Execute all buffered jobs on deeper levels
+    if (!this.parsingContext.streamingProfile && depth === 0) {
+      this.lastOnValueJob = this.lastOnValueJob
+            .then(() => this.executeBufferedJobs());
+    }
   }
 
   /**
@@ -537,17 +529,13 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     }
   }
 
-  private insertInStack(key: string | number | undefined, value: any, push: boolean): void {
+  private insertContainerInValueStack(key: string | number | undefined, value: any): void {
     if (typeof key === 'string') {
-      this.jsonKeyStack.push(key);
       this.jsonValueStack[this.jsonValueStack.length - 1][key] = value;
     } else if (typeof key === 'number') {
-      this.jsonKeyStack.push(key);
       this.jsonValueStack[this.jsonValueStack.length - 1].push(value);
     }
-    if (push) {
-      this.jsonValueStack.push(value);
-    }
+    this.jsonValueStack.push(value);
   }
 }
 
