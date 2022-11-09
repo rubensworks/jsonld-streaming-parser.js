@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.0.1"></a>
+## [v3.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.0.0...v3.0.1) - 2022-11-09
+
+### Fixed
+* [Include source map files in packed files](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/a7802f842522aa67241c227b8803fcd08b6ccff9)
+
+### Changed
+* [Use .push instead of .emit('data') where possible](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/7233b16fc316943f399a88607e5079ac236491af)
+* [Use .pipe in .import if available](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/df0af6d8493b53aea2fcb6d8fa2fa9f1b64b2db9)
+
 <a name="v3.0.0"></a>
 ## [v3.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v2.4.3...v3.0.0) - 2022-07-14
 
