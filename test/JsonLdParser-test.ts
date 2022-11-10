@@ -10,8 +10,17 @@ import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-p
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 import { ParsingContext } from '../lib/ParsingContext';
+// @ts-ignore The types are not updated yet
+import {pipeline, Readable} from "readable-stream";
+import {JsonEventParser} from "json-event-parser";
 
 const DF = new DataFactory<RDF.BaseQuad>();
+
+function pipeStr(input: Readable, parser: JsonLdParser): Readable {
+  return pipeline(input, new JsonEventParser(), parser, (err: any) => {
+    // We ignore the error?
+  });
+}
 
 describe('JsonLdParser', () => {
 
@@ -206,7 +215,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
         DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
           DF.namedNode('http://ex.org/g')),
       ]);
@@ -230,23 +239,23 @@ describe('JsonLdParser', () => {
       describe('an empty document with', () => {
         it('an empty object', async () => {
           const stream = streamifyString(`{}`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('a valid processing mode', async () => {
           const stream = streamifyString(`{ "@context": { "@version": 1.1 } }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('a non-default processing mode when configured as such', async () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`{ "@context": { "@version": 1.0 } }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('an empty array', async () => {
           const stream = streamifyString(`[]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
       });
 
@@ -256,7 +265,7 @@ describe('JsonLdParser', () => {
 {
   "@unknown": "dummy"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('should be ignored when mapped via the context', async () => {
@@ -268,7 +277,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": "should not be here"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.com/IgnoreTest')),
           ]);
@@ -284,7 +293,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": "should be here"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.com/IgnoreTest')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://example.org/ignoreMe'),
@@ -301,7 +310,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": "should not be here"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.com/IgnoreTest')),
           ]);
@@ -316,7 +325,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": {"http://example.org/text": "should not be here"}
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.com/IgnoreTest')),
           ]);
@@ -332,7 +341,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.com/IgnoreTest",
   "ignoreMe": {"text": "should be here"}
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.com/IgnoreTest')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://example.org/ignoreMe'),
@@ -349,7 +358,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -359,7 +368,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": {}
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
           ]);
         });
@@ -370,7 +379,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -381,7 +390,7 @@ describe('JsonLdParser', () => {
   "@id": "not-an-iri",
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with an o-o-o @id that has an invalid IRI', async () => {
@@ -390,7 +399,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1",
   "@id": "not-an-iri"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id but invalid predicate IRI that should be skipped', async () => {
@@ -399,7 +408,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with blank node @id', async () => {
@@ -408,7 +417,7 @@ describe('JsonLdParser', () => {
   "@id": "_:myid",
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -419,7 +428,7 @@ describe('JsonLdParser', () => {
   "@type": "_:type",
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toEqualRdfQuadArray([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toEqualRdfQuadArray([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.blankNode('type')),
@@ -432,7 +441,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": "_:obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('_:obj1')),
           ]);
         });
@@ -443,7 +452,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@id": "_:obj1" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('obj1')),
           ]);
         });
@@ -454,7 +463,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": true
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('true', DF.namedNode(Util.XSD_BOOLEAN))),
           ]);
@@ -466,7 +475,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": 2.2
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('2.2E0', DF.namedNode(Util.XSD_DOUBLE))),
           ]);
@@ -481,7 +490,7 @@ describe('JsonLdParser', () => {
     "@type": "http://ex.org/mytype"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -496,7 +505,7 @@ describe('JsonLdParser', () => {
     "@type": "http://ex.org/ mytype"
   }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Invalid \'@type\' value, got \'"http://ex.org/ mytype"\'', ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
@@ -512,7 +521,7 @@ describe('JsonLdParser', () => {
     "@type": "ex:mytype"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -529,7 +538,7 @@ describe('JsonLdParser', () => {
     "@value": "my value"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value')),
           ]);
@@ -546,7 +555,7 @@ describe('JsonLdParser', () => {
     "@value": null
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id and a null value', async () => {
@@ -558,7 +567,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": null
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id and a prefixed, context-typed literal', async () => {
@@ -571,7 +580,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -587,7 +596,7 @@ describe('JsonLdParser', () => {
   "@id":  "http://greggkellogg.net/foaf#me",
   "created":  "1957-02-27"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://greggkellogg.net/foaf#me'), DF.namedNode('http://purl.org/dc/terms/created'),
               DF.literal('1957-02-27', DF.namedNode('http://www.w3.org/2001/XMLSchema#date'))),
           ]);
@@ -603,7 +612,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'en-us')),
           ]);
@@ -619,7 +628,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'en-US')),
           ]);
@@ -636,7 +645,7 @@ describe('JsonLdParser', () => {
   "p": "my value"
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, normalizeLanguageTags: true });
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'en-us')),
           ]);
@@ -653,7 +662,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'en-us')),
           ]);
@@ -670,7 +679,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'nl-be')),
           ]);
@@ -687,7 +696,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value')),
           ]);
@@ -706,7 +715,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -723,7 +732,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -740,7 +749,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -757,7 +766,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -780,7 +789,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#_rtl'))),
               ]);
@@ -797,7 +806,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))),
               ]);
@@ -814,7 +823,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#_rtl'))),
               ]);
@@ -831,7 +840,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#_ltr'))),
               ]);
@@ -848,7 +857,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -866,7 +875,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', 'en-us')),
               ]);
@@ -889,7 +898,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.blankNode('b1')),
                 DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -910,7 +919,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.blankNode('b1')),
                 DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -933,7 +942,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.blankNode('b1')),
                 DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -954,7 +963,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.blankNode('b1')),
                 DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -975,7 +984,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -993,7 +1002,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "my value"
 }`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', 'en-us')),
               ]);
@@ -1015,7 +1024,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('a')),
           ]);
@@ -1034,7 +1043,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('true', DF.namedNode(Util.XSD_BOOLEAN))),
           ]);
@@ -1053,7 +1062,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('false', DF.namedNode(Util.XSD_BOOLEAN))),
           ]);
@@ -1072,7 +1081,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with a typed string', async () => {
@@ -1087,7 +1096,7 @@ describe('JsonLdParser', () => {
     "@type": "http://example.org/type"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1105,7 +1114,7 @@ describe('JsonLdParser', () => {
     "@value": "typed literal Prop"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1125,7 +1134,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1145,7 +1154,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1165,7 +1174,7 @@ describe('JsonLdParser', () => {
     }
   ]]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1185,7 +1194,7 @@ describe('JsonLdParser', () => {
     }
   ]]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('typed literal Prop', DF.namedNode('http://example.org/type'))),
           ]);
@@ -1200,7 +1209,7 @@ describe('JsonLdParser', () => {
     "@value": "my value"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -1218,7 +1227,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1237,7 +1246,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/mygraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1254,7 +1263,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -1272,7 +1281,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1291,7 +1300,7 @@ describe('JsonLdParser', () => {
   }],
   "@id": "http://ex.org/mygraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1308,7 +1317,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -1326,7 +1335,7 @@ describe('JsonLdParser', () => {
     }
   }]]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1345,7 +1354,7 @@ describe('JsonLdParser', () => {
   }]],
   "@id": "http://ex.org/mygraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -1362,7 +1371,7 @@ describe('JsonLdParser', () => {
     }
   }]]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -1374,7 +1383,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1",
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -1388,7 +1397,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
           ]);
         });
@@ -1401,7 +1410,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myid')),
           ]);
         });
@@ -1415,7 +1424,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
           ]);
         });
@@ -1430,7 +1439,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode(),
               DF.namedNode('http://ex.org/g')),
           ]);
@@ -1446,7 +1455,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/g"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode(),
               DF.namedNode('http://ex.org/g')),
           ]);
@@ -1462,7 +1471,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid')),
           ]);
@@ -1479,7 +1488,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/g')),
           ]);
@@ -1496,7 +1505,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/g"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/g')),
           ]);
@@ -1512,7 +1521,7 @@ describe('JsonLdParser', () => {
   },
   "p": { "@id": "http://ex.org/obj1" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
           ]);
         });
@@ -1526,7 +1535,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
    "p": { "@id": "http://ex.org/obj1" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myid')),
           ]);
         });
@@ -1541,7 +1550,7 @@ describe('JsonLdParser', () => {
     "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
           ]);
         });
@@ -1557,7 +1566,7 @@ describe('JsonLdParser', () => {
     "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode(),
               DF.namedNode('http://ex.org/g')),
           ]);
@@ -1574,7 +1583,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/g"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode(),
               DF.namedNode('http://ex.org/g')),
           ]);
@@ -1591,7 +1600,7 @@ describe('JsonLdParser', () => {
     "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid')),
           ]);
@@ -1609,7 +1618,7 @@ describe('JsonLdParser', () => {
     "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/g')),
           ]);
@@ -1627,7 +1636,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/g"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/g')),
           ]);
@@ -1644,7 +1653,7 @@ describe('JsonLdParser', () => {
      "p": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/obj1')),
           ]);
         });
@@ -1661,7 +1670,7 @@ describe('JsonLdParser', () => {
      "p2": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/pred2'), DF.namedNode('http://ex.org/obj1')),
           ]);
@@ -1680,7 +1689,7 @@ describe('JsonLdParser', () => {
     { "p2": { "@id": "http://ex.org/obj2" } }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred2'), DF.namedNode('http://ex.org/obj1')),
 
@@ -1699,7 +1708,7 @@ describe('JsonLdParser', () => {
   "term": {"@list": ["http://example/bar"]}
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, allowSubjectList: false });
-          return expect(arrayifyStream(stream.pipe(parser))).rejects
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects
             .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
               ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
         });
@@ -1714,7 +1723,7 @@ describe('JsonLdParser', () => {
   "term": {"@list": ["http://example/bar"]}
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, allowSubjectList: true });
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://example/reverse'),
               DF.namedNode('http://example/foo')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
@@ -1734,7 +1743,7 @@ describe('JsonLdParser', () => {
     "view": {"@id": "http://ex.org/obj2" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj2'), DF.namedNode('https://cdn.jsdelivr.net/gh/treecg/specification@master/tree.ttl#view'), DF.namedNode('http://ex.org/obj1')),
           ]);
         });
@@ -1754,7 +1763,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:p1'), DF.namedNode('ex:connector')),
             DF.quad(DF.namedNode('ex:reversed'), DF.namedNode('ex:p2'), DF.namedNode('ex:connector')),
           ]);
@@ -1768,7 +1777,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1",
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
           ]);
@@ -1781,7 +1790,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1",
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/sub1'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex.org/sub1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
           ]);
@@ -1793,7 +1802,7 @@ describe('JsonLdParser', () => {
   "@type": "http://ex.org/obj1",
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/obj1')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -1807,7 +1816,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/sub1",
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/sub1'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex.org/sub1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -1829,7 +1838,7 @@ describe('JsonLdParser', () => {
     { "@id": "http://ex.org/obj2" }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/obj2')),
           ]);
@@ -1848,7 +1857,7 @@ describe('JsonLdParser', () => {
     { "p2": "http://ex.org/obj2" }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('b1')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj1')),
 
@@ -1864,7 +1873,7 @@ describe('JsonLdParser', () => {
         it('with string in array', async () => {
           const stream = streamifyString(`
 [ "abc" ]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with string in @set array', async () => {
@@ -1874,7 +1883,7 @@ describe('JsonLdParser', () => {
     "abc", "cde"
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with string in @list array', async () => {
@@ -1884,7 +1893,7 @@ describe('JsonLdParser', () => {
     "abc", "cde"
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @list should also remove inner nodes', async () => {
@@ -1898,7 +1907,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with string in @list array in @graph array', async () => {
@@ -1912,13 +1921,13 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with typed @value', async () => {
           const stream = streamifyString(`
 { "@value": "free-floating value typed value", "@type": "http://example.com/type" }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with typed @value in @graph', async () => {
@@ -1928,7 +1937,7 @@ describe('JsonLdParser', () => {
     { "@value": "free-floating value typed value", "@type": "http://example.com/type" }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
       });
 
@@ -1938,7 +1947,7 @@ describe('JsonLdParser', () => {
 [{
   "http://ex.org/pred1": "http://ex.org/obj1"
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -1949,7 +1958,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": "http://ex.org/obj1"
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -1960,7 +1969,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": true
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('true', DF.namedNode(Util.XSD_BOOLEAN))),
           ]);
@@ -1972,7 +1981,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": 2.2
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('2.2E0', DF.namedNode(Util.XSD_DOUBLE))),
           ]);
@@ -1987,7 +1996,7 @@ describe('JsonLdParser', () => {
     "@type": "http://ex.org/mytype"
   }
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype'))),
           ]);
@@ -2002,7 +2011,7 @@ describe('JsonLdParser', () => {
     "@language": "en-us"
   }
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', 'en-us')),
           ]);
@@ -2016,7 +2025,7 @@ describe('JsonLdParser', () => {
     "@language": "en-us"
   }
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         describe('for @direction in @value', () => {
@@ -2033,7 +2042,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', 'en-us')),
               ]);
@@ -2048,7 +2057,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value')),
               ]);
@@ -2072,7 +2081,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#en-us_rtl'))),
               ]);
@@ -2087,7 +2096,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-              return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                   DF.literal('my value', DF.namedNode('https://www.w3.org/ns/i18n#_rtl'))),
               ]);
@@ -2113,7 +2122,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -2134,7 +2143,7 @@ describe('JsonLdParser', () => {
     "@direction": "rtl"
   }
 }]`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.blankNode('b1'), DF.namedNode(Util.RDF + 'value'),
@@ -2152,7 +2161,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": "http://ex.org/obj1",
   "@id": "http://ex.org/myid"
 }]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -2166,7 +2175,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred2": "http://ex.org/obj2",
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2181,7 +2190,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred2": "http://ex.org/obj2",
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2196,7 +2205,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred2": "http://ex.org/obj2",
   "http://ex.org/pred3": "http://ex.org/obj3"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2212,7 +2221,7 @@ describe('JsonLdParser', () => {
   { "http://ex.org/pred2": "http://ex.org/obj2" },
   { "http://ex.org/pred3": "http://ex.org/obj3" }
 ]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2226,7 +2235,7 @@ describe('JsonLdParser', () => {
   { "@id": "http://ex/B", "http://ex.org/pred2": "http://ex.org/obj2" },
   { "@id": "http://ex/C", "http://ex.org/pred3": "http://ex.org/obj3" }
 ]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex/A'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex/B'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex/C'), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2240,7 +2249,7 @@ describe('JsonLdParser', () => {
   { "http://ex.org/pred2": "http://ex.org/obj2", "@id": "http://ex/B" },
   { "http://ex.org/pred3": "http://ex.org/obj3", "@id": "http://ex/C" }
 ]`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex/A'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             DF.quad(DF.namedNode('http://ex/B'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex/C'), DF.namedNode('http://ex.org/pred3'), DF.literal('http://ex.org/obj3')),
@@ -2254,7 +2263,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": [ "a", "b", "c" ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('c')),
@@ -2267,7 +2276,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": [ "a", "b", "c" ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('c')),
@@ -2280,7 +2289,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": [ "a", "b", "c" ],
   "@id": "http://ex.org/myid",
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('c')),
@@ -2296,7 +2305,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
               DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
@@ -2309,7 +2318,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": { "@set": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([]);
           });
 
@@ -2318,7 +2327,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": [ { "@set": [ ] } ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([]);
           });
 
@@ -2328,7 +2337,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
@@ -2342,7 +2351,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
@@ -2357,7 +2366,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2377,7 +2386,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2394,7 +2403,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
@@ -2408,7 +2417,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
@@ -2420,7 +2429,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2441,7 +2450,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2459,7 +2468,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2475,7 +2484,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2488,7 +2497,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2509,7 +2518,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2525,7 +2534,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2546,7 +2555,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "ignored": { "@list": [ null, "a", null, "b", null, "c", null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([]);
           });
 
@@ -2559,7 +2568,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ { "@value": null } ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2575,7 +2584,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": [ null, "a", null, "b", null, "c", null ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2596,7 +2605,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": [ { "@value": null } ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2609,7 +2618,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2630,7 +2639,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "value" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('l')),
@@ -2650,7 +2659,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2666,7 +2675,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ { "@value": null } ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
@@ -2683,7 +2692,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "test" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('l')),
@@ -2699,7 +2708,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred1": [{ "@list": [ "a", "b", "c" ] }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2719,7 +2728,7 @@ describe('JsonLdParser', () => {
   "@context": { "p": {"@id": "http://ex.org/pred1", "@container": "@list" } },
   "p": [{ "@list": [ "a", "b", "c" ] }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -2742,7 +2751,7 @@ describe('JsonLdParser', () => {
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -2759,7 +2768,7 @@ describe('JsonLdParser', () => {
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz1", "baz2"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -2781,7 +2790,7 @@ describe('JsonLdParser', () => {
     {"@list": ["baz2"]}
   ]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.0.a')),
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l0.b')),
@@ -2806,7 +2815,7 @@ describe('JsonLdParser', () => {
     {"@list": ["baz2.1", "baz2.2"]}
   ]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.0.a')),
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l0.b')),
@@ -2832,7 +2841,7 @@ describe('JsonLdParser', () => {
 {
   "http://example.com/foo": {"@list": [{"@list": []}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -2846,7 +2855,7 @@ describe('JsonLdParser', () => {
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz"]}, { "@id": "ex:bla" }]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('lr1')),
@@ -2865,7 +2874,7 @@ describe('JsonLdParser', () => {
 {
   "http://example.com/foo": {"@list": [{ "@id": "ex:bla" }, {"@list": ["baz"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.namedNode('ex:bla')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('lr1')),
@@ -2889,7 +2898,7 @@ describe('JsonLdParser', () => {
   },
   "p": [ "a", "b", "c" ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2909,7 +2918,7 @@ describe('JsonLdParser', () => {
   },
   "p": []
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
@@ -2924,7 +2933,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": [ "a", "b", "c" ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2945,7 +2954,7 @@ describe('JsonLdParser', () => {
   "p": [ "a", "b", "c" ],
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
@@ -2967,7 +2976,7 @@ describe('JsonLdParser', () => {
   },
   "p": "a"
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -2984,7 +2993,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "a"
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3001,7 +3010,7 @@ describe('JsonLdParser', () => {
   "p": "a",
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3019,7 +3028,7 @@ describe('JsonLdParser', () => {
   },
   "p": { "@list": "a" }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3036,7 +3045,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": "a" }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3053,7 +3062,7 @@ describe('JsonLdParser', () => {
   "p": { "@list": "a" },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3070,7 +3079,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": [["baz"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3089,7 +3098,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": [["baz1", "baz2"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3110,7 +3119,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": [["baz1.1"],["baz2.1"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.1')),
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1.2')),
@@ -3134,7 +3143,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": [["baz1.1","baz1.2"],["baz2.1","baz2.2"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.1')),
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1.2')),
@@ -3164,7 +3173,7 @@ describe('JsonLdParser', () => {
     "ex:p": ["a"]
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('ex:p'), DF.literal('a')),
 
@@ -3184,7 +3193,7 @@ describe('JsonLdParser', () => {
     "ex:p": []
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3200,7 +3209,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": [{}]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3216,7 +3225,7 @@ describe('JsonLdParser', () => {
   "@id": "ex:id",
   "foo": []
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
             ]);
@@ -3233,7 +3242,7 @@ describe('JsonLdParser', () => {
     "foo": ["baz"]
   }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3253,7 +3262,7 @@ describe('JsonLdParser', () => {
     "foo": []
   }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3274,7 +3283,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3294,7 +3303,7 @@ describe('JsonLdParser', () => {
     "foo": []
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
+            const output = await arrayifyStream(pipeStr(stream, parser));
             return expect(output).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3322,7 +3331,7 @@ describe('JsonLdParser', () => {
     }
   ],
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           expect(output).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('abc')),
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3347,7 +3356,7 @@ describe('JsonLdParser', () => {
     }
   ],
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           expect(output).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
@@ -3365,7 +3374,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           return expect(output).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('b')),
@@ -3380,7 +3389,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           return expect(output).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('a')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3395,7 +3404,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           return expect(output).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('a')),
@@ -3410,7 +3419,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myinnerid')),
@@ -3426,7 +3435,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -3443,7 +3452,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -3459,7 +3468,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/myinnerid')),
@@ -3475,7 +3484,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -3492,7 +3501,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
               DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -3510,7 +3519,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('ABC')),
           ]);
@@ -3528,7 +3537,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('ABC')),
           ]);
@@ -3544,7 +3553,7 @@ describe('JsonLdParser', () => {
      "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
           ]);
@@ -3559,7 +3568,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3574,7 +3583,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id with inner subject @id that has an invalid IRI', async () => {
@@ -3586,7 +3595,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id with inner o-o-o subject @id that has an invalid IRI', async () => {
@@ -3598,7 +3607,7 @@ describe('JsonLdParser', () => {
     "@id": "not-an-iri"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @id with inner subject @id and @type', async () => {
@@ -3610,7 +3619,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
@@ -3626,7 +3635,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with out-of-order @id with inner subject @id', async () => {
@@ -3638,7 +3647,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3653,7 +3662,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "not-an-iri"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('without @id with out-of-order inner subject @id', async () => {
@@ -3664,7 +3673,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
           ]);
@@ -3679,7 +3688,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myinnerid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3694,7 +3703,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3707,7 +3716,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
           ]);
         });
@@ -3720,7 +3729,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3734,7 +3743,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
           ]);
@@ -3748,7 +3757,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.blankNode('g1')),
             DF.quad(DF.blankNode('g1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3763,7 +3772,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1",
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.blankNode('g1')),
             DF.quad(DF.blankNode('g1'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3779,7 +3788,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3795,7 +3804,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1",
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3811,7 +3820,7 @@ describe('JsonLdParser', () => {
   "http://ex.org/pred2": "http://ex.org/obj2",
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3827,7 +3836,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
@@ -3845,7 +3854,7 @@ describe('JsonLdParser', () => {
      "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3863,7 +3872,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3881,7 +3890,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3898,7 +3907,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3916,7 +3925,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3934,7 +3943,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred2'),
@@ -3950,7 +3959,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'), DF.defaultGraph()),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2'), DF.defaultGraph()),
           ]);
@@ -3965,7 +3974,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2'),
@@ -3982,7 +3991,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.namedNode('http://ex.org/myid')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2'),
@@ -3999,7 +4008,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred2": "http://ex.org/obj2"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.blankNode('g1')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2'),
@@ -4017,7 +4026,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1'),
               DF.blankNode('g1')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2'),
@@ -4038,7 +4047,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.blankNode()),
           ]);
@@ -4055,7 +4064,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.blankNode()),
           ]);
@@ -4072,7 +4081,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.blankNode()),
           ]);
@@ -4089,7 +4098,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4107,7 +4116,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4125,7 +4134,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4142,7 +4151,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/mymiddleid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4160,7 +4169,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/mymiddleid"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4178,7 +4187,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('http://ex.org/obj1'), DF.namedNode('http://ex.org/mymiddleid')),
           ]);
@@ -4201,7 +4210,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner'),
               DF.namedNode('http://ex.org/mygraph')),
@@ -4226,7 +4235,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/mygraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner'),
               DF.namedNode('http://ex.org/mygraph')),
@@ -4250,7 +4259,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner')),
             DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://ex.org/pred2'),
@@ -4273,7 +4282,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner'),
               DF.namedNode('http://ex.org/mygraph')),
@@ -4292,7 +4301,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myid"
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/mytype'),
@@ -4309,7 +4318,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myid"
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/mytype1'),
@@ -4330,7 +4339,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/myid"
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/mytype2'),
@@ -4353,7 +4362,7 @@ describe('JsonLdParser', () => {
   }],
   "@id": "http://ex.org/mygraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner'),
               DF.namedNode('http://ex.org/mygraph')),
@@ -4377,7 +4386,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myidinner')),
             DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://ex.org/pred2'),
@@ -4406,7 +4415,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid0'), DF.namedNode('http://vocab0.org/pred0'),
               DF.literal('abc0')),
             DF.quad(DF.namedNode('http://ex.org/myid1'), DF.namedNode('http://vocab1.org/pred1'),
@@ -4437,7 +4446,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid0'), DF.namedNode('http://vocab0.org/pred0'),
               DF.literal('abc0')),
             DF.quad(DF.namedNode('http://ex.org/myid1'), DF.namedNode('http://vocab1.org/pred1'),
@@ -4473,7 +4482,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid0'), DF.namedNode('http://vocab0.org/pred0'),
               DF.literal('abc0')),
             DF.quad(DF.namedNode('http://ex.org/myid1'), DF.namedNode('http://vocab1.org/pred1'),
@@ -4500,7 +4509,7 @@ describe('JsonLdParser', () => {
   ]
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('ex:s'), DF.namedNode('ex:p1'), DF.blankNode('b0')),
             DF.quad(DF.blankNode('b0'), DF.namedNode('ex:p2'), DF.blankNode('b1')),
           ]);
@@ -4515,7 +4524,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with a single unrelated triple', async () => {
@@ -4526,7 +4535,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -4539,7 +4548,7 @@ describe('JsonLdParser', () => {
   },
   "SomeTerm": "http://ex.org/obj1"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.literal('http://ex.org/obj1')),
           ]);
         });
@@ -4552,7 +4561,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with a single unrelated triple', async () => {
@@ -4568,7 +4577,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/obj1"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/obj1')),
             ]);
           });
@@ -4586,7 +4595,7 @@ describe('JsonLdParser', () => {
     "@id": "http://ex.org/obj1"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
             ]);
           });
@@ -4605,7 +4614,7 @@ describe('JsonLdParser', () => {
     "SomeInnerTerm": "abc"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://example.org/SomeInnerTerm'),
                 DF.literal('abc')),
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
@@ -4626,7 +4635,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "abc"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://example.org/SomeInnerTerm'),
                 DF.literal('abc')),
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
@@ -4647,7 +4656,7 @@ describe('JsonLdParser', () => {
   }
 }`);
             parser.parsingContext.contextParser.parse = () => Promise.reject(new Error('Dummy parsing error'));
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with two separate inner contexts at the same level', async () => {
@@ -4669,7 +4678,7 @@ describe('JsonLdParser', () => {
     "SomeInnerTerm": "http://ex.org/obj2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/s'), DF.namedNode('http://ex.org/p1'),
                 DF.namedNode('http://ex.org/obj11')),
               DF.quad(DF.namedNode('http://ex.org/obj11'), DF.namedNode('http://example.org/SomeInnerTerm1'),
@@ -4707,7 +4716,7 @@ describe('JsonLdParser', () => {
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory: DF,
             });
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example.org/document-base-overwritten'),
                 DF.namedNode('http://example.com/vocab#property'),
                 DF.namedNode('https://json-ld.org/test-suite/document-relative2')),
@@ -4755,7 +4764,7 @@ describe('JsonLdParser', () => {
               dataFactory: DF,
               streamingProfileAllowOutOfOrderPlainType: true,
             });
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example.org/document-base-overwritten'),
                 DF.namedNode('http://example.com/vocab#property'),
                 DF.namedNode('https://json-ld.org/test-suite/document-relative')),
@@ -4796,7 +4805,7 @@ describe('JsonLdParser', () => {
               baseIRI: 'https://json-ld.org/test-suite/tests/toRdf-0100-in.jsonld',
               dataFactory: DF,
             });
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example.org/s'),
                 DF.namedNode('http://example.org/p'),
                 DF.namedNode('https://json-ld.org/test-suite/document-relative')),
@@ -4811,7 +4820,7 @@ describe('JsonLdParser', () => {
     "@base": "http://example.org/"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
         });
 
         it('with @base and @vocab with triples', async () => {
@@ -4824,7 +4833,7 @@ describe('JsonLdParser', () => {
   "@id": "",
   "pred": { "@id": "bla" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/'), DF.namedNode('http://ex.org/pred'),
               DF.namedNode('http://example.org/bla')),
           ]);
@@ -4840,7 +4849,7 @@ describe('JsonLdParser', () => {
   "@id": "http://abc",
   "pred": { "@id": "http://bla" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://abc'), DF.namedNode('http://ex.org/pred'),
               DF.namedNode('http://bla')),
           ]);
@@ -4857,7 +4866,7 @@ describe('JsonLdParser', () => {
   "pred": { "@id": "bla" },
   "http://ex.org/pred": { "@id": "bla" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/'), DF.namedNode('http://ex.org/pred'),
               DF.namedNode('http://example.org/bla')),
           ]);
@@ -4873,7 +4882,7 @@ describe('JsonLdParser', () => {
   "@type": "bla",
   "@id": ""
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/bla')),
@@ -4890,7 +4899,7 @@ describe('JsonLdParser', () => {
   "@id": "",
   "http://ex.org/p": { "@value": "val", "@type": "bla" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/'),
               DF.namedNode('http://ex.org/p'),
               DF.literal('val', DF.namedNode('http://example.org/bla'))),
@@ -4908,7 +4917,7 @@ describe('JsonLdParser', () => {
   "pred": "http://bla",
   "ignore": "http://bla"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://abc'), DF.namedNode('http://example.org/pred'),
               DF.literal('http://bla')),
           ]);
@@ -4925,7 +4934,7 @@ describe('JsonLdParser', () => {
   "pred": "http://bla",
   "ignore": "http://bla"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://abc'), DF.namedNode('http://example.org/pred'),
               DF.literal('http://bla')),
           ]);
@@ -4942,7 +4951,7 @@ describe('JsonLdParser', () => {
   "pred": { "@id": "http://bla" },
   "ignore": { "@id": "http://bla" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://abc'), DF.namedNode('http://example.org/pred'),
               DF.namedNode('http://bla')),
           ]);
@@ -4961,7 +4970,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example.org/places#BrewEats",
   "name": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/places#BrewEats'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example/document#Restaurant')),
@@ -4982,7 +4991,7 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/places#BrewEats'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example/document#Restaurant')),
@@ -5003,7 +5012,7 @@ describe('JsonLdParser', () => {
   "@type": "Restaurant",
   "name": "Brew Eats"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
             new Error('Relative vocab expansion for term \'Restaurant\' with vocab \'#\' is not allowed.'));
         });
       });
@@ -5017,7 +5026,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('http://ex.org/compact-def'),
               DF.literal('Brew Eats')),
@@ -5032,7 +5041,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('abc:def'),
               DF.literal('Brew Eats')),
@@ -5047,7 +5056,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('abc:def'),
               DF.literal('Brew Eats')),
@@ -5062,7 +5071,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('abc:def'),
               DF.literal('Brew Eats')),
@@ -5077,7 +5086,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('http://ex.org/compact/def'),
               DF.literal('Brew Eats')),
@@ -5093,7 +5102,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('abc:def'),
               DF.literal('Brew Eats')),
@@ -5109,7 +5118,7 @@ describe('JsonLdParser', () => {
   },
   "abc:def": "Brew Eats"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('http://example.org/places#BrewEats'),
               DF.namedNode('abc:def'),
               DF.literal('Brew Eats')),
@@ -5133,7 +5142,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-        return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
           DF.quad(DF.namedNode('http://abc'), DF.namedNode('http://example.org/pred1'),
             DF.namedNode('http://bla')),
         ]);
@@ -5154,7 +5163,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.literal('http://ex.org/obj1')),
             ]);
           });
@@ -5167,7 +5176,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.literal('http://ex.org/obj1')),
             ]);
           });
@@ -5182,7 +5191,7 @@ describe('JsonLdParser', () => {
     "@vocab":  "http://ex.org/"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example.org/'), DF.namedNode('http://ex.org/pred'),
                 DF.namedNode('http://example.org/bla')),
             ]);
@@ -5197,7 +5206,7 @@ describe('JsonLdParser', () => {
   },
   "term": "value of term"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://example.com/anotherVocab#term'),
                 DF.literal('value of term')),
             ]);
@@ -5214,7 +5223,7 @@ describe('JsonLdParser', () => {
   },
   "term": "value of term"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://example.com/anotherVocab#term'),
                 DF.literal('value of term')),
             ]);
@@ -5232,7 +5241,7 @@ describe('JsonLdParser', () => {
   },
   "date": "2011-01-25T00:00:00Z"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://vocab.org/date'),
                 DF.literal('2011-01-25T00:00:00Z', DF.namedNode('http://vocab.org/dateTime'))),
             ]);
@@ -5249,7 +5258,7 @@ describe('JsonLdParser', () => {
   },
   "date": { "@value": "2011-01-25T00:00:00Z", "@type": "dateTime" }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://vocab.org/date'),
                 DF.literal('2011-01-25T00:00:00Z', DF.namedNode('http://vocab.org/dateTime'))),
             ]);
@@ -5271,7 +5280,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode('http://ex.org/obj1')),
             ]);
           });
@@ -5289,7 +5298,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
             ]);
           });
@@ -5311,7 +5320,7 @@ describe('JsonLdParser', () => {
     "SomeInnerTerm": "http://example.org/SomeInnerTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example.org/A'), DF.namedNode('http://example.org/SomeTerm'),
                 DF.namedNode('http://ex.org/obj1')),
               DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://example.org/SomeInnerTerm'),
@@ -5333,7 +5342,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://example.org/SomeInnerTerm'),
                 DF.literal('abc')),
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
@@ -5354,7 +5363,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://example.org/SomeInnerTerm'),
                 DF.literal('abc')),
               DF.quad(DF.blankNode(), DF.namedNode('http://example.org/SomeTerm'), DF.namedNode('http://ex.org/obj1')),
@@ -5378,7 +5387,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5397,7 +5406,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5419,7 +5428,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo",
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5438,7 +5447,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo",
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5460,7 +5469,7 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5479,7 +5488,7 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5501,7 +5510,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5520,7 +5529,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5542,7 +5551,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5561,7 +5570,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5583,7 +5592,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5602,7 +5611,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5630,7 +5639,7 @@ describe('JsonLdParser', () => {
     "@type": "Foo"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://vocab.org/a'), DF.blankNode('b1')),
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://vocab.org/b'), DF.blankNode('b2')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -5657,7 +5666,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": [ "Foo", "Foo2" ]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -5682,7 +5691,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo",
   "pred2": "http://ex.org/obj2",
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5709,7 +5718,7 @@ describe('JsonLdParser', () => {
     "pred3": "http://ex.org/obj3",
   },
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5738,7 +5747,7 @@ describe('JsonLdParser', () => {
     "@type": "Type"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example/typed-base#typed-id'),
                 DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example/Type')),
@@ -5765,7 +5774,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with a single contextified triple', async () => {
@@ -5776,7 +5785,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with @base and @vocab with triples', async () => {
@@ -5789,7 +5798,7 @@ describe('JsonLdParser', () => {
     "@vocab":  "http://ex.org/"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
         });
 
@@ -5808,7 +5817,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with a single contextified triple', async () => {
@@ -5824,7 +5833,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with a two contextified triples', async () => {
@@ -5841,7 +5850,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
 
           it('with a two contextified triples with overlapping contexts', async () => {
@@ -5858,7 +5867,7 @@ describe('JsonLdParser', () => {
     "SomeTerm": "http://example.org/SomeTerm"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
           });
         });
 
@@ -5878,7 +5887,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -5897,7 +5906,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
               'Found an out-of-order type-scoped context, while streaming is enabled.' +
               '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -5915,7 +5924,7 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5937,7 +5946,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo",
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.1.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5956,7 +5965,7 @@ describe('JsonLdParser', () => {
   "@type": "Foo",
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example.org/Foo')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://vocab.org/pred1'), DF.literal('http://ex.org/obj1')),
@@ -5978,7 +5987,7 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -5995,7 +6004,7 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6015,7 +6024,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6032,7 +6041,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6052,7 +6061,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6069,7 +6078,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6089,7 +6098,7 @@ describe('JsonLdParser', () => {
   },
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6106,7 +6115,7 @@ describe('JsonLdParser', () => {
   },
   "pred1": "http://ex.org/obj1"
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6130,7 +6139,7 @@ describe('JsonLdParser', () => {
     "@type": "Type"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)',
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
@@ -6144,7 +6153,7 @@ describe('JsonLdParser', () => {
 {
   "@type": "http://example.org/abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
           ]);
@@ -6156,7 +6165,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.org/abc",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
@@ -6172,7 +6181,7 @@ describe('JsonLdParser', () => {
   "@type": "abc",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
@@ -6188,7 +6197,7 @@ describe('JsonLdParser', () => {
   "@type": "ex:abc",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
@@ -6205,7 +6214,7 @@ describe('JsonLdParser', () => {
   "t": "ex:abc",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
@@ -6221,7 +6230,7 @@ describe('JsonLdParser', () => {
     "@id": "http://example.org/node"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc'),
@@ -6238,7 +6247,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://example.org/myGraph"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc'),
@@ -6252,7 +6261,7 @@ describe('JsonLdParser', () => {
   "@type": "http://example.org/abc",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc')),
@@ -6272,7 +6281,7 @@ describe('JsonLdParser', () => {
   ],
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc1')),
@@ -6295,7 +6304,7 @@ describe('JsonLdParser', () => {
   ],
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/abc1')),
@@ -6320,7 +6329,7 @@ describe('JsonLdParser', () => {
   "type2": "Type2",
   "@id": "http://example.org/node"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://example.org/node'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://example.org/Type1')),
@@ -6340,7 +6349,7 @@ describe('JsonLdParser', () => {
   },
   "p": "http://example.org/abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://example.org/abc')),
           ]);
@@ -6356,7 +6365,7 @@ describe('JsonLdParser', () => {
   },
   "p": "abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://base.org/abc')),
           ]);
@@ -6372,7 +6381,7 @@ describe('JsonLdParser', () => {
   },
   "p": "abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://vocab.org/abc')),
           ]);
@@ -6387,7 +6396,7 @@ describe('JsonLdParser', () => {
   },
   "p": "abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://base.org/abc')),
           ]);
@@ -6404,7 +6413,7 @@ describe('JsonLdParser', () => {
   },
   "p": "abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://ex.org/use-me')),
           ]);
@@ -6420,7 +6429,7 @@ describe('JsonLdParser', () => {
   },
   "p": true
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.literal('true', DF.namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
           ]);
@@ -6437,7 +6446,7 @@ describe('JsonLdParser', () => {
   },
   "p": "abc"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.namedNode('http://base.org/abc')),
           ]);
@@ -6453,7 +6462,7 @@ describe('JsonLdParser', () => {
   },
   "p": true
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.literal('true', DF.namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
           ]);
@@ -6467,7 +6476,7 @@ describe('JsonLdParser', () => {
   },
   "p": true
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/predicate'),
               DF.literal('true', DF.namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
           ]);
@@ -6481,7 +6490,7 @@ describe('JsonLdParser', () => {
   },
   "p": [ true, 1 ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/predicate'),
               DF.literal('true', DF.namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/predicate'),
@@ -6497,7 +6506,7 @@ describe('JsonLdParser', () => {
   },
   "p": true
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/predicate'),
               DF.literal('true', DF.namedNode('http://www.w3.org/2001/XMLSchema#boolean'))),
           ]);
@@ -6511,7 +6520,7 @@ describe('JsonLdParser', () => {
   },
   "p": { "@value": "2018-02-17", "@type": "http://www.w3.org/2001/XMLSchema#date" }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/predicate'),
               DF.literal('2018-02-17', DF.namedNode('http://www.w3.org/2001/XMLSchema#date'))),
           ]);
@@ -6528,7 +6537,7 @@ describe('JsonLdParser', () => {
   },
   "p": "http://example.org/abc"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('should ignore blank node predicates with multiple values', async () => {
@@ -6542,7 +6551,7 @@ describe('JsonLdParser', () => {
     "http://example.org/abc2"
   ]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('should ignore blank node predicates in a list', async () => {
@@ -6554,7 +6563,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": [ "a", "b", "c" ],
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('should ignore blank node predicates in an anonymous list', async () => {
@@ -6566,7 +6575,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "a", "b", "c" ] },
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
         });
 
@@ -6584,7 +6593,7 @@ describe('JsonLdParser', () => {
   },
   "p": "http://example.org/abc"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.blankNode('p'), DF.namedNode('http://example.org/abc')),
             ]);
           });
@@ -6600,7 +6609,7 @@ describe('JsonLdParser', () => {
     "http://example.org/abc2"
   ]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('a'), DF.blankNode('p'), DF.namedNode('http://example.org/abc1')),
               DF.quad(DF.blankNode('a'), DF.blankNode('p'), DF.namedNode('http://example.org/abc2')),
             ]);
@@ -6615,7 +6624,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": [ "a", "b", "c" ],
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l2')),
               DF.quad(DF.blankNode('l2'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -6635,7 +6644,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "a", "b", "c" ] },
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l2')),
               DF.quad(DF.blankNode('l2'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -6658,7 +6667,7 @@ describe('JsonLdParser', () => {
   "url": "http://ex.org/myid",
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
           ]);
@@ -6674,7 +6683,7 @@ describe('JsonLdParser', () => {
   "url": "http://ex.org/myid",
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
           ]);
@@ -6690,7 +6699,7 @@ describe('JsonLdParser', () => {
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, baseIRI: 'http://ex.org/' });
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
           ]);
@@ -6707,7 +6716,7 @@ describe('JsonLdParser', () => {
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, baseIRI: 'http://ex.org/' });
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
           ]);
@@ -6722,7 +6731,7 @@ describe('JsonLdParser', () => {
   "url": "http://ex.org/myid",
   "http://xmlns.com/foaf/0.1/name": "Bob",
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
           ]);
@@ -6737,7 +6746,7 @@ describe('JsonLdParser', () => {
   "a": "http://ex.org/bla",
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/bla')),
@@ -6753,7 +6762,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "a": "http://ex.org/bla",
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects
             .toThrow(new ErrorCoded('Invalid @reverse value, must be absolute IRI or blank node: \'@type\'',
             ERROR_CODES.INVALID_IRI_MAPPING));
         });
@@ -6767,7 +6776,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://xmlns.com/foaf/0.1/name": { "val": "Bob" },
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob')),
@@ -6784,7 +6793,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://xmlns.com/foaf/0.1/name": { "val": "Bob", "lang": "en" },
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'),
               DF.namedNode('http://xmlns.com/foaf/0.1/name'),
               DF.literal('Bob', 'en')),
@@ -6799,7 +6808,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": { "myList": [ "a", "b", "c" ] }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
             DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -6821,7 +6830,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'),
               DF.namedNode('http://ex.org/myid')),
           ]);
@@ -6842,7 +6851,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('my value', DF.namedNode('http://ex.org/mytype')),
               DF.namedNode('http://ex.org/mygraph')),
@@ -6858,7 +6867,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "set": [ "a", "b", "c" ] }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
+          const output = await arrayifyStream(pipeStr(stream, parser));
           expect(output).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
@@ -6884,7 +6893,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('https://api.coopstarter.happy-dev.fr/resources/'),
               DF.namedNode('http://www.w3.org/ns/ldp#contains'),
               DF.namedNode('https://api.coopstarter.happy-dev.fr/resources/1/')),
@@ -6909,7 +6918,7 @@ describe('JsonLdParser', () => {
   ]
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('https://api.coopstarter.happy-dev.fr/resources/'),
               DF.namedNode('http://www.w3.org/ns/ldp#contains'),
               DF.namedNode('https://api.coopstarter.happy-dev.fr/resources/1/')),
@@ -6928,7 +6937,7 @@ describe('JsonLdParser', () => {
   "e": true
 }
 `);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects
             .toThrow(new ErrorCoded(`A context @type must be an absolute IRI, found: 'e': '@json'`,
             ERROR_CODES.INVALID_TYPE_MAPPING));
         });
@@ -6942,7 +6951,7 @@ describe('JsonLdParser', () => {
   "e": true
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('true', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -6958,7 +6967,7 @@ describe('JsonLdParser', () => {
   "e": null
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('null', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -6974,7 +6983,7 @@ describe('JsonLdParser', () => {
   "e": { "a": true }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"a":true}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -6990,7 +6999,7 @@ describe('JsonLdParser', () => {
   "e": { "http://example.org/predicate": true }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"http://example.org/predicate":true}',
@@ -7007,7 +7016,7 @@ describe('JsonLdParser', () => {
   "e": { "zzz": "z", "b": 3, "a": true }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"a":true,"b":3,"zzz":"z"}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7023,7 +7032,7 @@ describe('JsonLdParser', () => {
   "e": [ "a", true ]
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('["a",true]', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7039,7 +7048,7 @@ describe('JsonLdParser', () => {
   "e": { "a": [ "a", true ] }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"a":["a",true]}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7056,7 +7065,7 @@ describe('JsonLdParser', () => {
   "e": { "a": true }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"a":true}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7073,7 +7082,7 @@ describe('JsonLdParser', () => {
   "e": { "a": [ true ] }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('http://example.com/vocab/json'),
               DF.literal('{"a":[true]}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7090,7 +7099,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''),
               DF.namedNode('ex:p'),
               DF.literal('{"a":true}', DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON'))),
@@ -7114,7 +7123,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/pred1'),
               DF.literal('a')),
           ]);
@@ -7137,7 +7146,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7161,7 +7170,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7185,7 +7194,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7209,7 +7218,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7236,7 +7245,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7261,7 +7270,7 @@ describe('JsonLdParser', () => {
     "@none": "Default"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7289,7 +7298,7 @@ describe('JsonLdParser', () => {
     "none": "Default"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者', 'ja')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7314,7 +7323,7 @@ describe('JsonLdParser', () => {
     "ja": true
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
               'Got invalid language map value, got \'true\', but expected string',
               ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
           });
@@ -7332,7 +7341,7 @@ describe('JsonLdParser', () => {
     "ja": [ true, false ]
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
               'Got invalid language map value, got \'true\', but expected string',
               ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
           });
@@ -7355,7 +7364,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7379,7 +7388,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7403,7 +7412,7 @@ describe('JsonLdParser', () => {
     "cs": "Nindža"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7427,7 +7436,7 @@ describe('JsonLdParser', () => {
     "en": []
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and index map with @none', async () => {
@@ -7445,7 +7454,7 @@ describe('JsonLdParser', () => {
     "@none": "Default"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7471,7 +7480,7 @@ describe('JsonLdParser', () => {
     "cs": { "@value": "Nindža" }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.literal('忍者')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7495,7 +7504,7 @@ describe('JsonLdParser', () => {
     "cs": { "@id": "ex:id3" }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/id1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7528,7 +7537,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('http://example/outer-prop'),
                 DF.blankNode('b0')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -7553,7 +7562,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:container'), DF.literal('A')),
               DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:container'), DF.literal('B')),
             ]);
@@ -7574,7 +7583,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:container'), DF.literal('A')),
               DF.quad(DF.namedNode('ex:root'), DF.namedNode('ex:container'), DF.literal('B')),
             ]);
@@ -7599,7 +7608,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7632,7 +7641,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7677,7 +7686,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7717,7 +7726,7 @@ describe('JsonLdParser', () => {
     }]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id2.1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name2.1')),
               DF.quad(DF.namedNode('http://ex.org/id2.1'), DF.namedNode('http://ex.org/prop'),
@@ -7759,7 +7768,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7799,7 +7808,7 @@ describe('JsonLdParser', () => {
     "Value1": []
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and index map with @none', async () => {
@@ -7825,7 +7834,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7860,7 +7869,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -7885,7 +7894,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/name'),
                 DF.literal('Name1')),
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
@@ -7910,7 +7919,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
               new ErrorCoded('Keywords can not be used as @index value, got: @keyword',
                 ERROR_CODES.INVALID_TERM_DEFINITION));
           });
@@ -7930,7 +7939,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
               new ErrorCoded('@index values must be strings, got: true',
               ERROR_CODES.INVALID_TERM_DEFINITION));
           });
@@ -7947,7 +7956,7 @@ describe('JsonLdParser', () => {
     "Value1": "ex:id1"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
               new ErrorCoded('Property-based index containers require nodes as values or strings with ' +
                 '@type: @id, but got: ex:id1',
                 ERROR_CODES.INVALID_VALUE_OBJECT));
@@ -7965,7 +7974,7 @@ describe('JsonLdParser', () => {
     "Value1": [ "ex:id1" ]
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
               new ErrorCoded('Property-based index containers require nodes as values or strings with ' +
                 '@type: @id, but got: ex:id1',
                 ERROR_CODES.INVALID_VALUE_OBJECT));
@@ -7983,7 +7992,7 @@ describe('JsonLdParser', () => {
     "Value1": "ex:id1"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/id1'), DF.namedNode('http://ex.org/prop'),
                 DF.literal('Value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8003,7 +8012,7 @@ describe('JsonLdParser', () => {
     "Value1": "id1"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and index map with a raw value with @type: @bla should error', async () => {
@@ -8018,7 +8027,7 @@ describe('JsonLdParser', () => {
     "Value1": "ex:id1"
   }
 }`);
-            return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+            return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(
               new ErrorCoded('A context @type must be an absolute IRI, found: \'p\': \'@bla\'',
                 ERROR_CODES.INVALID_TYPE_MAPPING));
           });
@@ -8049,7 +8058,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/posts/1/en')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8087,7 +8096,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/posts/1/en')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8125,7 +8134,7 @@ describe('JsonLdParser', () => {
     ]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/posts/1/en')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8156,7 +8165,7 @@ describe('JsonLdParser', () => {
     "1/en": []
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and identifier map with a nested array value', async () => {
@@ -8181,7 +8190,7 @@ describe('JsonLdParser', () => {
     ]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/posts/1/en')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8218,7 +8227,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and identifier map with @none', async () => {
@@ -8247,7 +8256,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/posts/1/en')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8291,7 +8300,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8329,7 +8338,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/myid1.1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8363,7 +8372,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('foo')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8395,7 +8404,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/myid1.1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8428,7 +8437,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8467,7 +8476,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8500,7 +8509,7 @@ describe('JsonLdParser', () => {
     "ex:Type2": "value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8528,7 +8537,7 @@ describe('JsonLdParser', () => {
     "ex:Type2": "value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and type map with string values expand to @id without @type', async () => {
@@ -8546,7 +8555,7 @@ describe('JsonLdParser', () => {
     "Type2": "value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8575,7 +8584,7 @@ describe('JsonLdParser', () => {
     "Type2": "value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8604,7 +8613,7 @@ describe('JsonLdParser', () => {
     "Type2": "value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/ns/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8633,7 +8642,7 @@ describe('JsonLdParser', () => {
     "Type2": "_:value2"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8661,7 +8670,7 @@ describe('JsonLdParser', () => {
     "Type1": [ "value1", "value2" ]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8689,7 +8698,7 @@ describe('JsonLdParser', () => {
     "Type1": [ "value1", "value2" ]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/ns/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8722,7 +8731,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8767,7 +8776,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8806,7 +8815,7 @@ describe('JsonLdParser', () => {
     "ex:Type1": []
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
           });
 
           it('with @id and type map with a nested array value', async () => {
@@ -8836,7 +8845,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8881,7 +8890,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8918,7 +8927,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://example.com/entries/value1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8959,7 +8968,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -8990,7 +8999,7 @@ describe('JsonLdParser', () => {
     "value": "1539"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9013,7 +9022,7 @@ describe('JsonLdParser', () => {
     "value": "1539"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9042,7 +9051,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9075,7 +9084,7 @@ describe('JsonLdParser', () => {
     }
   ]]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9106,7 +9115,7 @@ describe('JsonLdParser', () => {
     "value3": "3"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value1'),
@@ -9142,7 +9151,7 @@ describe('JsonLdParser', () => {
     "value3": "6"
   }]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9176,7 +9185,7 @@ describe('JsonLdParser', () => {
     "value": "1539"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/value'),
@@ -9199,7 +9208,7 @@ describe('JsonLdParser', () => {
     "@id": "value1"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9226,7 +9235,7 @@ describe('JsonLdParser', () => {
     "value3": "3"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value1'),
@@ -9253,7 +9262,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9276,7 +9285,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9301,7 +9310,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9326,7 +9335,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9353,7 +9362,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value1'),
@@ -9382,7 +9391,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9411,7 +9420,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9441,7 +9450,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.blankNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9471,7 +9480,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.blankNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9504,7 +9513,7 @@ describe('JsonLdParser', () => {
     }]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9537,7 +9546,7 @@ describe('JsonLdParser', () => {
     }]]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9570,7 +9579,7 @@ describe('JsonLdParser', () => {
     }]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9606,7 +9615,7 @@ describe('JsonLdParser', () => {
     }]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9643,7 +9652,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
             ]);
@@ -9672,7 +9681,7 @@ describe('JsonLdParser', () => {
     }
   }]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9701,7 +9710,7 @@ describe('JsonLdParser', () => {
     }
   }]]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
             ]);
@@ -9728,7 +9737,7 @@ describe('JsonLdParser', () => {
     }]]
   }]]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g0')),
             ]);
@@ -9751,7 +9760,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9779,7 +9788,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('g1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9806,7 +9815,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/index0')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9835,7 +9844,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/index0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9871,7 +9880,7 @@ describe('JsonLdParser', () => {
     }]
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode('http://ex.org/index0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
@@ -9903,7 +9912,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9930,7 +9939,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('b1')),
               DF.quad(DF.namedNode('http://example.com/entries/value1'), DF.namedNode('http://ex.org/value'),
@@ -9966,7 +9975,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('http://example/outer-prop'),
                 DF.blankNode('b0')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -9995,7 +10004,7 @@ describe('JsonLdParser', () => {
     "p1": "V1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10014,7 +10023,7 @@ describe('JsonLdParser', () => {
     "p1": "V1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10033,7 +10042,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10052,7 +10061,7 @@ describe('JsonLdParser', () => {
     "p1": "V1"
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10074,7 +10083,7 @@ describe('JsonLdParser', () => {
     "p2": "V2"
   }]
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p2'),
@@ -10097,7 +10106,7 @@ describe('JsonLdParser', () => {
     "p2": "V2"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p2'),
@@ -10122,7 +10131,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.namedNode('http://ex.org/mysubid')),
             DF.quad(DF.namedNode('http://ex.org/mysubid'), DF.namedNode('http://ex.org/p2'),
@@ -10144,7 +10153,7 @@ describe('JsonLdParser', () => {
     "p1": "V1"
   }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects
             .toThrow(new ErrorCoded('Found duplicate @ids \'http://ex.org/myid\' and \'http://ex.org/conflictingid\'',
               ERROR_CODES.COLLIDING_KEYWORDS));
         });
@@ -10162,7 +10171,7 @@ describe('JsonLdParser', () => {
     "p1": "V1"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10183,7 +10192,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/p1'),
               DF.literal('V1')),
           ]);
@@ -10199,7 +10208,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "@nest": "invalid"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Found invalid @nest entry for \'@nest\': \'invalid\'',
             ERROR_CODES.INVALID_NEST_VALUE));
         });
@@ -10214,7 +10223,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "@nest": 10
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Found invalid @nest entry for \'@nest\': \'10\'',
             ERROR_CODES.INVALID_NEST_VALUE));
         });
@@ -10229,7 +10238,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "@nest": true
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Found invalid @nest entry for \'@nest\': \'true\'',
             ERROR_CODES.INVALID_NEST_VALUE));
         });
@@ -10244,7 +10253,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "@nest": { "@value": true }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Found an invalid @value node for \'@nest\'',
             ERROR_CODES.INVALID_NEST_VALUE));
         });
@@ -10260,7 +10269,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "@nest": { "v": true }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Found an invalid @value node for \'@nest\'',
             ERROR_CODES.INVALID_NEST_VALUE));
         });
@@ -10284,7 +10293,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
               DF.namedNode('http://ex.org/myinnerid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -10310,7 +10319,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
               DF.namedNode('http://ex.org/myinnerid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -10339,7 +10348,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
               DF.namedNode('http://ex.org/myinnerid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -10365,7 +10374,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
               DF.namedNode('http://ex.org/myinnerid')),
             DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.org/bar'),
@@ -10396,7 +10405,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar'),
@@ -10421,7 +10430,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }]
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar'),
@@ -10446,7 +10455,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar'),
@@ -10474,7 +10483,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar1'),
@@ -10502,7 +10511,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
             ]);
@@ -10529,7 +10538,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar1'),
@@ -10560,7 +10569,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar1'),
@@ -10591,7 +10600,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo2'),
@@ -10628,7 +10637,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.foo.org/bar1'),
@@ -10657,7 +10666,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://ex.org/bar'),
@@ -10684,7 +10693,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:bar'), DF.namedNode('http://example/a')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('ex:nested'), DF.namedNode('ex:inner')),
             ]);
@@ -10709,7 +10718,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:bar'), DF.namedNode('http://example/a')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('ex:nested'), DF.namedNode('ex:inner')),
             ]);
@@ -10734,7 +10743,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:bar'), DF.namedNode('http://example/a')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('ex:nested'), DF.namedNode('ex:inner')),
             ]);
@@ -10759,7 +10768,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:foo'), DF.literal('1')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('ex:nested'), DF.namedNode('ex:inner')),
             ]);
@@ -10785,7 +10794,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/bar'),
@@ -10815,7 +10824,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -10847,7 +10856,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "bar": "baz"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -10880,7 +10889,7 @@ describe('JsonLdParser', () => {
   "bar1": "baz1",
   "bar2": "baz2"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo1')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -10911,7 +10920,7 @@ describe('JsonLdParser', () => {
     "baz": "buzz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -10941,7 +10950,7 @@ describe('JsonLdParser', () => {
     "baz": "buzz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://ex.org/Foo')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -10970,7 +10979,7 @@ describe('JsonLdParser', () => {
     "type": "value-type"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://vocab.org/Type')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/bar'),
@@ -10994,7 +11003,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "bar": "value"
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://vocab.org/Type')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/bar'),
@@ -11021,7 +11030,7 @@ describe('JsonLdParser', () => {
     "@id": "#typed-id"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example/typed-base#typed-id'),
                 DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('http://example/Type')),
@@ -11053,7 +11062,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example/base-base#subject-reference-id'), DF.namedNode('http://example/p'),
                 DF.literal('0')),
               DF.quad(DF.namedNode('http://example/typed-base#typed-id'),
@@ -11089,7 +11098,7 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://example/typed-base#typed-id'),
                 DF.namedNode('http://example/subjectReference'),
                 DF.namedNode('http://example/typed-base#subject-reference-id')),
@@ -11124,7 +11133,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:foo'), DF.literal('bar'), DF.blankNode('g0')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('ex:nested'), DF.blankNode('g0')),
               DF.quad(DF.namedNode('ex:outer'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11153,7 +11162,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:prop'), DF.literal('v2')),
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('ex:Type')),
@@ -11184,7 +11193,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('ex:prop'), DF.literal('v2')),
               DF.quad(DF.namedNode('ex:inner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
                 DF.namedNode('ex:Type')),
@@ -11218,7 +11227,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/prop'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11252,7 +11261,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/prop'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11282,7 +11291,7 @@ describe('JsonLdParser', () => {
     "bar": "baz"
   }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://vocab.org/prop'),
                 DF.namedNode('http://ex.org/myinnerid')),
               DF.quad(DF.namedNode('http://ex.org/myinnerid'), DF.namedNode('http://vocab.1.org/bar'),
@@ -11309,7 +11318,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "bar": { "baz": "buzz" }
 }`);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://example/bar'),
                 DF.blankNode('b0')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11343,7 +11352,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('ex:Foo')),
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11384,7 +11393,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://vocab.org/foo'),
                 DF.namedNode('ex:Foo')),
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11429,7 +11438,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('ex:foo'),
                 DF.namedNode('ex:Foo')),
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11472,7 +11481,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode('myidinner'), DF.namedNode('ex:foo'),
                 DF.namedNode('ex:Foo')),
               DF.quad(DF.blankNode('myidinner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11516,7 +11525,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('ex:foo'),
                 DF.namedNode('ex:Foo')),
               DF.quad(DF.namedNode('http://ex.org/myidinner'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
@@ -11549,7 +11558,7 @@ describe('JsonLdParser', () => {
   ],
   "foo": "bar"
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
@@ -11569,7 +11578,7 @@ describe('JsonLdParser', () => {
   ],
   "foo": "bar"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''), DF.namedNode('http://ex.org/foo'),
               DF.literal('bar')),
           ]);
@@ -11590,7 +11599,7 @@ describe('JsonLdParser', () => {
     "foo": "bar"
   }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
@@ -11613,7 +11622,7 @@ describe('JsonLdParser', () => {
     "foo": "bar"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''), DF.namedNode('http://vocab.org/scope'),
               DF.blankNode('b1')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.2.org/foo'),
@@ -11640,7 +11649,7 @@ describe('JsonLdParser', () => {
     "foo": "bar"
   }
 }`);
-          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+          return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
@@ -11663,7 +11672,7 @@ describe('JsonLdParser', () => {
     "foo": "bar"
   }
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode(''), DF.namedNode('http://ex.org/scope'),
               DF.blankNode('b1')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.2.org/foo'),
@@ -11688,7 +11697,7 @@ describe('JsonLdParser', () => {
   "@type": "Type",
   "foo": "value"
 }`);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
               DF.namedNode('http://ex.org/Type')),
             DF.quad(DF.blankNode('b1'), DF.namedNode('http://ex.org/foo'),
@@ -11709,7 +11718,7 @@ describe('JsonLdParser', () => {
   ]
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('A')),
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('B')),
           ]);
@@ -11726,7 +11735,7 @@ describe('JsonLdParser', () => {
   ]
 }
 `);
-          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+          return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('A')),
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('B')),
           ]);
@@ -11743,7 +11752,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid1"
   "b": "http://ex.org/myid2"
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
       });
       it('a document with duplicate @id definitions', async () => {
         const stream = streamifyString(`
@@ -11751,7 +11760,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid1",
   "@id": "http://ex.org/myid2"
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
       });
       it('a document with an invalid version for the given processing mode', async () => {
         parser = new JsonLdParser({ processingMode: '1.0' });
@@ -11762,7 +11771,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid1"
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
       });
       it('a document with @version set to 1.0 under default processing mode', async () => {
         const stream = streamifyString(`
@@ -11772,7 +11781,7 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid1"
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
       });
       it('an @id inside an @reverse', async () => {
         const stream = streamifyString(`
@@ -11782,7 +11791,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
           'Found the @id \'http://ex.org/myid\' inside an @reverse property',
           ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
       });
@@ -11794,7 +11803,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": "http://ex.org/obj1"
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toBeTruthy();
       });
       it('@reverse: true', async () => {
         const stream = streamifyString(`
@@ -11803,7 +11812,7 @@ describe('JsonLdParser', () => {
     "@reverse": true
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
           'Invalid value type for \'@reverse\' with value \'true\'',
           ERROR_CODES.INVALID_REVERSE_VALUE));
       });
@@ -11814,7 +11823,7 @@ describe('JsonLdParser', () => {
     "@index": true
   }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(new ErrorCoded(
           'Invalid value type for \'@index\' with value \'true\'',
           ERROR_CODES.INVALID_INDEX_VALUE));
       });
@@ -11827,7 +11836,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": ["http://example/bar"]}
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
@@ -11840,7 +11849,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": "http://example/bar"}
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
@@ -11853,7 +11862,7 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": []}
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
@@ -11863,7 +11872,7 @@ describe('JsonLdParser', () => {
 {
   "@id": true
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal @id \'true\'',
             ERROR_CODES.INVALID_ID_VALUE));
       });
@@ -11873,7 +11882,7 @@ describe('JsonLdParser', () => {
 {
   "@type": true
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal @type \'true\'',
             ERROR_CODES.INVALID_TYPE_VALUE));
       });
@@ -11883,7 +11892,7 @@ describe('JsonLdParser', () => {
 {
   "@type": [ true ]
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal @type \'true\'',
             ERROR_CODES.INVALID_TYPE_VALUE));
       });
@@ -11893,7 +11902,7 @@ describe('JsonLdParser', () => {
 {
   "@included": "bla"
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found illegal @included \'bla\'',
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
@@ -11903,7 +11912,7 @@ describe('JsonLdParser', () => {
 {
   "@included": { "@value": "bla" }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found an illegal @included @value node \'{"@value":"bla"}\'',
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
@@ -11913,7 +11922,7 @@ describe('JsonLdParser', () => {
 {
   "@included": { "@list": [ "bla" ] }
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded('Found an illegal @included @list node \'{"@list":["bla"]}\'',
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
@@ -11923,7 +11932,7 @@ describe('JsonLdParser', () => {
 {
   "http://example/prop": {"@list": ["foo"], "@id": "http://example/bar"}
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded(
             'Found illegal neighbouring entries next to @list for key: \'http://example/prop\'',
             ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
@@ -11934,7 +11943,7 @@ describe('JsonLdParser', () => {
 {
   "http://example/prop": {"@id": "http://example/bar", "@list": ["foo"]}
 }`);
-        return expect(arrayifyStream(stream.pipe(parser))).rejects
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects
           .toThrow(new ErrorCoded(
             'Found illegal neighbouring entries next to @list for key: \'http://example/prop\'',
             ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
@@ -11943,7 +11952,7 @@ describe('JsonLdParser', () => {
       it('unclosed JSON document', async () => {
         const stream = streamifyString(`{`)
 
-        return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(/Unclosed document/)
+        return expect(arrayifyStream(pipeStr(stream, parser))).rejects.toThrow(/Unexpected end of file/)
       })
     });
   });
@@ -11960,7 +11969,7 @@ describe('JsonLdParser', () => {
 {
   "@unknown": "dummy"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new Error('Unknown keyword \'@unknown\' with value \'dummy\''));
     });
 
@@ -11969,7 +11978,7 @@ describe('JsonLdParser', () => {
 {
   "bla": "dummy"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new Error('Invalid predicate IRI: bla'));
     });
 
@@ -11978,7 +11987,7 @@ describe('JsonLdParser', () => {
 {
   "@id": "dummy"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new Error('Invalid resource IRI: dummy'));
     });
 
@@ -11987,7 +11996,7 @@ describe('JsonLdParser', () => {
 {
   "http://ex.org/pred": { "@id": "dummy" }
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new Error('Invalid resource IRI: dummy'));
     });
 
@@ -11996,7 +12005,7 @@ describe('JsonLdParser', () => {
 {
   "@type": "http://ex.org/ abc"
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new Error('Invalid term IRI: http://ex.org/ abc'));
     });
 
@@ -12008,7 +12017,7 @@ describe('JsonLdParser', () => {
     "http://xmlns.com/foaf/0.1/knows": "Name"
   }
 }`);
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new ErrorCoded('Found illegal literal in subject position: Name',
           ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
     });
@@ -12026,7 +12035,7 @@ describe('JsonLdParser', () => {
   }
 ]`);
       parser = new JsonLdParser({ strictValues: true, validateValueIndexes: true });
-      return expect(arrayifyStream(stream.pipe(parser))).rejects
+      return expect(arrayifyStream(pipeStr(stream, parser))).rejects
         .toEqual(new ErrorCoded('Conflicting @index value for http://example/foo', ERROR_CODES.CONFLICTING_INDEXES));
     });
 
@@ -12042,7 +12051,7 @@ describe('JsonLdParser', () => {
     "@index": "baz"
   }
 ]`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
     });
 
     it('should not error on a predicate that is mapped to null', async () => {
@@ -12053,7 +12062,7 @@ describe('JsonLdParser', () => {
   },
   "bla": "dummy"
 }`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
     });
 
     it('should not error on a subject that is mapped to null', async () => {
@@ -12064,7 +12073,7 @@ describe('JsonLdParser', () => {
   },
   "id": "dummy"
 }`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([]);
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([]);
     });
 
     it('should not error on an anonymous list', async () => {
@@ -12073,7 +12082,7 @@ describe('JsonLdParser', () => {
   "@context": {"foo": {"@id": "http://example.com/foo"}},
   "foo": [{"@set": ["baz"]}]
 }`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
         DF.quad(DF.blankNode(), DF.namedNode('http://example.com/foo'), DF.literal('baz')),
       ]);
     });
@@ -12085,7 +12094,7 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred1": { "@id": "http://ex.org/obj1" }
   }
 }`);
-      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+      return expect(await arrayifyStream(pipeStr(stream, parser))).toBeRdfIsomorphic([
         DF.quad(DF.namedNode('http://ex.org/obj1'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('')),
       ]);
     });
@@ -12105,7 +12114,7 @@ describe('JsonLdParser', () => {
       const stream = streamifyString(`
 {
 }`);
-      await arrayifyStream(stream.pipe(parser));
+      await arrayifyStream(pipeStr(stream, parser));
       return expect(contextListener).not.toHaveBeenCalled();
     });
 
@@ -12116,7 +12125,7 @@ describe('JsonLdParser', () => {
     "term": {"@id": "http://example/id"}
   }
 }`);
-      await arrayifyStream(stream.pipe(parser));
+      await arrayifyStream(pipeStr(stream, parser));
       expect(contextListener).toHaveBeenCalledTimes(1);
       return expect(contextListener).toHaveBeenCalledWith({
         term: { "@id": "http://example/id" },
@@ -12135,7 +12144,7 @@ describe('JsonLdParser', () => {
     },
   }
 }`);
-      await arrayifyStream(stream.pipe(parser));
+      await arrayifyStream(pipeStr(stream, parser));
       expect(contextListener).toHaveBeenCalledTimes(2);
       expect(contextListener).toHaveBeenCalledWith({
         term: { "@id": "http://example/id" },
@@ -12155,13 +12164,8 @@ describe('JsonLdParser', () => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
       });
 
-      it('should emit nothing when nothing has been pushed', () => {
-        parser.write('');
-        expect(parser.read(1)).toBeFalsy();
-      });
-
       it('should emit nothing after {', (done) => {
-        parser.write('{', () => {
+        parser.write({type: 'open-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
@@ -12175,21 +12179,14 @@ describe('JsonLdParser', () => {
       });
 
       it('should emit nothing after @id value', (done) => {
-        parser.write('"http://example.org",', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
-      it('should emit nothing after predicate', (done) => {
-        parser.write('"http://example.com/p": ', () => {
+        parser.write({type: 'value', key: '@id', value: 'http://example.org'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit a quad after object', (done) => {
-        parser.write('"http://example.com/o",', () => {
+        parser.write({type: 'value', key: 'http://example.com/p', value: 'http://example.com/o'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://example.org'), DF.namedNode('http://example.com/p'),
             DF.literal('http://example.com/o')));
@@ -12197,15 +12194,8 @@ describe('JsonLdParser', () => {
         });
       });
 
-      it('should emit nothing after another predicate', (done) => {
-        parser.write('"http://example.com/p2": ', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
       it('should emit a quad after another object', (done) => {
-        parser.write('"http://example.com/o2"', () => {
+        parser.write({type: 'value', key: 'http://example.com/p2', value: 'http://example.com/o2'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://example.org'), DF.namedNode('http://example.com/p2'),
             DF.literal('http://example.com/o2')));
@@ -12214,7 +12204,7 @@ describe('JsonLdParser', () => {
       });
 
       it('should end after }', (done) => {
-        parser.write('}', () => {
+        parser.write({type: 'close-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
@@ -12234,48 +12224,29 @@ describe('JsonLdParser', () => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
       });
 
-      it('should emit nothing when nothing has been pushed', () => {
-        parser.write('');
-        expect(parser.read(1)).toBeFalsy();
-      });
-
       it('should emit nothing after {', (done) => {
-        parser.write('{', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
-      it('should emit nothing after @id', (done) => {
-        parser.write('"@id": ', () => {
+        parser.write({type: 'open-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit nothing after @id value', (done) => {
-        parser.write('"http://example.org",', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
-      it('should emit nothing after predicate', (done) => {
-        parser.write('"http://example.com/p": ', () => {
+        parser.write({type:'value', key: '@id', value: 'http://example.org'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit nothing after [', (done) => {
-        parser.write('[', () => {
+        parser.write({type: 'open-array', key: 'http://example.com/p'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit a quad after object', (done) => {
-        parser.write('"http://example.com/o",', () => {
+        parser.write({type: 'value', key: 0, value:'http://example.com/o'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://example.org'), DF.namedNode('http://example.com/p'),
             DF.literal('http://example.com/o')));
@@ -12284,7 +12255,7 @@ describe('JsonLdParser', () => {
       });
 
       it('should emit a quad after another object', (done) => {
-        parser.write('"http://example.com/o2"', () => {
+        parser.write({type: 'value', key: 1, value:'http://example.com/o2'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://example.org'), DF.namedNode('http://example.com/p'),
             DF.literal('http://example.com/o2')));
@@ -12293,14 +12264,14 @@ describe('JsonLdParser', () => {
       });
 
       it('should emit nothing after ]', (done) => {
-        parser.write(']', () => {
+        parser.write({type: 'close-array'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should end after }', (done) => {
-        parser.write('}', () => {
+        parser.write({type: 'close-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
@@ -12320,20 +12291,18 @@ describe('JsonLdParser', () => {
         parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true });
       });
 
-      it('should emit nothing when nothing has been pushed', () => {
-        parser.write('');
-        expect(parser.read(1)).toBeFalsy();
-      });
-
       it('should emit nothing after {', (done) => {
-        parser.write('{', () => {
+        parser.write({type: 'open-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit nothing after a context', (done) => {
-        parser.write('"@context": { "p": "http://example.org/p", "@base": "http://base.org/" },', () => {
+        parser.write({type: 'open-object', key: '@context'});
+        parser.write({type: 'value', key: 'p', value: 'http://example.org/p'});
+        parser.write({type: 'value', key: '@base', value: 'http://base.org/'});
+        parser.write({type: 'close-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
@@ -12347,21 +12316,14 @@ describe('JsonLdParser', () => {
       });
 
       it('should emit nothing after @id value', (done) => {
-        parser.write('"id",', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
-      it('should emit nothing after predicate', (done) => {
-        parser.write('"p": ', () => {
+        parser.write({type: 'value', key: '@id', value: 'id'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
       });
 
       it('should emit a quad after object', (done) => {
-        parser.write('"ooo",', () => {
+        parser.write({type: 'value', key: 'p', value: 'ooo'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://base.org/id'), DF.namedNode('http://example.org/p'),
             DF.literal('ooo')));
@@ -12369,15 +12331,8 @@ describe('JsonLdParser', () => {
         });
       });
 
-      it('should emit nothing after another predicate', (done) => {
-        parser.write('"http://example.com/p2": ', () => {
-          expect(parser.read(1)).toBeFalsy();
-          done();
-        });
-      });
-
       it('should emit a quad after another object', (done) => {
-        parser.write('"http://example.com/o2"', () => {
+        parser.write({type: 'value', key: 'http://example.com/p2', value: 'http://example.com/o2'}, () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
             DF.namedNode('http://base.org/id'), DF.namedNode('http://example.com/p2'),
             DF.literal('http://example.com/o2')));
@@ -12386,7 +12341,7 @@ describe('JsonLdParser', () => {
       });
 
       it('should end after }', (done) => {
-        parser.write('}', () => {
+        parser.write({type: 'close-object'}, () => {
           expect(parser.read(1)).toBeFalsy();
           done();
         });
