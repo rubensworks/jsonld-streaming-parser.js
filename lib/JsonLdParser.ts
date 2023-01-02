@@ -1,6 +1,6 @@
 import * as RDF from "@rdfjs/types";
 // tslint:disable-next-line:no-var-requires
-const Parser = require('jsonparse');
+const Parser = require('@bergos/jsonparse');
 import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil} from "jsonld-context-parser";
 import {PassThrough, Transform, Readable} from "readable-stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
