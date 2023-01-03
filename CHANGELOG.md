@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.1.0"></a>
+## [v3.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.0.1...v3.1.0) - 2023-01-03
+
+### Changed
+* [Use @bergos/jsonparse instead of jsonparse](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/448c8fe47fcd8d7f2f9124edbf2631913eb9b460)
+
 <a name="v3.0.1"></a>
 ## [v3.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.0.0...v3.0.1) - 2022-11-09
 
