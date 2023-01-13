@@ -106,7 +106,7 @@
     "spec-earl-tordf": "rdf-test-suite spec/parser.js https://w3c.github.io/json-ld-api/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-tordf.ttl",
     "spec-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/",
     "spec-earl-stream-tordf": "rdf-test-suite spec/parser.js -i '{ \"streamingProfile\": true }' https://w3c.github.io/json-ld-streaming/tests/stream-toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-stream-tordf.ttl",
-    "spec-star-tordf": "rdf-test-suite spec/parser.js https://json-ld.github.io/json-ld-star/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -e",
+    "spec-star-tordf": "rdf-test-suite spec/parser.js https://json-ld.github.io/json-ld-star/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/",
     "spec-earl-star-tordf": "rdf-test-suite spec/parser.js https://json-ld.github.io/json-ld-star/tests/toRdf-manifest.jsonld -c .rdf-test-suite-cache/ -o earl -p spec/earl-meta.json > spec/earl-star-tordf.ttl",
     "spec-clean": "rm -r .rdf-test-suite-cache/"
   },

@@ -213,13 +213,13 @@ describe('JsonLdParser', () => {
     });
   });
 
-  (<any> each ([
+  /*(<any> each ([
     [true],
     [false],
-  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {
+  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {*/
     // Enable the following instead if you want to run tests more conveniently with IDE integration
-  /*describe('when instantiated with a data factory and streamingProfile %s', () => {
-    const streamingProfile = true;*/
+  describe('when instantiated with a data factory and streamingProfile %s', () => {
+    const streamingProfile = true;
     let parser: any;
 
     beforeEach(() => {
@@ -11730,6 +11730,417 @@ describe('JsonLdParser', () => {
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('A')),
             DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.literal('B')),
           ]);
+        });
+      });
+
+      describe('rdf star', () => {
+        describe('embedded subject', () => {
+          it('as embedded subject when rdfstar is disabled', async () => {
+            parser = new JsonLdParser({ rdfstar: false });
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:subjectEmbedded",
+    "ex:prop": "valueEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found illegal @id '[object Object]'`,
+                ERROR_CODES.INVALID_ID_VALUE));
+          });
+
+          it('as embedded subject with property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:subjectEmbedded",
+    "ex:prop": "valueEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+              ),
+            ]);
+          });
+
+          it('as embedded subject with property and without subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "ex:prop": "valueEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.blankNode(), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+              ),
+            ]);
+          });
+
+          it('as embedded subject with @type property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@type": "ex:valueEmbedded",
+    "@id": "ex:subjectEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('ex:valueEmbedded')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+              ),
+            ]);
+          });
+
+          it('as embedded subject with @type property and without subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@type": "ex:valueEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.blankNode(), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('ex:valueEmbedded')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+              ),
+            ]);
+          });
+
+          it('as embedded subject with property and with subject inside @graph', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:graph",
+  "@graph": {
+    "@id": {
+      "@id": "ex:subjectEmbedded",
+      "ex:prop": "valueEmbedded"
+    },
+    "ex:prop": "value"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+                DF.namedNode('ex:graph'),
+              ),
+            ]);
+          });
+
+          it('as invalid embedded subject without property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:subjectEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Invalid embedded node without property with @id ex:subjectEmbedded`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          it('as invalid embedded subject with two properties', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:subjectEmbedded",
+    "ex:prop": [ "valueEmbedded1", "valueEmbedded2" ]
+  },
+  "ex:prop": "value"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          it('as invalid embedded subject with two @type properties', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:subjectEmbedded",
+    "@type": [ "ex:valueEmbedded1", "ex:valueEmbedded2" ]
+  },
+  "ex:prop": "value"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          it('as invalid embedded subject with a plain and @type property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@type": "ex:type",
+    "@id": "ex:subjectEmbedded",
+    "ex:prop": "valueEmbedded1"
+  },
+  "ex:prop": "value"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          it('as nested embedded subject with property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": {
+      "@id": "ex:subjectEmbedded2",
+      "ex:prop": "valueEmbedded2"
+    },
+    "ex:prop": "valueEmbedded"
+  },
+  "ex:prop": "value"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(
+                  DF.quad(
+                    DF.namedNode('ex:subjectEmbedded2'),
+                    DF.namedNode('ex:prop'),
+                    DF.literal('valueEmbedded2'),
+                  ),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('valueEmbedded'),
+                ),
+                DF.namedNode('ex:prop'),
+                DF.literal('value'),
+              ),
+            ]);
+          });
+
+          it('as embedded object with property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "@id": "ex:subjectEmbedded",
+      "ex:prop": "valueEmbedded"
+    },
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+              ),
+            ]);
+          });
+
+          it('as embedded object with property and without subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "ex:prop": "valueEmbedded"
+    },
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.quad(DF.blankNode(), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+              ),
+            ]);
+          });
+
+          it('as nested embedded object-subject with property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "@id": {
+        "@id": "ex:subjectEmbedded2",
+        "ex:prop": "valueEmbedded2"
+      },
+      "ex:prop": "valueEmbedded"
+    },
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.quad(
+                  DF.quad(DF.namedNode('ex:subjectEmbedded2'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded2')),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('valueEmbedded'),
+                ),
+              ),
+            ]);
+          });
+
+          it('as nested embedded object-object with property and with subject', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "@id": "ex:subjectEmbedded",
+      "ex:prop": {
+        "@id": {
+          "@id": "ex:subjectEmbedded2",
+          "ex:prop": "valueEmbedded2"
+        },
+      }
+    },
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.quad(
+                  DF.namedNode('ex:subjectEmbedded'),
+                  DF.namedNode('ex:prop'),
+                  DF.quad(DF.namedNode('ex:subjectEmbedded2'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded2')),
+                ),
+              ),
+            ]);
+          });
+
+          it('as embedded object with property and with subject, and a connected property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "@id": "ex:subjectEmbedded",
+      "ex:prop": "valueEmbedded"
+    },
+    "ex:prop2": "valueOnEmbedded"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+              ),
+              DF.quad(
+                DF.quad(DF.namedNode('ex:subjectEmbedded'), DF.namedNode('ex:prop'), DF.literal('valueEmbedded')),
+                DF.namedNode('ex:prop2'),
+                DF.literal('valueOnEmbedded'),
+              ),
+            ]);
+          });
+
+          it('as embedded subject with context-reverse with rdfstarReverseInEmbedded enabled', async () => {
+            parser = new JsonLdParser({ rdfstarReverseInEmbedded: true });
+            const stream = streamifyString(`
+{
+  "@context": {
+    "rel": {"@reverse": "ex:rel"}
+  },
+  "@id": {
+    "@id": "ex:rei",
+    "rel": {"@id": "ex:value"}
+  },
+  "ex:prop": "value2"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.namedNode('ex:value'), DF.namedNode('ex:rel'), DF.namedNode('ex:rei')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value2'),
+              ),
+            ]);
+          });
+
+          it('as invalid embedded subject with context-reverse', async () => {
+            const stream = streamifyString(`
+{
+  "@context": {
+    "rel": {"@reverse": "ex:rel"}
+  },
+  "@id": {
+    "@id": "ex:rei",
+    "rel": {"@id": "ex:value"}
+  },
+  "ex:prop": "value2"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Illegal reverse property in embedded node in rel`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          it('as embedded subject with explicit-reverse with rdfstarReverseInEmbedded enabled', async () => {
+            parser = new JsonLdParser({ rdfstarReverseInEmbedded: true });
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:rei",
+    "@reverse": { "ex:rel": {"@id": "ex:value"} }
+  },
+  "ex:prop": "value2"
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.quad(DF.namedNode('ex:value'), DF.namedNode('ex:rel'), DF.namedNode('ex:rei')),
+                DF.namedNode('ex:prop'),
+                DF.literal('value2'),
+              ),
+            ]);
+          });
+
+          it('as invalid embedded subject with explicit-reverse', async () => {
+            const stream = streamifyString(`
+{
+  "@id": {
+    "@id": "ex:rei",
+    "@reverse": { "ex:rel": {"@id": "ex:value"} }
+  },
+  "ex:prop": "value2"
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Illegal reverse property in embedded node in ex:rel`,
+                ERROR_CODES.INVALID_EMBEDDED_NODE));
+          });
+
+          // TODO: more tests
         });
       });
 

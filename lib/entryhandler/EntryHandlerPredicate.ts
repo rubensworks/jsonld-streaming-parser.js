@@ -20,10 +20,12 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
    * @param {Term} predicate The predicate.
    * @param {Term} object The object.
    * @param {boolean} reverse If the property is reversed.
+   * @param {boolean} isEmbedded If the property exists in an embedded node as direct child.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
   public static async handlePredicateObject(parsingContext: ParsingContext, util: Util, keys: any[], depth: number,
-                                            predicate: RDF.Term, object: RDF.Term, reverse: boolean) {
+                                            predicate: RDF.Term, object: RDF.Term,
+                                            reverse: boolean, isEmbedded: boolean) {
     const depthProperties: number = await util.getPropertiesDepth(keys, depth);
     const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
     const depthPropertiesGraph: number = depth - depthOffsetGraph;
@@ -39,33 +41,23 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           if (graphs) {
             for (const graph of graphs) {
               // Emit our quad if graph @id is known
-              if (reverse) {
-                util.validateReverseSubject(object);
-                parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
-              } else {
-                parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
-              }
+              util.emitQuadChecked(depth, subject, predicate, object, graph, reverse, isEmbedded);
             }
           } else {
             // Buffer our triple if graph @id is not known yet.
             if (reverse) {
               util.validateReverseSubject(object);
               parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
-                {subject: object, predicate, object: subject});
+                {subject: object, predicate, object: subject, isEmbedded });
             } else {
               parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
-                .push({subject, predicate, object});
+                .push({subject, predicate, object, isEmbedded});
             }
           }
         } else {
           // Emit if no @graph was applicable
           const graph = await util.getGraphContainerValue(keys, depthProperties);
-          if (reverse) {
-            util.validateReverseSubject(object);
-            parsingContext.emitQuad(depth, util.dataFactory.quad(object, predicate, subject, graph));
-          } else {
-            parsingContext.emitQuad(depth, util.dataFactory.quad(subject, predicate, object, graph));
-          }
+          util.emitQuadChecked(depth, subject, predicate, object, graph, reverse, isEmbedded);
         }
       }
     } else {
@@ -73,7 +65,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       if (reverse) {
         util.validateReverseSubject(object);
       }
-      parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse});
+      parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse, isEmbedded});
     }
   }
 
@@ -116,7 +108,15 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       const objects = await util.valueToTerm(context, key, value, depth, keys);
       if (objects.length) {
         for (let object of objects) {
-          const reverse = Util.isPropertyReverse(context, keyOriginal, await util.unaliasKeywordParent(keys, depth));
+          let parentKey = await util.unaliasKeywordParent(keys, depth);
+          const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
+          if (parentKey === '@reverse') {
+            // Check parent of parent when checking if we're in an embedded node if in @reverse
+            depth--;
+            parentKey = await util.unaliasKeywordParent(keys, depth);
+          }
+          const isEmbedded = Util.isPropertyInEmbeddedNode(parentKey);
+          util.validateReverseInEmbeddedNode(key, reverse, isEmbedded);
 
           if (value) {
             // Special case if our term was defined as an @list, but does not occur in an array,
@@ -143,7 +143,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           }
 
           await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-            predicate, object, reverse);
+            predicate, object, reverse, isEmbedded);
         }
       }
     }

@@ -26,7 +26,10 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     // as it's possible that the @type is used to identify the datatype of a literal, which we ignore here.
     const context = await parsingContext.getContext(keys);
     const predicate = util.rdfType;
-    const reverse = Util.isPropertyReverse(context, keyOriginal, await util.unaliasKeywordParent(keys, depth));
+    const parentKey = await util.unaliasKeywordParent(keys, depth);
+    const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
+    const isEmbedded = Util.isPropertyInEmbeddedNode(parentKey);
+    util.validateReverseInEmbeddedNode(key, reverse, isEmbedded);
 
     // Handle multiple values if the value is an array
     const elements = Array.isArray(value) ? value : [ value ];
@@ -37,7 +40,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       const type = util.createVocabOrBaseTerm(context, element);
       if (type) {
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-          predicate, type, reverse);
+          predicate, type, reverse, isEmbedded);
       }
     }
 

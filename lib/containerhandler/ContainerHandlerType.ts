@@ -59,7 +59,7 @@ export class ContainerHandlerType implements IContainerHandler {
       if (type) {
         // Push the type to the stack using the rdf:type predicate
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
-          util.rdfType, type, false);
+          util.rdfType, type, false, false);
       }
 
       // Flush any pending flush buffers

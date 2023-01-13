@@ -37,6 +37,7 @@ export class ParsingContext {
   public readonly normalizeLanguageTags?: boolean;
   public readonly streamingProfileAllowOutOfOrderPlainType?: boolean;
   public readonly rdfstar: boolean;
+  public readonly rdfstarReverseInEmbedded?: boolean;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -64,10 +65,10 @@ export class ParsingContext {
   public readonly jsonLiteralStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[][];
+  public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[][];
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
+  public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, isEmbedded: boolean }[][];
 
   // Depths that should be still flushed
   public pendingContainerFlushBuffers: { depth: number, keys: any[] }[];
@@ -94,6 +95,7 @@ export class ParsingContext {
     this.normalizeLanguageTags = options.normalizeLanguageTags;
     this.streamingProfileAllowOutOfOrderPlainType = options.streamingProfileAllowOutOfOrderPlainType;
     this.rdfstar = options.rdfstar !== false;
+    this.rdfstarReverseInEmbedded = options.rdfstarReverseInEmbedded;
 
     this.topLevelProperties = false;
     this.activeProcessingMode = parseFloat(this.processingMode);
@@ -344,7 +346,7 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedValuesBuffer}.
    */
-  public getUnidentifiedValueBufferSafe(depth: number): { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] {
+  public getUnidentifiedValueBufferSafe(depth: number): { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[] {
     let buffer = this.unidentifiedValuesBuffer[depth];
     if (!buffer) {
       buffer = [];
@@ -359,7 +361,7 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedGraphsBuffer}.
    */
-  public getUnidentifiedGraphBufferSafe(depth: number): { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] {
+  public getUnidentifiedGraphBufferSafe(depth: number): { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, isEmbedded: boolean }[] {
     let buffer = this.unidentifiedGraphsBuffer[depth];
     if (!buffer) {
       buffer = [];

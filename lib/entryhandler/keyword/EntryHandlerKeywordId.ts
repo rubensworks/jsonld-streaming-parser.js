@@ -19,7 +19,17 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
   public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
     : Promise<any> {
     if (typeof value !== 'string') {
-      parsingContext.emitError(new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE));
+      // JSON-LD-star allows @id object values
+      if (parsingContext.rdfstar && typeof value === 'object') {
+        const valueKeys = Object.keys(value);
+        if (valueKeys.length === 1 && valueKeys[0] === '@id') {
+          parsingContext.emitError(new ErrorCoded(`Invalid embedded node without property with @id ${value['@id']}`,
+            ERROR_CODES.INVALID_EMBEDDED_NODE))
+        }
+      } else {
+        parsingContext.emitError(new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE));
+      }
+      return;
     }
 
     // Determine the canonical place for this id.

@@ -318,12 +318,13 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    */
   public async flushBuffer(depth: number, keys: any[]) {
     let subjects: RDF.Term[] = this.parsingContext.idStack[depth];
-    if (!subjects) {
+    const subjectsWasDefined = !!subjects;
+    if (!subjectsWasDefined) {
       subjects = this.parsingContext.idStack[depth] = [ this.util.dataFactory.blankNode() ];
     }
 
     // Flush values at this level
-    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
+    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[] =
       this.parsingContext.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
       for (const subject of subjects) {
@@ -336,13 +337,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
             // Flush values to stream if the graph @id is known
             this.parsingContext.emittedStack[depth] = true;
             for (const bufferedValue of valueBuffer) {
-              if (bufferedValue.reverse) {
-                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                  bufferedValue.object, bufferedValue.predicate, subject, graph));
-              } else {
-                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                  subject, bufferedValue.predicate, bufferedValue.object, graph));
-              }
+              this.util.emitQuadChecked(depth, subject, bufferedValue.predicate, bufferedValue.object, graph, bufferedValue.reverse, bufferedValue.isEmbedded);
             }
           }
         } else {
@@ -355,12 +350,14 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
                 object: subject,
                 predicate: bufferedValue.predicate,
                 subject: bufferedValue.object,
+                isEmbedded: bufferedValue.isEmbedded,
               });
             } else {
               subGraphBuffer.push({
                 object: bufferedValue.object,
                 predicate: bufferedValue.predicate,
                 subject,
+                isEmbedded: bufferedValue.isEmbedded,
               });
             }
           }
@@ -638,8 +635,13 @@ export interface IJsonLdParserOptions {
    */
   skipContextValidation?: boolean;
   /**
-   * If nested triples should be parsed according to the JSON-LD star specification.
+   * If embedded nodes and annotated objects should be parsed according to the JSON-LD star specification.
    * Defaults to true
    */
   rdfstar?: boolean;
+  /**
+   * If embedded nodes may use reverse properties
+   * Defaults to false.
+   */
+  rdfstarReverseInEmbedded?: boolean;
 }
