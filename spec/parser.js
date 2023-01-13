@@ -7,7 +7,7 @@ module.exports = {
       return Promise.reject(
         new ErrorSkipped(`Test with processing mode ${options.processingMode} was skipped, only 1.0 is supported.`));
     }
-    if (options.specVersion && options.specVersion !== '1.1') {
+    if (options.specVersion && options.specVersion !== '1.1' && options.specVersion !== 'star') {
       return Promise.reject(
         new ErrorSkipped(`Test with spec version ${options.specVersion} was skipped, only 1.1 is supported.`));
     }

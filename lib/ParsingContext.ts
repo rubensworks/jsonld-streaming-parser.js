@@ -36,6 +36,7 @@ export class ParsingContext {
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
   public readonly normalizeLanguageTags?: boolean;
   public readonly streamingProfileAllowOutOfOrderPlainType?: boolean;
+  public readonly rdfstar: boolean;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -92,6 +93,7 @@ export class ParsingContext {
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;
     this.streamingProfileAllowOutOfOrderPlainType = options.streamingProfileAllowOutOfOrderPlainType;
+    this.rdfstar = options.rdfstar !== false;
 
     this.topLevelProperties = false;
     this.activeProcessingMode = parseFloat(this.processingMode);

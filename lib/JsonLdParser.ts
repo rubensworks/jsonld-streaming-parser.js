@@ -637,4 +637,9 @@ export interface IJsonLdParserOptions {
    * This is useful when parsing large contexts that are known to be valid.
    */
   skipContextValidation?: boolean;
+  /**
+   * If nested triples should be parsed according to the JSON-LD star specification.
+   * Defaults to true
+   */
+  rdfstar?: boolean;
 }
