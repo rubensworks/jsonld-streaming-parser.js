@@ -213,13 +213,13 @@ describe('JsonLdParser', () => {
     });
   });
 
-  /*(<any> each ([
+  (<any> each ([
     [true],
     [false],
-  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {*/
+  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
-  describe('when instantiated with a data factory and streamingProfile %s', () => {
-    const streamingProfile = true;
+  /*describe('when instantiated with a data factory and streamingProfile %s', () => {
+    const streamingProfile = true;*/
     let parser: any;
 
     beforeEach(() => {
@@ -12139,8 +12139,626 @@ describe('JsonLdParser', () => {
               .toThrow(new ErrorCoded(`Illegal reverse property in embedded node in ex:rel`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
+        });
 
-          // TODO: more tests
+        describe('annotation object', () => {
+          it('on nested node', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": {
+      "ex:annotation": "valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation'),
+                DF.literal('valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on nested node when rdfstar is disabled', async () => {
+            parser = new JsonLdParser({ rdfstar: false });
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": {
+      "ex:annotation": "valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+            ]);
+          });
+
+          it('on nested node with @reverse', async () => {
+            const stream = streamifyString(`
+{
+  "@context": { "annotation": { "@reverse": "ex:annotation", "@type": "@id" } },
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": {
+      "annotation": "ex:valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.namedNode('ex:valueAnnotated'),
+                DF.namedNode('ex:annotation'),
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+              ),
+            ]);
+          });
+
+          it('on nested node where @annotation comes before @id', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@annotation": {
+      "ex:annotation": "valueAnnotated"
+    },
+    "@id": "ex:o"
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation'),
+                DF.literal('valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on nested node with @type in annotation', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": {
+      "@type": "ex:valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('ex:valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on nested node with additional property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "ex:prop2": "value2",
+    "@annotation": {
+      "ex:annotation": "valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.namedNode('ex:o'),
+                DF.namedNode('ex:prop2'),
+                DF.literal('value2'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation'),
+                DF.literal('valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on nested node with two annotations as array', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": [
+      { "ex:annotation1": "valueAnnotated1" },
+      { "ex:annotation2": "valueAnnotated2" }
+    ]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation1'),
+                DF.literal('valueAnnotated1')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation2'),
+                DF.literal('valueAnnotated2')
+              ),
+            ]);
+          });
+
+          it('on nested node with two annotations as object', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": "ex:o",
+    "@annotation": {
+      "ex:annotation1": "valueAnnotated1",
+      "ex:annotation2": "valueAnnotated2"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation1'),
+                DF.literal('valueAnnotated1')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:annotation2'),
+                DF.literal('valueAnnotated2')
+              ),
+            ]);
+          });
+
+          it('on @value', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@value": "value",
+    "@annotation": {
+      "ex:annotation": "valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.literal('value')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('value')
+                ),
+                DF.namedNode('ex:annotation'),
+                DF.literal('valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on @value with aliased @annotation', async () => {
+            const stream = streamifyString(`
+{
+  "@context": { "annotation": "@annotation" },
+  "@id": "ex:s",
+  "ex:prop": {
+    "@value": "value",
+    "annotation": {
+      "ex:annotation": "valueAnnotated"
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.literal('value')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('value')
+                ),
+                DF.namedNode('ex:annotation'),
+                DF.literal('valueAnnotated')
+              ),
+            ]);
+          });
+
+          it('on nested @value', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@value": "value",
+    "@annotation": {
+      "ex:annotation1": {
+        "@value": "valueAnnotated1",
+        "@annotation": {
+          "ex:annotation2": "valueAnnotated2"
+        }
+      }
+    }
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.literal('value')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('value')
+                ),
+                DF.namedNode('ex:annotation1'),
+                DF.literal('valueAnnotated1')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.quad(
+                    DF.namedNode('ex:s'),
+                    DF.namedNode('ex:prop'),
+                    DF.literal('value')
+                  ),
+                  DF.namedNode('ex:annotation1'),
+                  DF.literal('valueAnnotated1')
+                ),
+                DF.namedNode('ex:annotation2'),
+                DF.literal('valueAnnotated2')
+              ),
+            ]);
+          });
+
+          it('on branched nested @value', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@value": "value",
+    "@annotation": [
+      {
+        "ex:annotation1.1": {
+          "@value": "valueAnnotated1.1",
+          "@annotation": {
+            "ex:annotation1.2": "valueAnnotated1.2"
+          }
+        }
+      },
+      {
+        "ex:annotation2.1": {
+          "@value": "valueAnnotated2.1",
+          "@annotation": {
+            "ex:annotation2.2": "valueAnnotated2.2"
+          }
+        }
+      }
+    ]
+  }
+}
+`);
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:prop'),
+                DF.literal('value')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('value')
+                ),
+                DF.namedNode('ex:annotation1.1'),
+                DF.literal('valueAnnotated1.1')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.quad(
+                    DF.namedNode('ex:s'),
+                    DF.namedNode('ex:prop'),
+                    DF.literal('value')
+                  ),
+                  DF.namedNode('ex:annotation1.1'),
+                  DF.literal('valueAnnotated1.1')
+                ),
+                DF.namedNode('ex:annotation1.2'),
+                DF.literal('valueAnnotated1.2')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:prop'),
+                  DF.literal('value')
+                ),
+                DF.namedNode('ex:annotation2.1'),
+                DF.literal('valueAnnotated2.1')
+              ),
+              DF.quad(
+                DF.quad(
+                  DF.quad(
+                    DF.namedNode('ex:s'),
+                    DF.namedNode('ex:prop'),
+                    DF.literal('value')
+                  ),
+                  DF.namedNode('ex:annotation2.1'),
+                  DF.literal('valueAnnotated2.1')
+                ),
+                DF.namedNode('ex:annotation2.2'),
+                DF.literal('valueAnnotated2.2')
+              ),
+            ]);
+          });
+
+          it('an invalid top-level @annotation', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:name": "Bob",
+  "@annotation": {"ex:prop": "value2"}
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Annotations can not be made on top-level nodes`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+
+          it('an illegal @id inside an @annotation before the property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:knows": {
+    "@id": "ex:fred",
+    "@annotation": {
+      "@id": "ex:invalid-ann-id",
+      "ex:prop": "value2"
+    }
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found an illegal @id inside an annotation: ex:invalid-ann-id`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+
+          it('an illegal @id inside an @annotation after the property', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:knows": {
+    "@id": "ex:fred",
+    "@annotation": {
+      "ex:prop": "value2",
+      "@id": "ex:invalid-ann-id"
+    }
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found an illegal @id inside an annotation: ex:invalid-ann-id`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+
+          it('an illegal string value', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:knows": {
+    "@id": "ex:fred",
+    "@annotation": "abc"
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found illegal annotation value: "abc"`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+
+          it('an illegal @value value', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:knows": {
+    "@id": "ex:fred",
+    "@annotation": { "@value": "abc" }
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found illegal annotation value: {"@value":"abc"}`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+
+          it('an illegal annotation inside an @list', async () => {
+            const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:knows": {
+    "@list": [
+      {
+        "@id": "ex:fred",
+        "@annotation": { "ex:prop": "value2" }
+      }
+    ]
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found an illegal annotation inside a list`,
+                ERROR_CODES.INVALID_ANNOTATION));
+          });
+        });
+
+        it('on annotation containing an embedded node', async () => {
+          const stream = streamifyString(`
+{
+  "@context": {
+    "@vocab": "ex:",
+    "p1": {"@type": "@id"}
+  },
+  "@id": "ex:s",
+  "p": {
+    "@id": "ex:o",
+    "@annotation": {
+      "r": {
+        "@id": "ex:s1",
+        "@annotation": {
+          "p1": "ex:o1"
+        }
+      }
+    }
+  }
+}
+`);
+          return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+            DF.quad(
+              DF.namedNode('ex:s'),
+              DF.namedNode('ex:p'),
+              DF.namedNode('ex:o'),
+            ),
+            DF.quad(
+              DF.quad(
+                DF.namedNode('ex:s'),
+                DF.namedNode('ex:p'),
+                DF.namedNode('ex:o'),
+              ),
+              DF.namedNode('ex:r'),
+              DF.namedNode('ex:s1')
+            ),
+            DF.quad(
+              DF.quad(
+                DF.quad(
+                  DF.namedNode('ex:s'),
+                  DF.namedNode('ex:p'),
+                  DF.namedNode('ex:o'),
+                ),
+                DF.namedNode('ex:r'),
+                DF.namedNode('ex:s1')
+              ),
+              DF.namedNode('ex:p1'),
+              DF.namedNode('ex:o1')
+            ),
+          ]);
+        });
+
+        it('an illegal embedded node containing an annotation', async () => {
+          const stream = streamifyString(`
+{
+  "@id": "ex:bob",
+  "ex:claims": {
+    "@id": {
+        "@id": "ex:fred",
+        "name": "Fred",
+        "@annotation": {
+          "ex:certainty": 0.8
+        }
+    }
+  }
+}
+`);
+          await expect(arrayifyStream(stream.pipe(parser))).rejects
+            .toThrow(new ErrorCoded(`Found an illegal annotation inside an embedded node`,
+              ERROR_CODES.INVALID_ANNOTATION));
         });
       });
 

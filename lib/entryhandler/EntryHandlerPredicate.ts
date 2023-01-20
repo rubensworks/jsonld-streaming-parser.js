@@ -1,6 +1,6 @@
 import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
 import * as RDF from "@rdfjs/types";
-import {ParsingContext} from "../ParsingContext";
+import { AnnotationsBufferEntry, ParsingContext } from "../ParsingContext";
 import {Util} from "../Util";
 import {IEntryHandler} from "./IEntryHandler";
 
@@ -21,17 +21,18 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
    * @param {Term} object The object.
    * @param {boolean} reverse If the property is reversed.
    * @param {boolean} isEmbedded If the property exists in an embedded node as direct child.
+   * @param {boolean} isAnnotation If the property exists in an annotation object.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
   public static async handlePredicateObject(parsingContext: ParsingContext, util: Util, keys: any[], depth: number,
                                             predicate: RDF.Term, object: RDF.Term,
-                                            reverse: boolean, isEmbedded: boolean) {
+                                            reverse: boolean, isEmbedded: boolean, isAnnotation: boolean) {
     const depthProperties: number = await util.getPropertiesDepth(keys, depth);
     const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
     const depthPropertiesGraph: number = depth - depthOffsetGraph;
 
     const subjects = parsingContext.idStack[depthProperties];
-    if (subjects) {
+    if (subjects && !isAnnotation) {
       // Emit directly if the @id was already defined
       for (const subject of subjects) {
         // Check if we're in a @graph context
@@ -65,7 +66,44 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       if (reverse) {
         util.validateReverseSubject(object);
       }
-      parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({predicate, object, reverse, isEmbedded});
+
+      // Either push to the annotations or the actual value buffer
+      if (isAnnotation) {
+        // Only add to buffer if rdfstar is enabled
+        if (parsingContext.rdfstar) {
+          // Error if an @id was defined
+          if (parsingContext.idStack[depth]) {
+            parsingContext.emitError(new ErrorCoded(`Found an illegal @id inside an annotation: ${parsingContext.idStack[depth][0].value}`,
+              ERROR_CODES.INVALID_ANNOTATION));
+          }
+
+          // Error if we're in an embedded node
+          for (let i = 0; i < depth; i++) {
+            if (await util.unaliasKeyword(keys[i], keys, i) === '@id') {
+              parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside an embedded node`,
+                ERROR_CODES.INVALID_ANNOTATION));
+            }
+          }
+
+          // Store new annotation in the buffer
+          const annotationsBuffer = parsingContext.getAnnotationsBufferSafe(depthProperties);
+          const newAnnotation: AnnotationsBufferEntry = { predicate, object, reverse, nestedAnnotations: [], depth: depthProperties };
+          annotationsBuffer.push(newAnnotation);
+
+          // Check in the buffer if any annotations were defined at a deeper depth,
+          // if so, they are considered nested annotations.
+          for (let i = annotationsBuffer.length - 2; i >= 0; i--) {
+            // We iterate in reverse order, to enable easy item removal from the back.
+            const existingAnnotation = annotationsBuffer[i];
+            if (existingAnnotation.depth > depthProperties) {
+              newAnnotation.nestedAnnotations.push(existingAnnotation);
+              annotationsBuffer.splice(i, 1);
+            }
+          }
+        }
+      } else {
+        parsingContext.getUnidentifiedValueBufferSafe(depthProperties).push({ predicate, object, reverse, isEmbedded });
+      }
     }
   }
 
@@ -108,15 +146,22 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
       const objects = await util.valueToTerm(context, key, value, depth, keys);
       if (objects.length) {
         for (let object of objects) {
+          // Based on parent key, check if reverse, embedded, and annotation.
           let parentKey = await util.unaliasKeywordParent(keys, depth);
           const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
-          if (parentKey === '@reverse') {
-            // Check parent of parent when checking if we're in an embedded node if in @reverse
-            depth--;
-            parentKey = await util.unaliasKeywordParent(keys, depth);
+          let parentDepthOffset = 0;
+          while (parentKey === '@reverse' || typeof parentKey === 'number') {
+            // Check parent of parent when checking while we're in an array or in @reverse
+            if (typeof parentKey === 'number') {
+              parentDepthOffset++;
+            } else {
+              depth--;
+            }
+            parentKey = await util.unaliasKeywordParent(keys, depth - parentDepthOffset);
           }
           const isEmbedded = Util.isPropertyInEmbeddedNode(parentKey);
           util.validateReverseInEmbeddedNode(key, reverse, isEmbedded);
+          const isAnnotation = Util.isPropertyInAnnotationObject(parentKey);
 
           if (value) {
             // Special case if our term was defined as an @list, but does not occur in an array,
@@ -143,7 +188,7 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
           }
 
           await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-            predicate, object, reverse, isEmbedded);
+            predicate, object, reverse, isEmbedded, isAnnotation);
         }
       }
     }

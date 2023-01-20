@@ -30,6 +30,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
     const isEmbedded = Util.isPropertyInEmbeddedNode(parentKey);
     util.validateReverseInEmbeddedNode(key, reverse, isEmbedded);
+    const isAnnotation = Util.isPropertyInAnnotationObject(parentKey);
 
     // Handle multiple values if the value is an array
     const elements = Array.isArray(value) ? value : [ value ];
@@ -40,7 +41,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       const type = util.createVocabOrBaseTerm(context, element);
       if (type) {
         await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-          predicate, type, reverse, isEmbedded);
+          predicate, type, reverse, isEmbedded, isAnnotation);
       }
     }
 

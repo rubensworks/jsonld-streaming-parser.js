@@ -24,7 +24,7 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
         const valueKeys = Object.keys(value);
         if (valueKeys.length === 1 && valueKeys[0] === '@id') {
           parsingContext.emitError(new ErrorCoded(`Invalid embedded node without property with @id ${value['@id']}`,
-            ERROR_CODES.INVALID_EMBEDDED_NODE))
+            ERROR_CODES.INVALID_EMBEDDED_NODE));
         }
       } else {
         parsingContext.emitError(new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE));
@@ -47,6 +47,16 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
         // Otherwise, the previous id was just because of an @id entry.
         parsingContext.emitError(new ErrorCoded(`Found duplicate @ids '${parsingContext
           .idStack[depthProperties][0].value}' and '${value}'`, ERROR_CODES.COLLIDING_KEYWORDS));
+      }
+    }
+
+    // Error if an annotation was defined
+    if (parsingContext.rdfstar && parsingContext.annotationsBuffer[depth]) {
+      for (const annotation of parsingContext.annotationsBuffer[depth]) {
+        if (annotation.depth === depth) {
+          parsingContext.emitError(new ErrorCoded(`Found an illegal @id inside an annotation: ${value}`,
+            ERROR_CODES.INVALID_ANNOTATION));
+        }
       }
     }
 

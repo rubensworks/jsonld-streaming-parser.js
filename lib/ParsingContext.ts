@@ -5,6 +5,8 @@ import * as RDF from "@rdfjs/types";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
 
+export type AnnotationsBufferEntry = { predicate: RDF.Term, object: RDF.Term, reverse: boolean, nestedAnnotations: AnnotationsBufferEntry[], depth: number };
+
 /**
  * Data holder for parsing information.
  */
@@ -69,6 +71,8 @@ export class ParsingContext {
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
   public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, isEmbedded: boolean }[][];
+  // Stack of annotation objects on incomplete nodes.
+  public readonly annotationsBuffer: AnnotationsBufferEntry[][];
 
   // Depths that should be still flushed
   public pendingContainerFlushBuffers: { depth: number, keys: any[] }[];
@@ -115,6 +119,7 @@ export class ParsingContext {
     this.jsonLiteralStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
+    this.annotationsBuffer = [];
 
     this.pendingContainerFlushBuffers = [];
 
@@ -371,6 +376,20 @@ export class ParsingContext {
   }
 
   /**
+   * Safely get or create the depth value of {@link ParsingContext.annotationsBuffer}.
+   * @param {number} depth A depth.
+   * @return {} An element of {@link ParsingContext.annotationsBuffer}.
+   */
+  public getAnnotationsBufferSafe(depth: number): AnnotationsBufferEntry[] {
+    let buffer = this.annotationsBuffer[depth];
+    if (!buffer) {
+      buffer = [];
+      this.annotationsBuffer[depth] = buffer;
+    }
+    return buffer;
+  }
+
+  /**
    * @return IExpandOptions The expand options for the active processing mode.
    */
   public getExpandOptions(): IExpandOptions {
@@ -409,6 +428,16 @@ export class ParsingContext {
     if (this.unidentifiedValuesBuffer[depth + depthOffset]) {
       this.unidentifiedValuesBuffer[depth] = this.unidentifiedValuesBuffer[depth + depthOffset];
       delete this.unidentifiedValuesBuffer[depth + depthOffset];
+    }
+    if (this.annotationsBuffer[depth + depthOffset - 1]) {
+      if (!this.annotationsBuffer[depth - 1]) {
+        this.annotationsBuffer[depth - 1] = [];
+      }
+      this.annotationsBuffer[depth - 1] = [
+        ...this.annotationsBuffer[depth - 1],
+        ...this.annotationsBuffer[depth + depthOffset - 1],
+      ];
+      delete this.annotationsBuffer[depth + depthOffset - 1];
     }
 
     // TODO: also do the same for other stacks

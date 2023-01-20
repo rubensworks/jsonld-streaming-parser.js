@@ -20,6 +20,7 @@ import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywo
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
 import {parse as parseLinkHeader} from "http-link-header";
+import { EntryHandlerKeywordAnnotation } from './entryhandler/keyword/EntryHandlerKeywordAnnotation';
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -36,6 +37,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     new EntryHandlerKeywordNest(),
     new EntryHandlerKeywordType(),
     new EntryHandlerKeywordValue(),
+    new EntryHandlerKeywordAnnotation(),
     new EntryHandlerContainer(),
     new EntryHandlerKeywordUnknownFallback(),
     new EntryHandlerPredicate(),
@@ -251,7 +253,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     }
 
     // Skip further processing if this node is part of a literal
-    if (this.util.isLiteral(depth)) {
+    if (await this.util.isLiteral(keys, depth)) {
       handleKey = false;
     }
 
@@ -304,6 +306,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     this.parsingContext.jsonLiteralStack.splice(depth, 1);
     this.parsingContext.validationStack.splice(depth - 1, 2);
     this.parsingContext.literalStack.splice(depth, this.parsingContext.literalStack.length - depth);
+    this.parsingContext.annotationsBuffer.splice(depth, 1);
     // TODO: just like the literal stack, splice all other stack until the end as well?
   }
 
@@ -385,6 +388,23 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
         }
       }
       this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
+    }
+
+    // Push unhandled annotations up the stack as nested annotations
+    const annotationsBuffer = this.parsingContext.annotationsBuffer[depth];
+    if (annotationsBuffer) {
+      // Throw an error if we reach the top, and still have annotations
+      if (annotationsBuffer.length > 0 && depth === 1) {
+        this.parsingContext.emitError(new ErrorCoded(`Annotations can not be made on top-level nodes`,
+          ERROR_CODES.INVALID_ANNOTATION));
+      }
+
+      // Pass the annotations buffer up one level in the stack
+      const annotationsBufferParent = this.parsingContext.getAnnotationsBufferSafe(depth - 1);
+      for (const annotation of annotationsBuffer) {
+        annotationsBufferParent.push(annotation);
+      }
+      delete this.parsingContext.annotationsBuffer[depth];
     }
   }
 
