@@ -11959,6 +11959,24 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          it('as embedded object with property and with subject when rdfstar is disabled', async () => {
+            parser = new JsonLdParser({ rdfstar: false });
+            const stream = streamifyString(`
+{
+  "@id": "ex:s",
+  "ex:prop": {
+    "@id": {
+      "@id": "ex:subjectEmbedded",
+      "ex:prop": "valueEmbedded"
+    },
+  }
+}
+`);
+            await expect(arrayifyStream(stream.pipe(parser))).rejects
+              .toThrow(new ErrorCoded(`Found illegal @id '[object Object]'`,
+                ERROR_CODES.INVALID_ID_VALUE));
+          });
+
           it('as embedded object with property and without subject', async () => {
             const stream = streamifyString(`
 {
