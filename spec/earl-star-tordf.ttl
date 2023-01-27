@@ -1,0 +1,695 @@
+@prefix dc: <http://purl.org/dc/terms/>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix earl: <http://www.w3.org/ns/earl#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix mf: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rdft: <http://www.w3.org/ns/rdftest#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+
+<> foaf:primaryTopic <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    dc:issued "2023-01-27T07:38:03.989Z"^^xsd:dateTime;
+    foaf:maker <https://www.rubensworks.net/#me>.
+<https://www.npmjs.com/package/jsonld-streaming-parser/> a earl:Software, earl:TestSubject, doap:Project;
+    doap:name "jsonld-streaming-parser";
+    dc:title "jsonld-streaming-parser";
+    doap:release _:b_release.
+_:b_release doap:revision "2.0.0".
+<https://www.npmjs.com/package/jsonld-streaming-parser/> doap:homepage <https://github.com/rubensworks/jsonld-streaming-parser.js#readme>;
+    doap:license <http://opensource.org/licenses/MIT>;
+    doap:programming-language "JavaScript";
+    doap:implements <https://www.w3.org/TR/json-ld/>;
+    doap:category <http://dbpedia.org/resource/Resource_Description_Framework>;
+    doap:download-page <https://npmjs.org/package/jsonld-streaming-parser>;
+    doap:bug-database <https://github.com/rubensworks/jsonld-streaming-parser.js/issues>;
+    doap:developer <https://www.rubensworks.net/#me>;
+    doap:maintainer <https://www.rubensworks.net/#me>;
+    doap:documenter <https://www.rubensworks.net/#me>;
+    doap:maker <https://www.rubensworks.net/#me>;
+    dc:creator <https://www.rubensworks.net/#me>;
+    dc:description "Streaming JSON-LD parser"@en;
+    doap:description "Streaming JSON-LD parser"@en.
+<https://www.rubensworks.net/#me> a foaf:Person, earl:Assertor;
+    foaf:name "Ruben Taelman <rubensworks@gmail.com>";
+    foaf:homepage <https://www.rubensworks.net/>.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst01> a earl:TestCriterion, earl:TestCase;
+    dc:title "invalid embedded node 1";
+    dc:description "Node with embedded subject without rdfstar option.";
+    earl:assertions _:assertions0.
+_:assertions0 rdf:first _:assertion0;
+    rdf:rest rdf:nil.
+_:assertion0 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst01>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result0.
+_:result0 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst02> a earl:TestCriterion, earl:TestCase;
+    dc:title "ignored annotation 1";
+    dc:description "Node object with @annotation property is ignored without rdfstar option.";
+    earl:assertions _:assertions1.
+_:assertions1 rdf:first _:assertion1;
+    rdf:rest rdf:nil.
+_:assertion1 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst02>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result1.
+_:result1 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst03> a earl:TestCriterion, earl:TestCase;
+    dc:title "ignored annotation 2";
+    dc:description "Value object with @annotation property is ignored without rdfstar option";
+    earl:assertions _:assertions2.
+_:assertions2 rdf:first _:assertion2;
+    rdf:rest rdf:nil.
+_:assertion2 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst03>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result2.
+_:result2 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst04> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 1";
+    dc:description "Node with embedded subject having no @id";
+    earl:assertions _:assertions3.
+_:assertions3 rdf:first _:assertion3;
+    rdf:rest rdf:nil.
+_:assertion3 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst04>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result3.
+_:result3 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst05> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 2";
+    dc:description "Node with embedded subject having IRI @id";
+    earl:assertions _:assertions4.
+_:assertions4 rdf:first _:assertion4;
+    rdf:rest rdf:nil.
+_:assertion4 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst05>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result4.
+_:result4 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst06> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 3";
+    dc:description "Node with embedded subject having BNode @id";
+    earl:assertions _:assertions5.
+_:assertions5 rdf:first _:assertion5;
+    rdf:rest rdf:nil.
+_:assertion5 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst06>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result5.
+_:result5 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst07> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 4";
+    dc:description "Node with embedded subject having a type";
+    earl:assertions _:assertions6.
+_:assertions6 rdf:first _:assertion6;
+    rdf:rest rdf:nil.
+_:assertion6 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst07>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result6.
+_:result6 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst08> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 5";
+    dc:description "Node with embedded subject having an IRI value";
+    earl:assertions _:assertions7.
+_:assertions7 rdf:first _:assertion7;
+    rdf:rest rdf:nil.
+_:assertion7 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst08>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result7.
+_:result7 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst09> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 6";
+    dc:description "Node with embedded subject having an BNode value";
+    earl:assertions _:assertions8.
+_:assertions8 rdf:first _:assertion8;
+    rdf:rest rdf:nil.
+_:assertion8 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst09>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result8.
+_:result8 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst10> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 7";
+    dc:description "Node with recursive embedded subject";
+    earl:assertions _:assertions9.
+_:assertions9 rdf:first _:assertion9;
+    rdf:rest rdf:nil.
+_:assertion9 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst10>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result9.
+_:result9 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst11> a earl:TestCriterion, earl:TestCase;
+    dc:title "invalid embedded node 2";
+    dc:description "Illegal node with subject having no property";
+    earl:assertions _:assertions10.
+_:assertions10 rdf:first _:assertion10;
+    rdf:rest rdf:nil.
+_:assertion10 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst11>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result10.
+_:result10 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst12> a earl:TestCriterion, earl:TestCase;
+    dc:title "invalid embedded node 3";
+    dc:description "Illegal node with subject having multiple properties";
+    earl:assertions _:assertions11.
+_:assertions11 rdf:first _:assertion11;
+    rdf:rest rdf:nil.
+_:assertion11 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst12>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result11.
+_:result11 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst13> a earl:TestCriterion, earl:TestCase;
+    dc:title "invalid embedded node 4";
+    dc:description "Illegal node with subject having multiple types";
+    earl:assertions _:assertions12.
+_:assertions12 rdf:first _:assertion12;
+    rdf:rest rdf:nil.
+_:assertion12 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst13>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result12.
+_:result12 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst14> a earl:TestCriterion, earl:TestCase;
+    dc:title "invalid embedded node 5";
+    dc:description "Illegal node with subject having type and property";
+    earl:assertions _:assertions13.
+_:assertions13 rdf:first _:assertion13;
+    rdf:rest rdf:nil.
+_:assertion13 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst14>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result13.
+_:result13 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst15> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 8";
+    dc:description "Node with embedded object";
+    earl:assertions _:assertions14.
+_:assertions14 rdf:first _:assertion14;
+    rdf:rest rdf:nil.
+_:assertion14 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst15>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result14.
+_:result14 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst16> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 9";
+    dc:description "Node with embedded object having properties";
+    earl:assertions _:assertions15.
+_:assertions15 rdf:first _:assertion15;
+    rdf:rest rdf:nil.
+_:assertion15 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst16>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result15.
+_:result15 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst17> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 10";
+    dc:description "Node with recursive embedded object";
+    earl:assertions _:assertions16.
+_:assertions16 rdf:first _:assertion16;
+    rdf:rest rdf:nil.
+_:assertion16 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst17>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result16.
+_:result16 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst18> a earl:TestCriterion, earl:TestCase;
+    dc:title "Annotation node 1";
+    dc:description "Node with @annotation property on value object";
+    earl:assertions _:assertions17.
+_:assertions17 rdf:first _:assertion17;
+    rdf:rest rdf:nil.
+_:assertion17 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst18>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result17.
+_:result17 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst19> a earl:TestCriterion, earl:TestCase;
+    dc:title "Annotation node 2";
+    dc:description "Node with @annotation property on node object";
+    earl:assertions _:assertions18.
+_:assertions18 rdf:first _:assertion18;
+    rdf:rest rdf:nil.
+_:assertion18 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst19>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result18.
+_:result18 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20> a earl:TestCriterion, earl:TestCase;
+    dc:title "Annotation node 3";
+    dc:description "Node with @annotation property multiple values";
+    earl:assertions _:assertions19.
+_:assertions19 rdf:first _:assertion19;
+    rdf:rest rdf:nil.
+_:assertion19 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result19.
+_:result19 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20a> a earl:TestCriterion, earl:TestCase;
+    dc:title "Annotation node 4";
+    dc:description "Node with @annotation property containing multiple properties";
+    earl:assertions _:assertions20.
+_:assertions20 rdf:first _:assertion20;
+    rdf:rest rdf:nil.
+_:assertion20 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20a>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result20.
+_:result20 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20b> a earl:TestCriterion, earl:TestCase;
+    dc:title "Annotation node 5";
+    dc:description "Node with @annotation property containing an empty node object";
+    earl:assertions _:assertions21.
+_:assertions21 rdf:first _:assertion21;
+    rdf:rest rdf:nil.
+_:assertion21 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst20b>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result21.
+_:result21 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst21> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 1";
+    dc:description "Node with @annotation property that is on the top-level is invalid";
+    earl:assertions _:assertions22.
+_:assertions22 rdf:first _:assertion22;
+    rdf:rest rdf:nil.
+_:assertion22 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst21>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result22.
+_:result22 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst22> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 2";
+    dc:description "Node with @annotation property on a top-level graph node is invalid";
+    earl:assertions _:assertions23.
+_:assertions23 rdf:first _:assertion23;
+    rdf:rest rdf:nil.
+_:assertion23 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst22>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result23.
+_:result23 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst23> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 3";
+    dc:description "Node with @annotation property having @id is invalid";
+    earl:assertions _:assertions24.
+_:assertions24 rdf:first _:assertion24;
+    rdf:rest rdf:nil.
+_:assertion24 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst23>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result24.
+_:result24 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst24> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 4";
+    dc:description "Node with @annotation property with simple value is invalid";
+    earl:assertions _:assertions25.
+_:assertions25 rdf:first _:assertion25;
+    rdf:rest rdf:nil.
+_:assertion25 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst24>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result25.
+_:result25 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst24a> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 5";
+    dc:description "Node with @annotation property with value object value is invalid";
+    earl:assertions _:assertions26.
+_:assertions26 rdf:first _:assertion26;
+    rdf:rest rdf:nil.
+_:assertion26 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst24a>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result26.
+_:result26 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst25> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 6";
+    dc:description "@annotation on a list";
+    earl:assertions _:assertions27.
+_:assertions27 rdf:first _:assertion27;
+    rdf:rest rdf:nil.
+_:assertion27 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst25>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result27.
+_:result27 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst26> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 7";
+    dc:description "Node with @annotation on a list value";
+    earl:assertions _:assertions28.
+_:assertions28 rdf:first _:assertion28;
+    rdf:rest rdf:nil.
+_:assertion28 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst26>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result28.
+_:result28 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst27> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 8";
+    dc:description "@annotation property on a top-level @included node is invalid";
+    earl:assertions _:assertions29.
+_:assertions29 rdf:first _:assertion29;
+    rdf:rest rdf:nil.
+_:assertion29 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst27>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result29.
+_:result29 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst27a> a earl:TestCriterion, earl:TestCase;
+    dc:title "Invalid annotation node 9";
+    dc:description "Node with @annotation that is an embedded node is invalid";
+    earl:assertions _:assertions30.
+_:assertions30 rdf:first _:assertion30;
+    rdf:rest rdf:nil.
+_:assertion30 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst27a>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result30.
+_:result30 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst28> a earl:TestCriterion, earl:TestCase;
+    dc:title "Embedded annotation node 1";
+    dc:description "Node with @annotation property on embedded subject";
+    earl:assertions _:assertions31.
+_:assertions31 rdf:first _:assertion31;
+    rdf:rest rdf:nil.
+_:assertion31 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst28>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result31.
+_:result31 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst29> a earl:TestCriterion, earl:TestCase;
+    dc:title "Embedded annotation node 1";
+    dc:description "Node with @annotation property on embedded object";
+    earl:assertions _:assertions32.
+_:assertions32 rdf:first _:assertion32;
+    rdf:rest rdf:nil.
+_:assertion32 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst29>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result32.
+_:result32 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst30> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 11";
+    dc:description "Embedded node with reverse relationship";
+    earl:assertions _:assertions33.
+_:assertions33 rdf:first _:assertion33;
+    rdf:rest rdf:nil.
+_:assertion33 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst30>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result33.
+_:result33 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst31> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 12";
+    dc:description "Embedded node with expanded reverse relationship";
+    earl:assertions _:assertions34.
+_:assertions34 rdf:first _:assertion34;
+    rdf:rest rdf:nil.
+_:assertion34 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst31>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result34.
+_:result34 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst32> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 13";
+    dc:description "Embedded node used as subject in reverse relationship";
+    earl:assertions _:assertions35.
+_:assertions35 rdf:first _:assertion35;
+    rdf:rest rdf:nil.
+_:assertion35 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst32>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result35.
+_:result35 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst33> a earl:TestCriterion, earl:TestCase;
+    dc:title "embedded node 14";
+    dc:description "Embedded node used as object in reverse relationship";
+    earl:assertions _:assertions36.
+_:assertions36 rdf:first _:assertion36;
+    rdf:rest rdf:nil.
+_:assertion36 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst33>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result36.
+_:result36 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst34> a earl:TestCriterion, earl:TestCase;
+    dc:title "Reverse annotation node 1";
+    dc:description "node with @annotation property on node object with reverse relationship";
+    earl:assertions _:assertions37.
+_:assertions37 rdf:first _:assertion37;
+    rdf:rest rdf:nil.
+_:assertion37 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst34>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result37.
+_:result37 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst35> a earl:TestCriterion, earl:TestCase;
+    dc:title "Reverse annotation node 2";
+    dc:description "reverse relationship inside annotation";
+    earl:assertions _:assertions38.
+_:assertions38 rdf:first _:assertion38;
+    rdf:rest rdf:nil.
+_:assertion38 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst35>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result38.
+_:result38 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst36> a earl:TestCriterion, earl:TestCase;
+    dc:title "Alias for embedded node";
+    dc:description "embedded node with an alias of `@id`";
+    earl:assertions _:assertions39.
+_:assertions39 rdf:first _:assertion39;
+    rdf:rest rdf:nil.
+_:assertion39 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst36>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result39.
+_:result39 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst37> a earl:TestCriterion, earl:TestCase;
+    dc:title "Alias for annotation node";
+    dc:description "annotation node with an alias of `@annotation`";
+    earl:assertions _:assertions40.
+_:assertions40 rdf:first _:assertion40;
+    rdf:rest rdf:nil.
+_:assertion40 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst37>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result40.
+_:result40 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst38> a earl:TestCriterion, earl:TestCase;
+    dc:title "annotation value 1";
+    dc:description "embedded node with annotation on value object";
+    earl:assertions _:assertions41.
+_:assertions41 rdf:first _:assertion41;
+    rdf:rest rdf:nil.
+_:assertion41 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst38>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result41.
+_:result41 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst39> a earl:TestCriterion, earl:TestCase;
+    dc:title "annotation with embedded node 1";
+    dc:description "annotation node containing an embedded node";
+    earl:assertions _:assertions42.
+_:assertions42 rdf:first _:assertion42;
+    rdf:rest rdf:nil.
+_:assertion42 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst39>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result42.
+_:result42 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
+<https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst40> a earl:TestCriterion, earl:TestCase;
+    dc:title "annotation with annotation 1";
+    dc:description "annotation node containing an annotation node";
+    earl:assertions _:assertions43.
+_:assertions43 rdf:first _:assertion43;
+    rdf:rest rdf:nil.
+_:assertion43 a earl:Assertion;
+    earl:assertedBy <https://www.rubensworks.net/#me>;
+    earl:test <https://json-ld.github.io/json-ld-star/tests/toRdf-manifest#tst40>;
+    earl:subject <https://www.npmjs.com/package/jsonld-streaming-parser/>;
+    earl:mode earl:automatic;
+    earl:result _:result43.
+_:result43 a earl:TestResult;
+    earl:outcome earl:passed;
+    dc:date "2023-01-27T07:38:03.989Z"^^xsd:dateTime.
