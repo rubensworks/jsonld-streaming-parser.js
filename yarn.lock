@@ -2493,10 +2493,22 @@ jsonify@^0.0.1:
   resolved "https://registry.yarnpkg.com/jsonify/-/jsonify-0.0.1.tgz#2aa3111dae3d34a0f151c63f3a45d995d9420978"
   integrity sha512-2/Ki0GcmuqSrgFyelQq9M05y7PS0mEwuIzrf3f1fPqkVDVRvZrPZtVSMHxdgo8Aq0sxAOb/cr2aqqA3LeWHVPg==
 
-jsonld-context-parser@^2.0.2, jsonld-context-parser@^2.1.3, jsonld-context-parser@^2.2.3:
+jsonld-context-parser@^2.0.2, jsonld-context-parser@^2.1.3:
   version "2.2.3"
   resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-2.2.3.tgz#51f1042dd1dbd75c9991ae70faf984048020ebe6"
   integrity sha512-SMMS/CEKK9VSiKIpmaivVZVpHfC59qax6UM4hbWv5YRcyxx7kmzXWzM/LGxPAwxwx3nwbB644Xd+4443L7OW4g==
+  dependencies:
+    "@types/http-link-header" "^1.0.1"
+    "@types/node" "^18.0.0"
+    canonicalize "^1.0.1"
+    cross-fetch "^3.0.6"
+    http-link-header "^1.0.2"
+    relative-to-absolute-iri "^1.0.5"
+
+jsonld-context-parser@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/jsonld-context-parser/-/jsonld-context-parser-2.3.0.tgz#423a36114bd7876477dabef105efe49cc79fb59b"
+  integrity sha512-c6w2GE57O26eWFjcPX6k6G86ootsIfpuVwhZKjCll0bVoDGBxr1P4OuU+yvgfnh1GJhAGErolfC7W1BklLjWMg==
   dependencies:
     "@types/http-link-header" "^1.0.1"
     "@types/node" "^18.0.0"
@@ -3079,10 +3091,10 @@ rdf-terms@^1.7.0, rdf-terms@^1.9.1:
     rdf-data-factory "^1.1.0"
     rdf-string "^1.6.0"
 
-rdf-test-suite@^1.20.0:
-  version "1.20.0"
-  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.20.0.tgz#9f046a9b4b1c337cd96afb0a7614c4280beda502"
-  integrity sha512-5p26dxVT3Hxr0nV3fEmGHm/NYHr7i8R4zp1hijCNHVrwV22LhAGtYWqYUtRUe00HO0J0kUr+Hpxh3X/OejCLxA==
+rdf-test-suite@^1.21.0:
+  version "1.21.0"
+  resolved "https://registry.yarnpkg.com/rdf-test-suite/-/rdf-test-suite-1.21.0.tgz#abbe8e6c6e0e9ae00168752112eec5e17f3acda1"
+  integrity sha512-BWhThrHpsDafgK8GQL6ZipdUgQo+uStzz/GJ4RZ9dqPTI/7uFZq/MxK1z2vFi0NZtxX+4UCuicK9Tb9Jb1+BGg==
   dependencies:
     "@rdfjs/types" "*"
     "@types/json-stable-stringify" "^1.0.32"
