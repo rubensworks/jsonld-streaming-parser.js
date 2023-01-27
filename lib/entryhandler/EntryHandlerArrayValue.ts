@@ -2,7 +2,7 @@ import * as RDF from "@rdfjs/types";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
 import {IEntryHandler} from "./IEntryHandler";
-import { ERROR_CODES, ErrorCoded } from '../../../jsonld-context-flatten';
+import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
 
 /**
  * Handles values that are part of an array.

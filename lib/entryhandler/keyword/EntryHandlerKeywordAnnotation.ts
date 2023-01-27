@@ -1,7 +1,7 @@
 import {ParsingContext} from "../../ParsingContext";
 import {Util} from "../../Util";
 import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
-import { ERROR_CODES, ErrorCoded } from '../../../../jsonld-context-flatten';
+import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
 
 /**
  * Handles @annotation entries.
