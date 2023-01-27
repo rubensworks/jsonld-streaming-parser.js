@@ -162,6 +162,8 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `normalizeLanguageTags`: Whether or not language tags should be normalized to lowercase. _(Default: `false` for JSON-LD 1.1 (and higher), `true` for JSON-LD 1.0)_
 * `streamingProfileAllowOutOfOrderPlainType`: When the streaming profile flag is enabled, `@type` entries MUST come before other properties since they may defined a type-scoped context. However, when this flag is enabled, `@type` entries that do NOT define a type-scoped context may appear anywhere just like a regular property.. _(Default: `false`)_
 * `skipContextValidation`: If JSON-LD context validation should be skipped. This is useful when parsing large contexts that are known to be valid. _(Default: `false`)_
+* `rdfstar`: If embedded nodes and annotated objects should be parsed according to the [JSON-LD star specification](https://json-ld.github.io/json-ld-star/). _(Default: `true`)_
+* `rdfstarReverseInEmbedded`: If embedded nodes in JSON-LD star can have reverse properties. _(Default: `false`)_
 
 ```javascript
 new JsonLdParser({
@@ -179,6 +181,7 @@ new JsonLdParser({
   defaultGraph: namedNode('http://example.org/graph'),
   rdfDirection: 'i18n-datatype',
   normalizeLanguageTags: true,
+  rdfstar: true,
 });
 ```
 
@@ -239,8 +242,9 @@ Other documents will still be parsed correctly as well, with a slightly lower ef
 
 ## Streaming Profile
 
-This parser adheres to both the [JSON-LD 1.1](https://www.w3.org/TR/json-ld/) specification
-and the [JSON-LD 1.1 Streaming specification](https://w3c.github.io/json-ld-streaming/).
+This parser adheres to the [JSON-LD 1.1](https://www.w3.org/TR/json-ld/) specification,
+the [JSON-LD 1.1 Streaming](https://w3c.github.io/json-ld-streaming/) specification,
+and the [JSON-LD star](https://json-ld.github.io/json-ld-star/) specification.
 
 By default, this parser assumes that JSON-LD document
 are *not* in the [streaming document form](https://w3c.github.io/json-ld-streaming/#streaming-document-form).
@@ -261,6 +265,8 @@ This parser implements the following [JSON-LD specifications](https://json-ld.or
 * JSON-LD 1.1 - Transform JSON-LD to RDF
 * JSON-LD 1.1 - Error handling
 * JSON-LD 1.1 - Streaming Transform JSON-LD to RDF
+* [JSON-LD star](https://json-ld.github.io/json-ld-star/) - Transform JSON-LD star to RDF
+* [JSON-LD star](https://json-ld.github.io/json-ld-star/) - Error handling
 
 ## Performance
 

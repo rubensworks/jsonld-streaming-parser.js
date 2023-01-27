@@ -69,7 +69,7 @@ export class ContainerHandlerIndex implements IContainerHandler {
             // Otherwise, attach the index to the node identifier
             for (const indexValue of indexValues) {
               await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1,
-                indexProperty, indexValue, false);
+                indexProperty, indexValue, false, false, false);
             }
           }
         }

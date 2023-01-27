@@ -5,6 +5,8 @@ import * as RDF from "@rdfjs/types";
 import {ContextTree} from "./ContextTree";
 import {IJsonLdParserOptions, JsonLdParser} from "./JsonLdParser";
 
+export type AnnotationsBufferEntry = { predicate: RDF.Term, object: RDF.Term, reverse: boolean, nestedAnnotations: AnnotationsBufferEntry[], depth: number };
+
 /**
  * Data holder for parsing information.
  */
@@ -36,6 +38,8 @@ export class ParsingContext {
   public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
   public readonly normalizeLanguageTags?: boolean;
   public readonly streamingProfileAllowOutOfOrderPlainType?: boolean;
+  public readonly rdfstar: boolean;
+  public readonly rdfstarReverseInEmbedded?: boolean;
 
   // Stack of indicating if a depth has been touched.
   public readonly processingStack: boolean[];
@@ -63,10 +67,12 @@ export class ParsingContext {
   public readonly jsonLiteralStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[][];
+  public readonly unidentifiedValuesBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[][];
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[][];
+  public readonly unidentifiedGraphsBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, isEmbedded: boolean }[][];
+  // Stack of annotation objects on incomplete nodes.
+  public readonly annotationsBuffer: AnnotationsBufferEntry[][];
 
   // Depths that should be still flushed
   public pendingContainerFlushBuffers: { depth: number, keys: any[] }[];
@@ -92,6 +98,8 @@ export class ParsingContext {
     this.rdfDirection = options.rdfDirection;
     this.normalizeLanguageTags = options.normalizeLanguageTags;
     this.streamingProfileAllowOutOfOrderPlainType = options.streamingProfileAllowOutOfOrderPlainType;
+    this.rdfstar = options.rdfstar !== false;
+    this.rdfstarReverseInEmbedded = options.rdfstarReverseInEmbedded;
 
     this.topLevelProperties = false;
     this.activeProcessingMode = parseFloat(this.processingMode);
@@ -111,6 +119,7 @@ export class ParsingContext {
     this.jsonLiteralStack = [];
     this.unidentifiedValuesBuffer = [];
     this.unidentifiedGraphsBuffer = [];
+    this.annotationsBuffer = [];
 
     this.pendingContainerFlushBuffers = [];
 
@@ -342,7 +351,7 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedValuesBuffer}.
    */
-  public getUnidentifiedValueBufferSafe(depth: number): { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] {
+  public getUnidentifiedValueBufferSafe(depth: number): { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[] {
     let buffer = this.unidentifiedValuesBuffer[depth];
     if (!buffer) {
       buffer = [];
@@ -357,11 +366,25 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedGraphsBuffer}.
    */
-  public getUnidentifiedGraphBufferSafe(depth: number): { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] {
+  public getUnidentifiedGraphBufferSafe(depth: number): { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, isEmbedded: boolean }[] {
     let buffer = this.unidentifiedGraphsBuffer[depth];
     if (!buffer) {
       buffer = [];
       this.unidentifiedGraphsBuffer[depth] = buffer;
+    }
+    return buffer;
+  }
+
+  /**
+   * Safely get or create the depth value of {@link ParsingContext.annotationsBuffer}.
+   * @param {number} depth A depth.
+   * @return {} An element of {@link ParsingContext.annotationsBuffer}.
+   */
+  public getAnnotationsBufferSafe(depth: number): AnnotationsBufferEntry[] {
+    let buffer = this.annotationsBuffer[depth];
+    if (!buffer) {
+      buffer = [];
+      this.annotationsBuffer[depth] = buffer;
     }
     return buffer;
   }
@@ -405,6 +428,16 @@ export class ParsingContext {
     if (this.unidentifiedValuesBuffer[depth + depthOffset]) {
       this.unidentifiedValuesBuffer[depth] = this.unidentifiedValuesBuffer[depth + depthOffset];
       delete this.unidentifiedValuesBuffer[depth + depthOffset];
+    }
+    if (this.annotationsBuffer[depth + depthOffset - 1]) {
+      if (!this.annotationsBuffer[depth - 1]) {
+        this.annotationsBuffer[depth - 1] = [];
+      }
+      this.annotationsBuffer[depth - 1] = [
+        ...this.annotationsBuffer[depth - 1],
+        ...this.annotationsBuffer[depth + depthOffset - 1],
+      ];
+      delete this.annotationsBuffer[depth + depthOffset - 1];
     }
 
     // TODO: also do the same for other stacks

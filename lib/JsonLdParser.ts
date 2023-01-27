@@ -20,6 +20,7 @@ import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywo
 import {ParsingContext} from "./ParsingContext";
 import {Util} from "./Util";
 import {parse as parseLinkHeader} from "http-link-header";
+import { EntryHandlerKeywordAnnotation } from './entryhandler/keyword/EntryHandlerKeywordAnnotation';
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
@@ -36,6 +37,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     new EntryHandlerKeywordNest(),
     new EntryHandlerKeywordType(),
     new EntryHandlerKeywordValue(),
+    new EntryHandlerKeywordAnnotation(),
     new EntryHandlerContainer(),
     new EntryHandlerKeywordUnknownFallback(),
     new EntryHandlerPredicate(),
@@ -251,7 +253,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     }
 
     // Skip further processing if this node is part of a literal
-    if (this.util.isLiteral(depth)) {
+    if (await this.util.isLiteral(keys, depth)) {
       handleKey = false;
     }
 
@@ -304,6 +306,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     this.parsingContext.jsonLiteralStack.splice(depth, 1);
     this.parsingContext.validationStack.splice(depth - 1, 2);
     this.parsingContext.literalStack.splice(depth, this.parsingContext.literalStack.length - depth);
+    this.parsingContext.annotationsBuffer.splice(depth, 1);
     // TODO: just like the literal stack, splice all other stack until the end as well?
   }
 
@@ -318,12 +321,13 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    */
   public async flushBuffer(depth: number, keys: any[]) {
     let subjects: RDF.Term[] = this.parsingContext.idStack[depth];
-    if (!subjects) {
+    const subjectsWasDefined = !!subjects;
+    if (!subjectsWasDefined) {
       subjects = this.parsingContext.idStack[depth] = [ this.util.dataFactory.blankNode() ];
     }
 
     // Flush values at this level
-    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean }[] =
+    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[] =
       this.parsingContext.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
       for (const subject of subjects) {
@@ -336,13 +340,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
             // Flush values to stream if the graph @id is known
             this.parsingContext.emittedStack[depth] = true;
             for (const bufferedValue of valueBuffer) {
-              if (bufferedValue.reverse) {
-                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                  bufferedValue.object, bufferedValue.predicate, subject, graph));
-              } else {
-                this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-                  subject, bufferedValue.predicate, bufferedValue.object, graph));
-              }
+              this.util.emitQuadChecked(depth, subject, bufferedValue.predicate, bufferedValue.object, graph, bufferedValue.reverse, bufferedValue.isEmbedded);
             }
           }
         } else {
@@ -355,12 +353,14 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
                 object: subject,
                 predicate: bufferedValue.predicate,
                 subject: bufferedValue.object,
+                isEmbedded: bufferedValue.isEmbedded,
               });
             } else {
               subGraphBuffer.push({
                 object: bufferedValue.object,
                 predicate: bufferedValue.predicate,
                 subject,
+                isEmbedded: bufferedValue.isEmbedded,
               });
             }
           }
@@ -388,6 +388,23 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
         }
       }
       this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
+    }
+
+    // Push unhandled annotations up the stack as nested annotations
+    const annotationsBuffer = this.parsingContext.annotationsBuffer[depth];
+    if (annotationsBuffer) {
+      // Throw an error if we reach the top, and still have annotations
+      if (annotationsBuffer.length > 0 && depth === 1) {
+        this.parsingContext.emitError(new ErrorCoded(`Annotations can not be made on top-level nodes`,
+          ERROR_CODES.INVALID_ANNOTATION));
+      }
+
+      // Pass the annotations buffer up one level in the stack
+      const annotationsBufferParent = this.parsingContext.getAnnotationsBufferSafe(depth - 1);
+      for (const annotation of annotationsBuffer) {
+        annotationsBufferParent.push(annotation);
+      }
+      delete this.parsingContext.annotationsBuffer[depth];
     }
   }
 
@@ -637,4 +654,14 @@ export interface IJsonLdParserOptions {
    * This is useful when parsing large contexts that are known to be valid.
    */
   skipContextValidation?: boolean;
+  /**
+   * If embedded nodes and annotated objects should be parsed according to the JSON-LD star specification.
+   * Defaults to true
+   */
+  rdfstar?: boolean;
+  /**
+   * If embedded nodes may use reverse properties
+   * Defaults to false.
+   */
+  rdfstarReverseInEmbedded?: boolean;
 }

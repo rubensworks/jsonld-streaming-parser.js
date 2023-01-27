@@ -2,6 +2,7 @@ import * as RDF from "@rdfjs/types";
 import {ParsingContext} from "../ParsingContext";
 import {Util} from "../Util";
 import {IEntryHandler} from "./IEntryHandler";
+import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
 
 /**
  * Handles values that are part of an array.
@@ -141,6 +142,12 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     }
 
     parsingContext.listPointerStack[depth] = listPointer;
+
+    // Error if an annotation was defined
+    if (parsingContext.rdfstar && parsingContext.annotationsBuffer[depth]) {
+      parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside a list`,
+        ERROR_CODES.INVALID_ANNOTATION));
+    }
   }
 
 }

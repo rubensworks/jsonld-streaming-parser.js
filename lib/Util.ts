@@ -3,7 +3,7 @@ import {ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized,
 import * as RDF from "@rdfjs/types";
 import {DataFactory} from "rdf-data-factory";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
-import {ParsingContext} from "./ParsingContext";
+import { AnnotationsBufferEntry, ParsingContext } from "./ParsingContext";
 
 // tslint:disable-next-line:no-var-requires
 const canonicalizeJson = require('canonicalize');
@@ -143,6 +143,24 @@ export class Util {
   }
 
   /**
+   * Check if the given key exists inside an embedded node as direct child.
+   * @param {string} parentKey The parent key.
+   * @return {boolean} If the property is embedded.
+   */
+  public static isPropertyInEmbeddedNode(parentKey: string): boolean {
+    return parentKey === '@id';
+  }
+
+  /**
+   * Check if the given key exists inside an annotation object as direct child.
+   * @param {string} parentKey The parent key.
+   * @return {boolean} If the property is an annotation.
+   */
+  public static isPropertyInAnnotationObject(parentKey: string): boolean {
+    return parentKey === '@annotation';
+  }
+
+  /**
    * Check if the given IRI is valid.
    * @param {string} iri A potential IRI.
    * @return {boolean} If the given IRI is valid.
@@ -266,6 +284,9 @@ export class Util {
             break;
           case '@index':
             valueIndex = subValue;
+            break;
+          case '@annotation':
+            // This keyword is allowed, but is processed like normal nodes
             break;
           default:
             throw new ErrorCoded(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`,
@@ -416,7 +437,18 @@ export class Util {
         if (value["@type"] === '@vocab') {
           return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value["@id"]));
         } else {
-          return this.nullableTermToArray(this.resourceToTerm(context, value["@id"]));
+          const valueId = value["@id"];
+          let valueTerm: RDF.Term | null;
+          if (typeof valueId === 'object') {
+            if (this.parsingContext.rdfstar) {
+              valueTerm = this.parsingContext.idStack[depth + 1][0];
+            } else {
+              throw new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE);
+            }
+          } else {
+            valueTerm = this.resourceToTerm(context, valueId);
+          }
+          return this.nullableTermToArray(valueTerm);
         }
       } else {
         // Only make a blank node if at least one triple was emitted at the value's level.
@@ -743,11 +775,16 @@ export class Util {
    * This will also check higher levels,
    * because if a parent is a literal,
    * then the deeper levels are definitely a literal as well.
+   * @param {any[]} keys The keys.
    * @param {number} depth The depth.
    * @return {boolean} If we are processing a literal.
    */
-  public isLiteral(depth: number): boolean {
+  public async isLiteral(keys: any[], depth: number): Promise<boolean> {
     for (let i = depth; i >= 0; i--) {
+      if (await this.unaliasKeyword(keys[i], keys, i) === '@annotation') {
+        // Literals may have annotations, which require processing of inner nodes.
+        return false;
+      }
       if (this.parsingContext.literalStack[i] || this.parsingContext.jsonLiteralStack[i]) {
         return true;
       }
@@ -881,6 +918,91 @@ export class Util {
   public async getContainerKey(key: any, keys: string[], depth: number): Promise<any> {
     const keyUnaliased = await this.unaliasKeyword(key, keys, depth);
     return keyUnaliased === '@none' ? null : keyUnaliased;
+  }
+
+  /**
+   * Check if no reverse properties are present in embedded nodes.
+   * @param key The current key.
+   * @param reverse If a reverse property is active.
+   * @param isEmbedded If we're in an embedded node.
+   */
+  public validateReverseInEmbeddedNode(key: string, reverse: boolean, isEmbedded: boolean): void {
+    if (isEmbedded && reverse && !this.parsingContext.rdfstarReverseInEmbedded) {
+      throw new ErrorCoded(`Illegal reverse property in embedded node in ${key}`,
+        ERROR_CODES.INVALID_EMBEDDED_NODE);
+    }
+  }
+
+  /**
+   * Emit a quad, with checks.
+   * @param depth The current depth.
+   * @param subject S
+   * @param predicate P
+   * @param object O
+   * @param graph G
+   * @param reverse If a reverse property is active.
+   * @param isEmbedded If we're in an embedded node.
+   */
+  public emitQuadChecked(
+    depth: number,
+    subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, graph: RDF.Term,
+    reverse: boolean, isEmbedded: boolean,
+  ): void {
+    // Create a quad
+    let quad: RDF.BaseQuad;
+    if (reverse) {
+      this.validateReverseSubject(object);
+      quad = this.dataFactory.quad(object, predicate, subject, graph);
+    } else {
+      quad = this.dataFactory.quad(subject, predicate, object, graph);
+    }
+
+    // Emit the quad, unless it was created in an embedded node
+    if (isEmbedded) {
+      // Embedded nodes don't inherit the active graph
+      if (quad.graph.termType !== 'DefaultGraph') {
+        quad = this.dataFactory.quad(quad.subject, quad.predicate, quad.object);
+      }
+
+      // Multiple embedded nodes are not allowed
+      if (this.parsingContext.idStack[depth - 1]) {
+        throw new ErrorCoded(`Illegal multiple properties in an embedded node`,
+          ERROR_CODES.INVALID_EMBEDDED_NODE)
+      }
+
+      this.parsingContext.idStack[depth - 1] = [ quad ];
+    } else {
+      this.parsingContext.emitQuad(depth, quad);
+    }
+
+    // Flush annotations
+    const annotationsBuffer = this.parsingContext.annotationsBuffer[depth];
+    if (annotationsBuffer) {
+      for (const annotation of annotationsBuffer) {
+        this.emitAnnotation(depth, quad, annotation);
+      }
+      delete this.parsingContext.annotationsBuffer[depth];
+    }
+  }
+
+  // This is a separate function to enable recursion
+  protected emitAnnotation(depth: number, quad: RDF.BaseQuad, annotation: AnnotationsBufferEntry) {
+    // Construct annotation quad
+    let annotationQuad;
+    if (annotation.reverse) {
+      this.validateReverseSubject(annotation.object);
+      annotationQuad = this.dataFactory.quad(annotation.object, annotation.predicate, quad);
+    } else {
+      annotationQuad = this.dataFactory.quad(quad, annotation.predicate, annotation.object);
+    }
+
+    // Emit annotated quad
+    this.parsingContext.emitQuad(depth, annotationQuad);
+
+    // Also emit nested annotations
+    for (const nestedAnnotation of annotation.nestedAnnotations) {
+      this.emitAnnotation(depth, annotationQuad, nestedAnnotation);
+    }
   }
 
 }
