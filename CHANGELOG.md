@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.2.0"></a>
+## [v3.2.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.1.0...v3.2.0) - 2023-01-27
+
+### Added
+* Add support for JSON-LD star:
+    * [Handle annotations as RDF-star statements](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/0f451a621863e866a040abb5defa5256f2631697)
+    * [Handle embedded nodes as RDF-star statements](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/0f54ecd6e7dc73fff16054e7bcc19aed2c8ef5ce)
+    * [Add rdfstar option](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/79a5118fc3788b61a14e8c5b4b7f280b5caa029e)
+
+Support for JSON-LD star (or RDF-star) is enabled by default, as does not introduce breaking changes.
+This functionality is however experimental, and may change at any point in time.
+Opting out of JSON-LD star support can be done by setting `rdfstar` to `false` in the parser's constructor.
+
 <a name="v3.1.0"></a>
 ## [v3.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.0.1...v3.1.0) - 2023-01-03
 
