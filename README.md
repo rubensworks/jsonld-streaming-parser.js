@@ -81,6 +81,23 @@ myParser.write(`}}`);
 myParser.end();
 ```
 
+### Convert a JSON-LD string to an RDF/JS dataset
+
+```javascript
+import { Store } from 'n3';
+import { JsonLdParser } from 'jsonld-streaming-parser';
+import { promisifyEventEmitter } from 'event-emitter-promisify';
+
+const store = new Store();
+const parser = new JsonLdParser();
+parser.write('{"@id": "http://example.org/jesse", "@type": "http://example.org/Thing"}');
+parser.end();
+await promisifyEventEmitter(store.import(parser));
+
+// Logs all the quads in the store
+console.log(...store);
+```
+
 ### Import streams
 
 This parser implements the RDFJS [Sink interface](https://rdf.js.org/#sink-interface),
