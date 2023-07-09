@@ -5254,6 +5254,81 @@ describe('JsonLdParser', () => {
                 DF.literal('2011-01-25T00:00:00Z', DF.namedNode('http://vocab.org/dateTime'))),
             ]);
           });
+
+          it('with multiple contexts', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context":[
+                {"ex":"https://example.org/ns/"},
+                {
+                  "@version": 1.1,
+                  "VerifiableCredential": {
+                    "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                  }
+                }
+              ],
+              "@id": "ex:someCredentialInstance",
+              "@type": "VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
+            ]);
+          });
+
+          it('with multiple contexts, one of which contains protected values', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context":[
+                {"ex":"https://example.org/ns/"},
+                {
+                  "@version": 1.1,
+                  "@protected": true,
+                  "VerifiableCredential": {
+                    "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                  }
+                }
+              ],
+              "@id": "ex:someCredentialInstance",
+              "@type": "VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
+            ]);
+          });
+
+          it('with one context containing protected values', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context": {
+                "@version": 1.1,
+                "@protected": true,
+                "VerifiableCredential": {
+                  "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                },
+                "ex": "https://example.org/ns/"
+              },
+              "@id": "ex:someCredentialInstance",
+              "@type": "https://www.w3.org/2018/credentials#VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
+            ]);
+          });
         });
 
         describe('with an out-of-order inner context', () => {
