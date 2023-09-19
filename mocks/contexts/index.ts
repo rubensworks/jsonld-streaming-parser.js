@@ -12,6 +12,6 @@ export class MockedDocumentLoader implements IDocumentLoader {
     if (!(url in allContexts)) {
       throw new Error(`URL [${url}] is not in the set of hard coded contexts`);
     }
-    return allContexts[url]['@context'];
+    return allContexts[url];
   }
 }

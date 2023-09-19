@@ -143,13 +143,15 @@ export class ParsingContext {
   public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalizedRaw,
                             ignoreProtection?: boolean)
     : Promise<JsonLdContextNormalized> {
-    return this.contextParser.parse(context, {
+    const contextOut = await this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
       ignoreProtection,
       normalizeLanguageTags: this.normalizeLanguageTags,
       parentContext,
       processingMode: this.activeProcessingMode,
     });
+    // throw new Error(`The parsed context is ${JSON.stringify(contextOut.getContextRaw(), null, 2)}`);
+    return contextOut
   }
 
   /**

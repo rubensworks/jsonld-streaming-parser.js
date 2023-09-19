@@ -44,6 +44,50 @@ describe('JsonLdParser', () => {
         DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
       ]);
     });
+
+    it('should parse the VC when using @id rather than id', async () => {
+      const stream = streamifyString(JSON.stringify({
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+        ],
+        "@id": "https://some.credential",
+        "credentialSubject": {
+          "@id": "https://some.requestor",
+        },
+        "type": [
+          "VerifiableCredential"
+        ]
+      }));
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
+      ]);
+    });
+
+    it('should parse a VC with minified context', async () => {
+      const stream = streamifyString(JSON.stringify({
+        "@context": {
+          "ty": "@type",
+          "VerifiableCredential": {
+            "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+            "@context": {
+              "credentialSubject": {"@id": "https://www.w3.org/2018/credentials#credentialSubject", "@type": "@id"},
+            }
+          },
+        },
+        "@id": "https://some.credential",
+        "credentialSubject": {
+          "@id": "https://some.requestor",
+        },
+        "ty": 
+          "VerifiableCredential"
+        
+      }));
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
+      ]);
+    })
   });
 
   describe('#fromHttpResponse', () => {

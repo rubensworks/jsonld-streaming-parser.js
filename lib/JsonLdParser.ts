@@ -432,7 +432,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    */
   protected attachJsonParserListeners() {
     // Listen to json parser events
-    this.jsonParser.onValue = (value: any) => {
+    this.jsonParser.onValue = async (value: any) => {
       const depth = this.jsonParser.stack.length;
       const keys = (new Array(depth + 1).fill(0)).map((v, i) => {
         return i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key;

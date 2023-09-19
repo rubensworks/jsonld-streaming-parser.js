@@ -235,3 +235,24 @@ export default {
     "proof": {"@id": "https://w3id.org/security#proof", "@type": "@id", "@container": "@graph"}
   }
 }
+
+
+const data = {
+  "@context": {
+    "@version": 1.1,
+    "@protected": true,
+    "id": "@id",
+    "type": "@type",
+    "VerifiableCredential": {
+      "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+      "@context": {
+        "@version": 1.1,
+        "@protected": true,
+        "id": "@id",
+        "type": "@type",
+        "cred": "https://www.w3.org/2018/credentials#",
+        "credentialSubject": {"@id": "cred:credentialSubject", "@type": "@id"},
+      }
+    },
+  }
+}
