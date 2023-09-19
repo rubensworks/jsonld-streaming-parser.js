@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.2.1"></a>
+## [v3.2.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.2.0...v3.2.1) - 2023-09-19
+
+### Fixed
+* [Fix type-scoped contexts breaking when aliasing `@type`](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/3249687aad62bc48a4e617b49abe6acfa9d01efe)
+
 <a name="v3.2.0"></a>
 ## [v3.2.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.1.0...v3.2.0) - 2023-01-27
 
