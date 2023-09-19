@@ -54,7 +54,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   // Jobs that are not started yet that process a @type (only used if streamingProfile is false)
   private readonly typeJobs: { job: () => Promise<void>, keys: string[] }[];
   // Jobs that are not started yet because of a missing @context or @type (only used if streamingProfile is false)
-  private readonly contextAwaitingJobs: { job: () => Promise<void>, keys: string[] }[];
+  private readonly contextAwaitingJobs: { job: () => Promise<void>, keys: string[]; depth: number }[];
 
   // The last depth that was processed.
   private lastDepth: number;
@@ -432,7 +432,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    */
   protected attachJsonParserListeners() {
     // Listen to json parser events
-    this.jsonParser.onValue = (value: any) => {
+    this.jsonParser.onValue = async (value: any) => {
       const depth = this.jsonParser.stack.length;
       const keys = (new Array(depth + 1).fill(0)).map((v, i) => {
         return i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key;
@@ -453,12 +453,8 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
               jobs = this.contextJobs[depth] = [];
             }
             jobs.push(valueJobCb);
-          } else if (keys[depth] === '@type'
-            || typeof keys[depth] === 'number' && keys[depth - 1] === '@type') { // Also capture @type with array values
-            // Remove @type from keys, because we want it to apply to parent later on
-            this.typeJobs.push({ job: valueJobCb, keys: keys.slice(0, keys.length - 1) });
           } else {
-            this.contextAwaitingJobs.push({ job: valueJobCb, keys });
+            this.contextAwaitingJobs.push({ job: valueJobCb, keys, depth });
           }
         } else {
           // Make sure that our value jobs are chained synchronously
@@ -508,8 +504,19 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     // Clear the keyword cache.
     this.parsingContext.unaliasedKeywordCacheStack.splice(0);
 
-    // Handle non-context jobs
+    const contextAwaitingJobs: { job: () => Promise<void>, keys: string[]; depth: number }[] = [];
+
     for (const job of this.contextAwaitingJobs) {
+      if ((await this.util.unaliasKeyword(job.keys[job.depth], job.keys, job.depth, true)) === '@type'
+      || typeof job.keys[job.depth] === 'number' && (await this.util.unaliasKeyword(job.keys[job.depth - 1], job.keys, job.depth - 1, true)) === '@type') {
+        this.typeJobs.push({ job: job.job, keys: job.keys.slice(0, job.keys.length - 1) })
+      } else {
+        contextAwaitingJobs.push(job)
+      }
+    }
+
+    // Handle non-context jobs
+    for (const job of contextAwaitingJobs) {
       // Check if we have a type (with possible type-scoped context) that should be handled before.
       // We check all possible parent nodes for the current job, from root to leaves.
       if (this.typeJobs.length > 0) {
