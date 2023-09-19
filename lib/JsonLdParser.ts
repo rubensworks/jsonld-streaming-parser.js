@@ -508,7 +508,8 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
 
     for (const job of this.contextAwaitingJobs) {
       if ((await this.util.unaliasKeyword(job.keys[job.depth], job.keys, job.depth, true)) === '@type'
-      || typeof job.keys[job.depth] === 'number' && (await this.util.unaliasKeyword(job.keys[job.depth - 1], job.keys, job.depth - 1, true)) === '@type') {
+      || typeof job.keys[job.depth] === 'number' && (await this.util.unaliasKeyword(job.keys[job.depth - 1], job.keys, job.depth - 1, true)) === '@type') { // Also capture @type with array values
+        // Remove @type from keys, because we want it to apply to parent later on
         this.typeJobs.push({ job: job.job, keys: job.keys.slice(0, job.keys.length - 1) })
       } else {
         contextAwaitingJobs.push(job)
