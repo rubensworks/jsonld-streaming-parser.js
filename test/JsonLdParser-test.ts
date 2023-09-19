@@ -13524,7 +13524,6 @@ describe('JsonLdParser', () => {
     });
   });
 
-
   it('should parse a VC with minified context', async () => {
     const parser = new JsonLdParser();
     const stream = streamifyString(JSON.stringify({
