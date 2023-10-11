@@ -150,7 +150,6 @@ export class ParsingContext {
       parentContext,
       processingMode: this.activeProcessingMode,
     });
-    // throw new Error(`The parsed context is ${JSON.stringify(contextOut.getContextRaw(), null, 2)}`);
     return contextOut
   }
 
