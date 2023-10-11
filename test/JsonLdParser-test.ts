@@ -79,9 +79,9 @@ describe('JsonLdParser', () => {
         "credentialSubject": {
           "@id": "https://some.requestor",
         },
-        "ty": 
+        "ty":
           "VerifiableCredential"
-        
+
       }));
       return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
         DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
@@ -13690,9 +13690,9 @@ describe('JsonLdParser', () => {
       "credentialSubject": {
         "@id": "https://some.requestor",
       },
-      "ty": 
+      "ty":
         "VerifiableCredential"
-      
+
     }));
     return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
       DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
