@@ -38,7 +38,7 @@
     "buffer": "^6.0.3",
     "canonicalize": "^1.0.1",
     "http-link-header": "^1.0.2",
-    "jsonld-context-parser": "^2.3.2",
+    "jsonld-context-parser": "^2.3.3",
     "rdf-data-factory": "^1.1.0",
     "readable-stream": "^4.0.0"
   },
