@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { IDocumentLoader, IJsonLdContext } from 'jsonld-context-parser';
 import vc from './vc';
 
