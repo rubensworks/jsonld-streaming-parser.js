@@ -6,14 +6,89 @@ import { EventEmitter } from 'events';
 import {DataFactory} from "rdf-data-factory";
 import each from 'jest-each';
 import "jest-rdf";
-import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded, FetchDocumentLoader, JsonLdContextNormalized} from "jsonld-context-parser";
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 import { ParsingContext } from '../lib/ParsingContext';
+import contexts, { MockedDocumentLoader } from '../mocks/contexts';
 
 const DF = new DataFactory<RDF.BaseQuad>();
 
 describe('JsonLdParser', () => {
+
+  describe('Parsing a Verifiable Credential', () => {
+    let parser: JsonLdParser;
+
+    beforeEach(() => {
+      parser = new JsonLdParser({
+        dataFactory: DF,
+        documentLoader: new MockedDocumentLoader(),
+      })
+    });
+
+    it('should parse the VC correctly handling the @protected keyword', async () => {
+      const stream = streamifyString(JSON.stringify({
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+        ],
+        "id": "https://some.credential",
+        "credentialSubject": {
+          "id": "https://some.requestor",
+        },
+        "type": [
+          "VerifiableCredential"
+        ]
+      }));
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
+      ]);
+    });
+
+    it('should parse the VC when using @id rather than id', async () => {
+      const stream = streamifyString(JSON.stringify({
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+        ],
+        "@id": "https://some.credential",
+        "credentialSubject": {
+          "@id": "https://some.requestor",
+        },
+        "type": [
+          "VerifiableCredential"
+        ]
+      }));
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
+      ]);
+    });
+
+    it('should parse a VC with minified context', async () => {
+      const stream = streamifyString(JSON.stringify({
+        "@context": {
+          "ty": "@type",
+          "VerifiableCredential": {
+            "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+            "@context": {
+              "credentialSubject": {"@id": "https://www.w3.org/2018/credentials#credentialSubject", "@type": "@id"},
+            }
+          },
+        },
+        "@id": "https://some.credential",
+        "credentialSubject": {
+          "@id": "https://some.requestor",
+        },
+        "ty":
+          "VerifiableCredential"
+
+      }));
+      return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),
+        DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential')),
+      ]);
+    })
+  });
 
   describe('#fromHttpResponse', () => {
     const parseContextSpy = jest.spyOn(ParsingContext.prototype, 'parseContext');
@@ -5252,6 +5327,81 @@ describe('JsonLdParser', () => {
             return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://vocab.org/date'),
                 DF.literal('2011-01-25T00:00:00Z', DF.namedNode('http://vocab.org/dateTime'))),
+            ]);
+          });
+
+          it('with multiple contexts', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context":[
+                {"ex":"https://example.org/ns/"},
+                {
+                  "@version": 1.1,
+                  "VerifiableCredential": {
+                    "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                  }
+                }
+              ],
+              "@id": "ex:someCredentialInstance",
+              "@type": "VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
+            ]);
+          });
+
+          it('with multiple contexts, one of which contains protected values', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context":[
+                {"ex":"https://example.org/ns/"},
+                {
+                  "@version": 1.1,
+                  "@protected": true,
+                  "VerifiableCredential": {
+                    "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                  }
+                }
+              ],
+              "@id": "ex:someCredentialInstance",
+              "@type": "VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
+            ]);
+          });
+
+          it('with one context containing protected values', async () => {
+            parser = new JsonLdParser(
+              { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
+            const stream = streamifyString(JSON.stringify({
+              "@context": {
+                "@version": 1.1,
+                "@protected": true,
+                "VerifiableCredential": {
+                  "@id": "https://www.w3.org/2018/credentials#VerifiableCredential",
+                },
+                "ex": "https://example.org/ns/"
+              },
+              "@id": "ex:someCredentialInstance",
+              "@type": "https://www.w3.org/2018/credentials#VerifiableCredential"
+            }));
+            return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
+              DF.quad(
+                DF.namedNode('https://example.org/ns/someCredentialInstance'),
+                DF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+                DF.namedNode('https://www.w3.org/2018/credentials#VerifiableCredential'),
+                ),
             ]);
           });
         });
@@ -13540,9 +13690,9 @@ describe('JsonLdParser', () => {
       "credentialSubject": {
         "@id": "https://some.requestor",
       },
-      "ty": 
+      "ty":
         "VerifiableCredential"
-      
+
     }));
     return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
       DF.quad(DF.namedNode("https://some.credential"), DF.namedNode('https://www.w3.org/2018/credentials#credentialSubject'), DF.namedNode('https://some.requestor')),

@@ -38,7 +38,7 @@
     "buffer": "^6.0.3",
     "canonicalize": "^1.0.1",
     "http-link-header": "^1.0.2",
-    "jsonld-context-parser": "^2.3.0",
+    "jsonld-context-parser": "^2.3.3",
     "rdf-data-factory": "^1.1.0",
     "readable-stream": "^4.0.0"
   },
@@ -94,7 +94,7 @@
     "test": "jest ${1}",
     "test-watch": "jest ${1} --watch",
     "coveralls": "jest --coverage && cat ./coverage/lcov.info | coveralls",
-    "lint": "tslint index.ts lib/**/*.ts test/**/*.ts --exclude '**/*.d.ts'",
+    "lint": "tslint index.ts lib/**/*.ts test/**/*.ts test/*.ts --exclude '**/*.d.ts'",
     "build": "tsc",
     "build-watch": "tsc --watch",
     "validate": "npm ls",
