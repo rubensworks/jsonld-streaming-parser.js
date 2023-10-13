@@ -143,14 +143,13 @@ export class ParsingContext {
   public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalizedRaw,
                             ignoreProtection?: boolean)
     : Promise<JsonLdContextNormalized> {
-    const contextOut = await this.contextParser.parse(context, {
+    return this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
       ignoreProtection,
       normalizeLanguageTags: this.normalizeLanguageTags,
       parentContext,
       processingMode: this.activeProcessingMode,
     });
-    return contextOut
   }
 
   /**
