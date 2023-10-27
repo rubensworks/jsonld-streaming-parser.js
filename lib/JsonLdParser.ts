@@ -1,7 +1,7 @@
 import * as RDF from "@rdfjs/types";
 // tslint:disable-next-line:no-var-requires
 const Parser = require('@bergos/jsonparse');
-import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil} from "jsonld-context-parser";
+import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil, ContextParser} from "jsonld-context-parser";
 import {PassThrough, Transform, Readable} from "readable-stream";
 import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
 import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
@@ -672,4 +672,8 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   rdfstarReverseInEmbedded?: boolean;
+  /**
+   * The the context parser to use.
+   */
+  contextParser?: ContextParser;
 }

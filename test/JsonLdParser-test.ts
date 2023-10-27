@@ -6,13 +6,30 @@ import { EventEmitter } from 'events';
 import {DataFactory} from "rdf-data-factory";
 import each from 'jest-each';
 import "jest-rdf";
-import {ERROR_CODES, ErrorCoded, FetchDocumentLoader, JsonLdContextNormalized} from "jsonld-context-parser";
+import {ContextParser, ERROR_CODES, ErrorCoded, FetchDocumentLoader, IParseOptions, JsonLdContext, JsonLdContextNormalized} from "jsonld-context-parser";
 import {PassThrough} from "stream";
 import {Util} from "../lib/Util";
 import { ParsingContext } from '../lib/ParsingContext';
 import contexts, { MockedDocumentLoader } from '../mocks/contexts';
 
 const DF = new DataFactory<RDF.BaseQuad>();
+
+const deepFreeze = obj => {
+  Object.keys(obj).forEach(prop => {
+    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) deepFreeze(obj[prop]);
+  });
+  return Object.freeze(obj);
+};
+
+class FrozenContextParser extends ContextParser {
+  constructor(options: ConstructorParameters<typeof ContextParser>[0]) {
+    super(options);
+  }
+
+  public parse(context: JsonLdContext, options?: IParseOptions): Promise<JsonLdContextNormalized> {
+    return super.parse(context, options)// .then(deepFreeze);
+  }
+}
 
 describe('JsonLdParser', () => {
 
@@ -22,7 +39,11 @@ describe('JsonLdParser', () => {
     beforeEach(() => {
       parser = new JsonLdParser({
         dataFactory: DF,
-        documentLoader: new MockedDocumentLoader(),
+        // Use the frozen context parser so we can detect if there are
+        // any attempts at mutations in the unit tests
+        contextParser: new FrozenContextParser({
+          documentLoader: new MockedDocumentLoader()
+        }),
       })
     });
 
