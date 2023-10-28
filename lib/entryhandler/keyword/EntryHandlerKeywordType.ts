@@ -69,16 +69,14 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     if (hasTypedScopedContext) {
       // Do not propagate by default
       scopedContext = scopedContext.then((c) => {
-        let rawContext = c.getContextRaw();
-
         // Set the original context at this depth as a fallback
         // This is needed when a context was already defined at the given depth,
         // and this context needs to remain accessible from child nodes when propagation is disabled.
-        if (rawContext['@propagate'] !== true) {
-          rawContext = { ...rawContext, '@propagate': false, '@__propagateFallback': context.getContextRaw() };
+        if (c.getContextRaw()['@propagate'] !== true) {
+          return new JsonLdContextNormalized({ ...c.getContextRaw(), '@propagate': false, '@__propagateFallback': context.getContextRaw() });
         }
 
-        return new JsonLdContextNormalized(rawContext);
+        return c;
       });
 
       // Set the new context in the context tree
