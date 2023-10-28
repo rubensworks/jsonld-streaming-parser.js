@@ -86,7 +86,7 @@ export class ParsingContext {
 
   constructor(options: IParsingContextOptions) {
     // Initialize settings
-    this.contextParser = new ContextParser({ documentLoader: options.documentLoader, skipValidation: options.skipContextValidation });
+    this.contextParser = options.contextParser ?? new ContextParser({ documentLoader: options.documentLoader, skipValidation: options.skipContextValidation });
     this.streamingProfile = !!options.streamingProfile;
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = !!options.produceGeneralizedRdf;
@@ -207,11 +207,11 @@ export class ParsingContext {
           || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
-          contextRaw = scopedContext;
+          contextRaw = { ...scopedContext };
 
           // Clean up final context
           delete contextRaw['@propagate'];
-          contextRaw[key] = { ...contextRaw[key] };
+          contextRaw[key] = { ...contextRaw[key], };
           if ('@id' in contextKeyEntry) {
             contextRaw[key]['@id'] = contextKeyEntry['@id'];
           }
