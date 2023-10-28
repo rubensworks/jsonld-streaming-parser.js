@@ -1,16 +1,16 @@
-import {JsonLdParser} from "../index";
-import arrayifyStream from 'arrayify-stream';
-const streamifyString = require('streamify-string');
 import * as RDF from "@rdfjs/types";
+import arrayifyStream from 'arrayify-stream';
 import { EventEmitter } from 'events';
-import {DataFactory} from "rdf-data-factory";
 import each from 'jest-each';
 import "jest-rdf";
-import {ContextParser, ERROR_CODES, ErrorCoded, FetchDocumentLoader, IParseOptions, JsonLdContext, JsonLdContextNormalized} from "jsonld-context-parser";
-import {PassThrough} from "stream";
-import {Util} from "../lib/Util";
+import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized, ContextParser, IParseOptions, JsonLdContext } from "jsonld-context-parser";
+import { DataFactory } from "rdf-data-factory";
+import { PassThrough } from "stream";
+import { JsonLdParser } from "../index";
 import { ParsingContext } from '../lib/ParsingContext';
-import contexts, { MockedDocumentLoader } from '../mocks/contexts';
+import { Util } from "../lib/Util";
+import { MockedDocumentLoader } from '../mocks/contexts';
+const streamifyString = require('streamify-string');
 
 const DF = new DataFactory<RDF.BaseQuad>();
 
@@ -21,13 +21,15 @@ const deepFreeze = obj => {
   return Object.freeze(obj);
 };
 
-class FrozenContextParser extends ContextParser {
+export class FrozenContextParser extends ContextParser {
   constructor(options: ConstructorParameters<typeof ContextParser>[0]) {
     super(options);
   }
 
-  public parse(context: JsonLdContext, options?: IParseOptions): Promise<JsonLdContextNormalized> {
-    return super.parse(context, options)// .then(deepFreeze);
+  public async parse(context: JsonLdContext, options?: IParseOptions): Promise<JsonLdContextNormalized> {
+    const parsed = await super.parse(context, options);
+    deepFreeze(parsed);
+    return parsed;
   }
 }
 
@@ -310,16 +312,20 @@ describe('JsonLdParser', () => {
   });
 
   (<any> each ([
-    [true],
-    [false],
-  ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {
+    [true, true],
+    [false, true],
+    [true, false],
+    [false, false],
+  ])).describe('when instantiated with a data factory and streamingProfile %s and context caching %s', (streamingProfile: boolean, contextCache: boolean) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
   /*describe('when instantiated with a data factory and streamingProfile %s', () => {
     const streamingProfile = true;*/
     let parser: any;
 
     beforeEach(() => {
-      parser = new JsonLdParser({ dataFactory: DF, streamingProfile });
+      parser = new JsonLdParser({ dataFactory: DF, streamingProfile, contextParser: new ContextParser({
+        // contextCache: contextCache ? new ContextCache() : undefined,
+      }) });
     });
 
     describe('should parse', () => {
@@ -11813,6 +11819,51 @@ describe('JsonLdParser', () => {
 }`);
           return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
             'Attempted to override the protected keyword foo from "http://ex.org/foo" to "http://ex.2.org/foo"',
+            ERROR_CODES.PROTECTED_TERM_REDEFINITION));
+        });
+
+        it('should error on protected term overrides after a property scoped-context', async () => {
+          const stream = streamifyString(JSON.stringify({
+            "@context": {
+              "@vocab": "http://example.com/",
+              "@version": 1.1,
+              "protected": {
+                "@protected": false
+              },
+              "scope1": {
+                "@protected": false,
+                "@context": {
+                  "protected": {
+                    "@id": "http://example.com/something-else"
+                  }
+                }
+              },
+              "scope2": {
+                "@protected": true,
+                "@context": {
+                  "protected": {
+                    "@protected": true
+                  }
+                }
+              }
+            },
+            "protected": false,
+            "scope1": {
+              "@context": {
+                "protected": "http://example.com/another-thing"
+              },
+              "protected": "property http://example.com/another-thing"
+            },
+            "scope2": {
+              "@context": {
+                "protected": "http://example.com/another-thing"
+              },
+              "protected": "error / property http://example.com/protected"
+            }
+          }
+          ));
+          return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded(
+            'Attempted to override the protected keyword protected from \"http://example.com/protected\" to \"http://example.com/another-thing\"',
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 

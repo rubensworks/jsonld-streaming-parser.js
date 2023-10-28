@@ -1,5 +1,27 @@
 const { JsonLdParser } = require("..");
+const { ContextParser, FetchDocumentLoader, ContextCache } = require("jsonld-context-parser");
 const { ErrorSkipped } = require('rdf-test-suite');
+
+
+const deepFreeze = obj => {
+  Object.keys(obj).forEach(prop => {
+    if (typeof obj[prop] === 'object' && !Object.isFrozen(obj[prop])) deepFreeze(obj[prop]);
+  });
+  return Object.freeze(obj);
+};
+
+class FrozenContextParser extends ContextParser {
+  constructor(options) {
+    super(options);
+  }
+
+  async parse(context, options) {
+    const parsed = await super.parse(context, options);
+    deepFreeze(parsed);
+    return parsed;
+  }
+}
+
 
 module.exports = {
   parse: function (data, baseIRI, options) {
@@ -16,6 +38,10 @@ module.exports = {
         baseIRI,
         validateValueIndexes: true,
         normalizeLanguageTags: true, // To simplify testing
+        contextParser: new FrozenContextParser({
+          documentLoader: new FetchDocumentLoader(),
+          contextCache: new ContextCache(),
+        }),
       }, options))));
   },
 };
