@@ -207,7 +207,7 @@ export class ParsingContext {
           || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
-          contextRaw = scopedContext;
+          contextRaw = { ...scopedContext };
 
           // Clean up final context
           delete contextRaw['@propagate'];
