@@ -1,4 +1,4 @@
-import {JsonLdContextNormalized} from "jsonld-context-parser";
+import {JsonLdContextNormalized, ContextParser} from "jsonld-context-parser";
 import {ParsingContext} from "../lib/ParsingContext";
 import {ParsingContextMocked} from "../mocks/ParsingContextMocked";
 
@@ -607,22 +607,20 @@ describe('ParsingContext', () => {
       describe('for type-scoped and property-scoped contexts', () => {
 
         beforeEach(() => {
-          parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
-            '@__propagateFallback': { fallback: true },
-            '@propagate': false,
+          const contextParser = new ContextParser();
+          parsingContext.contextTree.setContext(['', 'a'], contextParser.parse({
             '@vocab': 'http://bla.org/',
             'bar': {
               '@context': {
                 baz: { '@type': '@vocab' },
               },
             },
-          })));
+          }));
         });
 
         it('should consider the applicable property-scoped context', async () => {
           return expect(await parsingContext.getContext(['', 'a', 'bar'], 0))
             .toEqual(new JsonLdContextNormalized({
-              '@__propagateFallback': { fallback: true },
               '@vocab': 'http://bla.org/',
               'bar': { '@id': 'http://bla.org/bar' },
               'baz': { '@type': '@vocab', '@id': 'http://bla.org/baz' },
