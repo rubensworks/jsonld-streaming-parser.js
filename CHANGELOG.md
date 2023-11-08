@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.3.0"></a>
+## [v3.3.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.2.1...v3.3.0) - 2023-11-08
+
+### Changed
+* [Remove deep cloning of contexts during parsing](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/dc18d7f4c91329c09f781ee257d6b9a74014d64f)
+
 <a name="v3.2.1"></a>
 ## [v3.2.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.2.0...v3.2.1) - 2023-09-19
 
