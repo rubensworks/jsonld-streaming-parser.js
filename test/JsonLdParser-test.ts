@@ -26,7 +26,7 @@ describe('JsonLdParser', () => {
       })
     });
 
-    it('should parse the VC correctly handling the @protected keyword', async () => {
+    it('should parse the VC correctly handling the @protected keyword', () => {
       const stream = streamifyString(JSON.stringify({
         "@context": [
           "https://www.w3.org/2018/credentials/v1",
@@ -45,7 +45,7 @@ describe('JsonLdParser', () => {
       ]);
     });
 
-    it('should parse the VC when using @id rather than id', async () => {
+    it('should parse the VC when using @id rather than id', () => {
       const stream = streamifyString(JSON.stringify({
         "@context": [
           "https://www.w3.org/2018/credentials/v1",
@@ -64,7 +64,7 @@ describe('JsonLdParser', () => {
       ]);
     });
 
-    it('should parse a VC with minified context', async () => {
+    it('should parse a VC with minified context', () => {
       const stream = streamifyString(JSON.stringify({
         "@context": {
           "ty": "@type",
@@ -239,11 +239,11 @@ describe('JsonLdParser', () => {
       parser = new JsonLdParser();
     });
 
-    it('should have a default data factory', async () => {
+    it('should have a default data factory', () => {
       expect(parser.util.dataFactory).toBeTruthy();
     });
 
-    it('should have a default root context', async () => {
+    it('should have a default root context', () => {
       expect(parser.parsingContext.rootContext).resolves.toEqual(new JsonLdContextNormalized({ '@base': undefined }));
     });
   });
@@ -255,11 +255,11 @@ describe('JsonLdParser', () => {
       parser = new JsonLdParser({ context: { SomeTerm: 'http://example.org/' } });
     });
 
-    it('should have a default data factory', async () => {
+    it('should have a default data factory', () => {
       expect(parser.util.dataFactory).toBeTruthy();
     });
 
-    it('should have no root context', async () => {
+    it('should have no root context', () => {
       expect(parser.parsingContext.rootContext).resolves.toEqual(
         new JsonLdContextNormalized({ SomeTerm: 'http://example.org/' }));
     });
@@ -276,7 +276,7 @@ describe('JsonLdParser', () => {
       expect(parser.util.getDefaultGraph()).toEqualRdfTerm(DF.namedNode('http://ex.org/g'));
     });
 
-    it('should parse triples into the given graph', async () => {
+    it('should parse triples into the given graph', () => {
       const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1"
@@ -303,30 +303,30 @@ describe('JsonLdParser', () => {
 
     describe('should parse', () => {
       describe('an empty document with', () => {
-        it('an empty object', async () => {
+        it('an empty object', () => {
           const stream = streamifyString(`{}`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('a valid processing mode', async () => {
+        it('a valid processing mode', () => {
           const stream = streamifyString(`{ "@context": { "@version": 1.1 } }`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('a non-default processing mode when configured as such', async () => {
+        it('a non-default processing mode when configured as such', () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`{ "@context": { "@version": 1.0 } }`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('an empty array', async () => {
+        it('an empty array', () => {
           const stream = streamifyString(`[]`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
       });
 
       describe('an invalid keyword', () => {
-        it('should be ignored', async () => {
+        it('should be ignored', () => {
           const stream = streamifyString(`
 {
   "@unknown": "dummy"
@@ -334,7 +334,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('should be ignored when mapped via the context', async () => {
+        it('should be ignored when mapped via the context', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -349,7 +349,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should fallback to @vocab when mapped via the context', async () => {
+        it('should fallback to @vocab when mapped via the context', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -367,7 +367,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should be ignored when mapped via the context via @reverse', async () => {
+        it('should be ignored when mapped via the context via @reverse', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -382,7 +382,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should be ignored when mapped via the context via @reverse and a sub-property', async () => {
+        it('should be ignored when mapped via the context via @reverse and a sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -397,7 +397,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should fallback to @vocab when mapped via the context via @reverse and a sub-prop', async () => {
+        it('should fallback to @vocab when mapped via the context via @reverse and a sub-prop', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -419,7 +419,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a single triple', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1"
@@ -429,7 +429,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and anonymous blank node value', async () => {
+        it('without @id and anonymous blank node value', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {}
@@ -439,7 +439,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -450,7 +450,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id that has an invalid IRI', async () => {
+        it('with @id that has an invalid IRI', () => {
           const stream = streamifyString(`
 {
   "@id": "not-an-iri",
@@ -459,7 +459,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with an o-o-o @id that has an invalid IRI', async () => {
+        it('with an o-o-o @id that has an invalid IRI', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -468,7 +468,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id but invalid predicate IRI that should be skipped', async () => {
+        it('with @id but invalid predicate IRI that should be skipped', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -477,7 +477,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with blank node @id', async () => {
+        it('with blank node @id', () => {
           const stream = streamifyString(`
 {
   "@id": "_:myid",
@@ -488,7 +488,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with blank node @type', async () => {
+        it('with blank node @type', () => {
           const stream = streamifyString(`
 {
   "@type": "_:type",
@@ -501,7 +501,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and literal value that *looks* like a blank node', async () => {
+        it('with @id and literal value that *looks* like a blank node', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -512,7 +512,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and blank node value', async () => {
+        it('with @id and blank node value', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -523,7 +523,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a boolean literal', async () => {
+        it('with @id and a boolean literal', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -535,7 +535,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a number literal', async () => {
+        it('with @id and a number literal', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -547,7 +547,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal', async () => {
+        it('with @id and a typed literal', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -562,7 +562,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and an invalid typed literal should throw', async () => {
+        it('with @id and an invalid typed literal should throw', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -575,7 +575,7 @@ describe('JsonLdParser', () => {
             'Invalid \'@type\' value, got \'"http://ex.org/ mytype"\'', ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
-        it('with @id and a prefixed, typed literal', async () => {
+        it('with @id and a prefixed, typed literal', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -593,7 +593,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a raw @value', async () => {
+        it('with @id and a raw @value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -610,7 +610,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a null @value', async () => {
+        it('with @id and a null @value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -624,7 +624,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id and a null value', async () => {
+        it('with @id and a null value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -636,7 +636,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id and a prefixed, context-typed literal', async () => {
+        it('with @id and a prefixed, context-typed literal', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -652,7 +652,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and another prefixed, context-typed literal', async () => {
+        it('with @id and another prefixed, context-typed literal', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -668,7 +668,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a context-language literal', async () => {
+        it('with @id and a context-language literal', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -684,7 +684,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a mixed-case context-language literal', async () => {
+        it('with @id and a mixed-case context-language literal', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -700,7 +700,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a mixed-case context-language literal when normalizeLanguageTags is true', async () => {
+        it('with @id and a mixed-case context-language literal when normalizeLanguageTags is true', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -717,7 +717,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and literal with default language', async () => {
+        it('with @id and literal with default language', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -734,7 +734,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and literal with default language but overridden language', async () => {
+        it('with @id and literal with default language but overridden language', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -751,7 +751,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and literal with default language but unset language', async () => {
+        it('with @id and literal with default language but unset language', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -771,7 +771,7 @@ describe('JsonLdParser', () => {
         describe('for @direction in context', () => {
 
           describe('rdfDirection: undefined', () => {
-            it('with @id and a context-direction literal', async () => {
+            it('with @id and a context-direction literal', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -787,7 +787,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction', async () => {
+            it('with @id and literal with default direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -804,7 +804,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but overridden direction', async () => {
+            it('with @id and literal with default direction but overridden direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -821,7 +821,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but unset direction', async () => {
+            it('with @id and literal with default direction but unset direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -845,7 +845,7 @@ describe('JsonLdParser', () => {
               parser = new JsonLdParser({ dataFactory: DF, streamingProfile, rdfDirection: 'i18n-datatype' });
             });
 
-            it('with @id and a context-direction literal', async () => {
+            it('with @id and a context-direction literal', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -861,7 +861,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and a context-direction literal and language', async () => {
+            it('with @id and a context-direction literal and language', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -878,7 +878,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction', async () => {
+            it('with @id and literal with default direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -895,7 +895,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but overridden direction', async () => {
+            it('with @id and literal with default direction but overridden direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -912,7 +912,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but unset direction', async () => {
+            it('with @id and literal with default direction but unset direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -929,7 +929,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction and language but unset direction', async () => {
+            it('with @id and literal with default direction and language but unset direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -954,7 +954,7 @@ describe('JsonLdParser', () => {
               parser = new JsonLdParser({ dataFactory: DF, streamingProfile, rdfDirection: 'compound-literal' });
             });
 
-            it('with @id and a context-direction literal', async () => {
+            it('with @id and a context-direction literal', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -974,7 +974,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and a context-direction literal and language', async () => {
+            it('with @id and a context-direction literal and language', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -997,7 +997,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction', async () => {
+            it('with @id and literal with default direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -1018,7 +1018,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but overridden direction', async () => {
+            it('with @id and literal with default direction but overridden direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -1039,7 +1039,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction but unset direction', async () => {
+            it('with @id and literal with default direction but unset direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -1056,7 +1056,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and literal with default direction and language but unset direction', async () => {
+            it('with @id and literal with default direction and language but unset direction', () => {
               const stream = streamifyString(`
 {
   "@context": {
@@ -1077,7 +1077,7 @@ describe('JsonLdParser', () => {
 
         });
 
-        it('with a string value in an array', async () => {
+        it('with a string value in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1096,7 +1096,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a true boolean value in an array', async () => {
+        it('with a true boolean value in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1115,7 +1115,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a false boolean value in an array', async () => {
+        it('with a false boolean value in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1134,7 +1134,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a null value in an array', async () => {
+        it('with a null value in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1150,7 +1150,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with a typed string', async () => {
+        it('with a typed string', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1168,7 +1168,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a typed string (opposite order)', async () => {
+        it('with a typed string (opposite order)', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1186,7 +1186,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a typed string in an array', async () => {
+        it('with a typed string in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1206,7 +1206,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a typed string (opposite order) in an array', async () => {
+        it('with a typed string (opposite order) in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1226,7 +1226,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a typed string in a double array', async () => {
+        it('with a typed string in a double array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1246,7 +1246,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a typed string (opposite order) in a double array', async () => {
+        it('with a typed string (opposite order) in a double array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1266,7 +1266,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value', async () => {
+        it('with @id and a typed literal with out-of-order @value', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -1281,7 +1281,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in a @graph', async () => {
+        it('with @id and a typed literal with out-of-order @value in a @graph', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -1300,7 +1300,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph', async () => {
+        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1319,7 +1319,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in an anonymous @graph', async () => {
+        it('with @id and a typed literal with out-of-order @value in an anonymous @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1335,7 +1335,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in a @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in a @graph array', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -1354,7 +1354,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in an o-o-o @graph array', () => {
           const stream = streamifyString(`
 {
   "@graph": [{
@@ -1373,7 +1373,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in an anonymous @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in an anonymous @graph array', () => {
           const stream = streamifyString(`
 {
   "@graph": [{
@@ -1389,7 +1389,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in a double @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in a double @graph array', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -1408,7 +1408,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in a double o-o-o @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in a double o-o-o @graph array', () => {
           const stream = streamifyString(`
 {
   "@graph": [[{
@@ -1427,7 +1427,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal with out-of-order @value in a double anonymous @graph array', async () => {
+        it('with @id and a typed literal with out-of-order @value in a double anonymous @graph array', () => {
           const stream = streamifyString(`
 {
   "@graph": [[{
@@ -1443,7 +1443,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id', async () => {
+        it('with out-of-order @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -1456,7 +1456,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a single anonymously reversed triple', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "@reverse": {
@@ -1468,7 +1468,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -1481,7 +1481,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with empty @graph', async () => {
+        it('without @id and with empty @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1495,7 +1495,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with @graph', async () => {
+        it('without @id and with @graph', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/g",
@@ -1511,7 +1511,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with out-of-order @graph', async () => {
+        it('without @id and with out-of-order @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1527,7 +1527,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with empty @graph', async () => {
+        it('with @id and with empty @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1543,7 +1543,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with @graph', async () => {
+        it('with @id and with @graph', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/g",
@@ -1560,7 +1560,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with out-of-order @graph', async () => {
+        it('with @id and with out-of-order @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -1579,7 +1579,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a single context-based reversed triple', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1592,7 +1592,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1606,7 +1606,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with empty @graph', async () => {
+        it('without @id and with empty @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1621,7 +1621,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with @graph', async () => {
+        it('without @id and with @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1638,7 +1638,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with out-of-order @graph', async () => {
+        it('without @id and with out-of-order @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1655,7 +1655,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with empty @graph', async () => {
+        it('with @id and with empty @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1672,7 +1672,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with @graph', async () => {
+        it('with @id and with @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1690,7 +1690,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with out-of-order @graph', async () => {
+        it('with @id and with out-of-order @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1708,7 +1708,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a @reverse container', async () => {
+        it('with @id and a @reverse container', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1724,7 +1724,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a bnode value', async () => {
+        it('with @id and a bnode value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1742,7 +1742,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and bnode values in an array', async () => {
+        it('with @id and bnode values in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1764,7 +1764,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a list as @reverse value, with allowSubjectList false', async () => {
+        it('with a list as @reverse value, with allowSubjectList false', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1779,7 +1779,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
         });
 
-        it('with a list as @reverse value, with allowSubjectList true', async () => {
+        it('with a list as @reverse value, with allowSubjectList true', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1800,7 +1800,7 @@ describe('JsonLdParser', () => {
         });
       });
       describe('a reversed triple with context', () => {
-        it('@context is added to predicate in reverse', async () => {
+        it('@context is added to predicate in reverse', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/obj1",
@@ -1815,7 +1815,7 @@ describe('JsonLdParser', () => {
         });
       });
       describe('a reversed triple within a regular triple', () => {
-        it('with @id\'s', async () => {
+        it('with @id\'s', () => {
           const stream = streamifyString(`
 {
   "@id": "ex:root",
@@ -1837,7 +1837,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('two triples', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -1849,7 +1849,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/sub1",
@@ -1862,7 +1862,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @type, without @id', async () => {
+        it('with @type, without @id', () => {
           const stream = streamifyString(`
 {
   "@type": "http://ex.org/obj1",
@@ -1875,7 +1875,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @type, with @id', async () => {
+        it('with @type, with @id', () => {
           const stream = streamifyString(`
 {
   "@type": "http://ex.org/obj1",
@@ -1891,7 +1891,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('an array with value nodes', () => {
-        it('with @id values', async () => {
+        it('with @id values', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1910,7 +1910,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with blank values', async () => {
+        it('with blank values', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -1936,13 +1936,13 @@ describe('JsonLdParser', () => {
       });
 
       describe('a free-floating node', () => {
-        it('with string in array', async () => {
+        it('with string in array', () => {
           const stream = streamifyString(`
 [ "abc" ]`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with string in @set array', async () => {
+        it('with string in @set array', () => {
           const stream = streamifyString(`
 {
   "@set": [
@@ -1952,7 +1952,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with string in @list array', async () => {
+        it('with string in @list array', () => {
           const stream = streamifyString(`
 {
   "@list": [
@@ -1962,7 +1962,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @list should also remove inner nodes', async () => {
+        it('with @list should also remove inner nodes', () => {
           const stream = streamifyString(`
 {
   "@list": [
@@ -1976,7 +1976,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with string in @list array in @graph array', async () => {
+        it('with string in @list array in @graph array', () => {
           const stream = streamifyString(`
 {
   "@graph": [
@@ -1990,13 +1990,13 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with typed @value', async () => {
+        it('with typed @value', () => {
           const stream = streamifyString(`
 { "@value": "free-floating value typed value", "@type": "http://example.com/type" }`);
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with typed @value in @graph', async () => {
+        it('with typed @value in @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": [
@@ -2008,7 +2008,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a single triple in an array', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 [{
   "http://ex.org/pred1": "http://ex.org/obj1"
@@ -2018,7 +2018,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2029,7 +2029,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a boolean literal', async () => {
+        it('with @id and a boolean literal', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2041,7 +2041,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a number literal', async () => {
+        it('with @id and a number literal', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2053,7 +2053,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a typed literal', async () => {
+        it('with @id and a typed literal', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2068,7 +2068,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and a language literal', async () => {
+        it('with @id and a language literal', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2083,7 +2083,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and and incomplete language literal', async () => {
+        it('with @id and and incomplete language literal', () => {
           const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2098,7 +2098,7 @@ describe('JsonLdParser', () => {
 
           describe('rdfDirection: undefined', () => {
 
-            it('with @id and a language+direction literal', async () => {
+            it('with @id and a language+direction literal', () => {
               const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2114,7 +2114,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and a direction literal', async () => {
+            it('with @id and a direction literal', () => {
               const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2137,7 +2137,7 @@ describe('JsonLdParser', () => {
               parser = new JsonLdParser({ dataFactory: DF, streamingProfile, rdfDirection: 'i18n-datatype' });
             });
 
-            it('with @id and a language+direction literal', async () => {
+            it('with @id and a language+direction literal', () => {
               const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2153,7 +2153,7 @@ describe('JsonLdParser', () => {
               ]);
             });
 
-            it('with @id and a direction literal', async () => {
+            it('with @id and a direction literal', () => {
               const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2178,7 +2178,7 @@ describe('JsonLdParser', () => {
             parser = new JsonLdParser({ dataFactory: DF, streamingProfile, rdfDirection: 'compound-literal' });
           });
 
-          it('with @id and a language+direction literal', async () => {
+          it('with @id and a language+direction literal', () => {
             const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2200,7 +2200,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and a direction literal', async () => {
+          it('with @id and a direction literal', () => {
             const stream = streamifyString(`
 [{
   "@id": "http://ex.org/myid",
@@ -2221,7 +2221,7 @@ describe('JsonLdParser', () => {
 
         });
 
-        it('with out-of-order @id', async () => {
+        it('with out-of-order @id', () => {
           const stream = streamifyString(`
 [{
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -2234,7 +2234,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('three triples', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -2248,7 +2248,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -2263,7 +2263,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id', async () => {
+        it('with out-of-order @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -2280,7 +2280,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('three triples inside separate arrays', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 [
   { "http://ex.org/pred1": "http://ex.org/obj1" },
@@ -2294,7 +2294,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 [
   { "@id": "http://ex/A", "http://ex.org/pred1": "http://ex.org/obj1" },
@@ -2308,7 +2308,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with o-o-o @id', async () => {
+        it('with o-o-o @id', () => {
           const stream = streamifyString(`
 [
   { "http://ex.org/pred1": "http://ex.org/obj1", "@id": "http://ex/A" },
@@ -2324,7 +2324,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a triple with an array', () => {
-        it('without @id', async () => {
+        it('without @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": [ "a", "b", "c" ]
@@ -2336,7 +2336,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id', async () => {
+        it('with @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -2349,7 +2349,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id', async () => {
+        it('with out-of-order @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": [ "a", "b", "c" ],
@@ -2366,7 +2366,7 @@ describe('JsonLdParser', () => {
       describe('lists with', () => {
 
         describe('a triple with an anonymous set array', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] }
@@ -2378,7 +2378,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id and an empty list', async () => {
+          it('without @id and an empty list', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@set": [ ] }
@@ -2386,7 +2386,7 @@ describe('JsonLdParser', () => {
             expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('without @id and an empty list in an array', async () => {
+          it('without @id and an empty list in an array', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": [ { "@set": [ ] } ]
@@ -2394,7 +2394,7 @@ describe('JsonLdParser', () => {
             expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id', async () => {
+          it('with @id', () => {
             const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -2407,7 +2407,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with out-of-order @id', async () => {
+          it('with out-of-order @id', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@set": [ "a", "b", "c" ] },
@@ -2422,7 +2422,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with an anonymous list array', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
@@ -2438,7 +2438,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id and it being an @list container', async () => {
+          it('without @id and it being an @list container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2446,8 +2446,7 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2458,18 +2457,17 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id and an empty list', async () => {
+          it('without @id and an empty list', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('without @id and an empty list and it being an @list container', async () => {
+          it('without @id and an empty list and it being an @list container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2477,20 +2475,18 @@ describe('JsonLdParser', () => {
   },
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with @id', async () => {
+          it('with @id', () => {
             const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2501,7 +2497,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and it being an @list container', async () => {
+          it('with @id and it being an @list container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2510,8 +2506,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2522,20 +2517,19 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and an empty list', async () => {
+          it('with @id and an empty list', () => {
             const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with @id and an empty list and it being an @list container', async () => {
+          it('with @id and an empty list and it being an @list container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2544,21 +2538,19 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with out-of-order @id', async () => {
+          it('with out-of-order @id', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ "a", "b", "c" ] },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2569,7 +2561,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with an anonymous list with a null value', async () => {
+          it('with an anonymous list with a null value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2578,14 +2570,13 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with an anonymous list with null values', async () => {
+          it('with an anonymous list with null values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2594,8 +2585,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2606,7 +2596,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with an anonymous list with null values in an invalid predicate', async () => {
+          it('with an anonymous list with null values in an invalid predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2615,11 +2605,10 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "ignored": { "@list": [ null, "a", null, "b", null, "c", null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([]);
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with an anonymous list with a null @value', async () => {
+          it('with an anonymous list with a null @value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2628,14 +2617,13 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "@list": [ { "@value": null } ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with a context-based list with null values', async () => {
+          it('with a context-based list with null values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2644,8 +2632,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": [ null, "a", null, "b", null, "c", null ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2656,7 +2643,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context-based list with a null @value', async () => {
+          it('with a context-based list with a null @value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2665,21 +2652,19 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": [ { "@value": null } ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with out-of-order @id with null values', async () => {
+          it('with out-of-order @id with null values', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": { "@list": [ null, "a", null, "b", null, "c", null ] },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2690,7 +2675,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with datatyped values', async () => {
+          it('with datatyped values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2699,8 +2684,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "value" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('l')),
               DF.quad(DF.blankNode('l'), DF.namedNode(Util.RDF + 'first'),
@@ -2710,7 +2694,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a null value should be optimized', async () => {
+          it('with a null value should be optimized', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2719,14 +2703,13 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ null ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with a null @value should be optimized', async () => {
+          it('with a null @value should be optimized', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2735,14 +2718,13 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ { "@value": null } ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with a bad base should not be optimized, but empty first should be skipped', async () => {
+          it('with a bad base should not be optimized, but empty first should be skipped', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2752,8 +2734,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": [ "test" ] }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
                 DF.blankNode('l')),
               DF.quad(DF.blankNode('l'), DF.namedNode(Util.RDF + 'rest'),
@@ -2763,13 +2744,12 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with an anonymous list array, in an array', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": [{ "@list": [ "a", "b", "c" ] }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2782,14 +2762,13 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with an anonymous list array, in an list container', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "@context": { "p": {"@id": "http://ex.org/pred1", "@container": "@list" } },
   "p": [{ "@list": [ "a", "b", "c" ] }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -2806,13 +2785,12 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with nested anonymous list arrays', () => {
-          it('without @id, single outer value, and a single inner value', async () => {
+          it('without @id, single outer value, and a single inner value', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -2823,13 +2801,12 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, single outer value, and multiple inner values', async () => {
+          it('without @id, single outer value, and multiple inner values', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz1", "baz2"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -2842,7 +2819,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, multiple outer values, and a single inner value', async () => {
+          it('without @id, multiple outer values, and a single inner value', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [
@@ -2850,8 +2827,7 @@ describe('JsonLdParser', () => {
     {"@list": ["baz2"]}
   ]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.0.a')),
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l0.b')),
               DF.quad(DF.blankNode('l0.b'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.1.a')),
@@ -2867,7 +2843,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, multiple outer values, and a multiple inner value', async () => {
+          it('without @id, multiple outer values, and a multiple inner value', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [
@@ -2875,8 +2851,7 @@ describe('JsonLdParser', () => {
     {"@list": ["baz2.1", "baz2.2"]}
   ]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.0.a')),
               DF.quad(DF.blankNode('l0.a'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l0.b')),
               DF.quad(DF.blankNode('l0.b'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0.1.a')),
@@ -2896,13 +2871,12 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, single outer value, and a no inner value', async () => {
+          it('without @id, single outer value, and a no inner value', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{"@list": []}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -2910,13 +2884,12 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, single outer value, and a single inner value, and a non-list outer value after', async () => {
+          it('without @id, single outer value, and a single inner value, and a non-list outer value after', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{"@list": ["baz"]}, { "@id": "ex:bla" }]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('lr1')),
               DF.quad(DF.blankNode('lr1'), DF.namedNode(Util.RDF + 'first'), DF.namedNode('ex:bla')),
@@ -2929,13 +2902,12 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id, single outer value, and a single inner value, and a non-list outer value before', async () => {
+          it('without @id, single outer value, and a single inner value, and a non-list outer value before', () => {
             const stream = streamifyString(`
 {
   "http://example.com/foo": {"@list": [{ "@id": "ex:bla" }, {"@list": ["baz"]}]}
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'first'), DF.namedNode('ex:bla')),
               DF.quad(DF.blankNode('lr0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('lr1')),
               DF.quad(DF.blankNode('lr1'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l0')),
@@ -2950,7 +2922,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with a context-based list array', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2958,8 +2930,7 @@ describe('JsonLdParser', () => {
   },
   "p": [ "a", "b", "c" ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -2970,7 +2941,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without @id and an empty list', async () => {
+          it('without @id and an empty list', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2978,13 +2949,12 @@ describe('JsonLdParser', () => {
   },
   "p": []
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode(), DF.namedNode('http://ex.org/pred1'), DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
 
-          it('with @id', async () => {
+          it('with @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -2993,8 +2963,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": [ "a", "b", "c" ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -3005,7 +2974,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with out-of-order @id', async () => {
+          it('with out-of-order @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3014,8 +2983,7 @@ describe('JsonLdParser', () => {
   "p": [ "a", "b", "c" ],
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l1'), DF.namedNode(Util.RDF + 'first'), DF.literal('b')),
@@ -3028,7 +2996,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with a context-based list element', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3036,15 +3004,14 @@ describe('JsonLdParser', () => {
   },
   "p": "a"
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
             ]);
           });
 
-          it('with @id', async () => {
+          it('with @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3053,15 +3020,14 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": "a"
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
             ]);
           });
 
-          it('with out-of-order @id', async () => {
+          it('with out-of-order @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3070,8 +3036,7 @@ describe('JsonLdParser', () => {
   "p": "a",
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
@@ -3080,7 +3045,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('a triple with a single anonymous list element', () => {
-          it('without @id', async () => {
+          it('without @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3088,15 +3053,14 @@ describe('JsonLdParser', () => {
   },
   "p": { "@list": "a" }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
             ]);
           });
 
-          it('with @id', async () => {
+          it('with @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3105,15 +3069,14 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "p": { "@list": "a" }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
             ]);
           });
 
-          it('with out-of-order @id', async () => {
+          it('with out-of-order @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -3122,8 +3085,7 @@ describe('JsonLdParser', () => {
   "p": { "@list": "a" },
   "@id": "http://ex.org/myid",
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            expect(output).toBeRdfIsomorphic([
+            expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('a')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
               DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('l0')),
@@ -3132,15 +3094,14 @@ describe('JsonLdParser', () => {
         });
 
         describe('a list container', () => {
-          it('with a nested array with one inner element', async () => {
+          it('with a nested array with one inner element', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": [["baz"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3151,15 +3112,14 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a nested array with two inner elements', async () => {
+          it('with a nested array with two inner elements', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": [["baz1", "baz2"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3172,15 +3132,14 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a nested array with two outer elements having one inner element', async () => {
+          it('with a nested array with two outer elements having one inner element', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": [["baz1.1"],["baz2.1"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.1')),
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1.2')),
               DF.quad(DF.blankNode('l1.2'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.2')),
@@ -3196,15 +3155,14 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a nested array with two outer elements having two inner elements', async () => {
+          it('with a nested array with two outer elements having two inner elements', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": [["baz1.1","baz1.2"],["baz2.1","baz2.2"]]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.1')),
               DF.quad(DF.blankNode('l1.1'), DF.namedNode(Util.RDF + 'rest'), DF.blankNode('l1.2')),
               DF.quad(DF.blankNode('l1.2'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('l1.1.2')),
@@ -3224,7 +3182,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with an inner predicate with array with one element', async () => {
+          it('with an inner predicate with array with one element', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3233,8 +3191,7 @@ describe('JsonLdParser', () => {
     "ex:p": ["a"]
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('ex:p'), DF.literal('a')),
 
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
@@ -3244,7 +3201,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with an inner predicate with array with zero elements', async () => {
+          it('with an inner predicate with array with zero elements', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3253,8 +3210,7 @@ describe('JsonLdParser', () => {
     "ex:p": []
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3262,15 +3218,14 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with an empty inner node', async () => {
+          it('with an empty inner node', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": [{}]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3278,22 +3233,21 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('without inner node', async () => {
+          it('without inner node', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
   "@id": "ex:id",
   "foo": []
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.namedNode('ex:id'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
             ]);
           });
         });
 
         describe('a list container inside a node', () => {
-          it('with one inner element', async () => {
+          it('with one inner element', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3302,8 +3256,7 @@ describe('JsonLdParser', () => {
     "foo": ["baz"]
   }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3313,7 +3266,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with zero inner elements', async () => {
+          it('with zero inner elements', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3322,8 +3275,7 @@ describe('JsonLdParser', () => {
     "foo": []
   }
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
 
               DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
@@ -3332,7 +3284,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('a list container inside a normal array', () => {
-          it('with one inner element', async () => {
+          it('with one inner element', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3343,8 +3295,7 @@ describe('JsonLdParser', () => {
     }
   ]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('baz')),
               DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
 
@@ -3354,7 +3305,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with zero inner elements', async () => {
+          it('with zero inner elements', () => {
             const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo", "@container": "@list"}},
@@ -3363,8 +3314,7 @@ describe('JsonLdParser', () => {
     "foo": []
   }]
 }`);
-            const output = await arrayifyStream(stream.pipe(parser));
-            return expect(output).toBeRdfIsomorphic([
+            return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
               DF.quad(DF.blankNode('b0'), DF.namedNode('http://example.com/foo'), DF.namedNode(Util.RDF + 'nil')),
 
               DF.quad(DF.namedNode('ex:id'), DF.namedNode('ex:p'), DF.blankNode('b0')),
@@ -3375,7 +3325,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a nested array', () => {
-        it('a list-based inside a set-based array', async () => {
+        it('a list-based inside a set-based array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3391,8 +3341,7 @@ describe('JsonLdParser', () => {
     }
   ],
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.literal('abc')),
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
             DF.quad(DF.blankNode('b0'), DF.namedNode('http://ex.org/pred2'), DF.blankNode('l0')),
@@ -3400,7 +3349,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('a set-based array inside a list-based array', async () => {
+        it('a set-based array inside a list-based array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -3416,8 +3365,7 @@ describe('JsonLdParser', () => {
     }
   ],
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'first'), DF.blankNode('b0')),
             DF.quad(DF.blankNode('l0'), DF.namedNode(Util.RDF + 'rest'), DF.namedNode(Util.RDF + 'nil')),
             DF.quad(DF.blankNode('b0'), DF.namedNode('http://ex.org/pred2'), DF.literal('abc')),
@@ -3427,21 +3375,20 @@ describe('JsonLdParser', () => {
       });
 
       describe('two nested triples', () => {
-        it('without @id and without inner @id', async () => {
+        it('without @id and without inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          return expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.blankNode('b'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('b')),
           ]);
         });
 
-        it('with @id and without inner @id', async () => {
+        it('with @id and without inner @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3449,14 +3396,13 @@ describe('JsonLdParser', () => {
     "http://ex.org/pred2": "http://ex.org/obj2"
   }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          return expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('a')),
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
           ]);
         });
 
-        it('with out-of-order @id and without inner @id', async () => {
+        it('with out-of-order @id and without inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -3464,14 +3410,13 @@ describe('JsonLdParser', () => {
   },
   "@id": "http://ex.org/myid"
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          return expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.blankNode('a'), DF.namedNode('http://ex.org/pred2'), DF.literal('http://ex.org/obj2')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.blankNode('a')),
           ]);
         });
 
-        it('without @id and with inner @id', async () => {
+        it('without @id and with inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -3486,7 +3431,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with inner @id', async () => {
+        it('with @id and with inner @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3503,7 +3448,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id and with inner @id', async () => {
+        it('with out-of-order @id and with inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -3520,7 +3465,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and with out-of-order inner @id', async () => {
+        it('without @id and with out-of-order inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -3535,7 +3480,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and with out-of-order inner @id', async () => {
+        it('with @id and with out-of-order inner @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3552,7 +3497,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id and with out-of-order inner @id', async () => {
+        it('with out-of-order @id and with out-of-order inner @id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -3569,7 +3514,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should skipped inner nodes behind an invalid predicate', async () => {
+        it('should skipped inner nodes behind an invalid predicate', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3585,7 +3530,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should skipped inner nodes behind a nested invalid predicates', async () => {
+        it('should skipped inner nodes behind a nested invalid predicates', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3605,7 +3550,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a single quad', () => {
-        it('without @id with inner subject @id', async () => {
+        it('without @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3619,7 +3564,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with inner subject @id', async () => {
+        it('with @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3634,7 +3579,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with invalid IRI with inner subject @id', async () => {
+        it('with @id with invalid IRI with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "not-an-iri",
@@ -3646,7 +3591,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id with inner subject @id that has an invalid IRI', async () => {
+        it('with @id with inner subject @id that has an invalid IRI', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3658,7 +3603,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id with inner o-o-o subject @id that has an invalid IRI', async () => {
+        it('with @id with inner o-o-o subject @id that has an invalid IRI', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3670,7 +3615,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @id with inner subject @id and @type', async () => {
+        it('with @id with inner subject @id and @type', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3686,7 +3631,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with inner subject @id and an invalid @type', async () => {
+        it('with @id with inner subject @id and an invalid @type', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3698,7 +3643,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with out-of-order @id with inner subject @id', async () => {
+        it('with out-of-order @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3713,7 +3658,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id with invalid IRI with inner subject @id', async () => {
+        it('with out-of-order @id with invalid IRI with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3725,7 +3670,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('without @id with out-of-order inner subject @id', async () => {
+        it('without @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3739,7 +3684,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with out-of-order inner subject @id', async () => {
+        it('with @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3754,7 +3699,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id with out-of-order inner subject @id', async () => {
+        it('with out-of-order @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3769,7 +3714,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and without inner subject @id', async () => {
+        it('without @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3781,7 +3726,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and without inner subject @id', async () => {
+        it('with @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3795,7 +3740,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id and without inner subject @id', async () => {
+        it('with out-of-order @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3809,7 +3754,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, but with a top-level property afterwards, should create a blank node graph id', async () => {
+        it('without @id, but with a top-level property afterwards, should create a blank node graph id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3824,7 +3769,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, but with a top-level property before, should create a blank node graph id', async () => {
+        it('without @id, but with a top-level property before, should create a blank node graph id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred2": "http://ex.org/obj2",
@@ -3839,7 +3784,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id, but with a top-level property afterwards', async () => {
+        it('with @id, but with a top-level property afterwards', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3855,7 +3800,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id, but with a top-level property before', async () => {
+        it('with @id, but with a top-level property before', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3871,7 +3816,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with o-o-o @id, but with a top-level property afterwards', async () => {
+        it('with o-o-o @id, but with a top-level property afterwards', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3887,7 +3832,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with o-o-o @id, but with a top-level property before', async () => {
+        it('with o-o-o @id, but with a top-level property before', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred2": "http://ex.org/obj2",
@@ -3905,7 +3850,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('two quads', () => {
-        it('without @id with inner subject @id', async () => {
+        it('without @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3922,7 +3867,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with inner subject @id', async () => {
+        it('with @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3940,7 +3885,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id with inner subject @id', async () => {
+        it('with out-of-order @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3958,7 +3903,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id with out-of-order inner subject @id', async () => {
+        it('without @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -3975,7 +3920,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id with out-of-order inner subject @id', async () => {
+        it('with @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -3993,7 +3938,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id with out-of-order inner subject @id', async () => {
+        it('with out-of-order @id with out-of-order inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4011,7 +3956,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id and without inner subject @id', async () => {
+        it('without @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4025,7 +3970,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and without inner subject @id', async () => {
+        it('with @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -4042,7 +3987,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id and without inner subject @id', async () => {
+        it('with out-of-order @id and without inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4059,7 +4004,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, but with a top-level property afterwards, should create a blank node graph id', async () => {
+        it('without @id, but with a top-level property afterwards, should create a blank node graph id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4077,7 +4022,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, but with a top-level property before, should create a blank node graph id', async () => {
+        it('without @id, but with a top-level property before, should create a blank node graph id', () => {
           const stream = streamifyString(`
 {
   "http://ex.org/pred2": "http://ex.org/obj2",
@@ -4097,7 +4042,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('nested quads', () => {
-        it('without @id, without middle @id with inner subject @id', async () => {
+        it('without @id, without middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4113,7 +4058,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id, without middle @id with inner subject @id', async () => {
+        it('with @id, without middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -4130,7 +4075,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id, without middle @id with inner subject @id', async () => {
+        it('with out-of-order @id, without middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4147,7 +4092,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, with middle @id with inner subject @id', async () => {
+        it('without @id, with middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4164,7 +4109,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id, with middle @id with inner subject @id', async () => {
+        it('with @id, with middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -4182,7 +4127,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id, with middle @id with inner subject @id', async () => {
+        it('with out-of-order @id, with middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4200,7 +4145,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @id, with out-of-order middle @id with inner subject @id', async () => {
+        it('without @id, with out-of-order middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4217,7 +4162,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id, with out-of-order middle @id with inner subject @id', async () => {
+        it('with @id, with out-of-order middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid",
@@ -4235,7 +4180,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with out-of-order @id, with out-of-order middle @id with inner subject @id', async () => {
+        it('with out-of-order @id, with out-of-order middle @id with inner subject @id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4255,7 +4200,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('quads with nested properties', () => {
-        it('with an in-order @graph id', async () => {
+        it('with an in-order @graph id', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -4280,7 +4225,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an o-o-o @graph id', async () => {
+        it('with an o-o-o @graph id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4305,7 +4250,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with no @graph id', async () => {
+        it('with no @graph id', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -4327,7 +4272,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an in-order @graph id in an array', async () => {
+        it('with an in-order @graph id in an array', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -4352,7 +4297,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an in-order @graph id in an array with @type', async () => {
+        it('with an in-order @graph id in an array with @type', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -4369,7 +4314,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an in-order @graph id in an array with @type array', async () => {
+        it('with an in-order @graph id in an array with @type array', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -4390,7 +4335,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an in-order @graph id in an array with @type array with an invalid IRI', async () => {
+        it('with an in-order @graph id in an array with @type array with an invalid IRI', () => {
           const stream = streamifyString(`
 {
   "@id": "http://ex.org/mygraph",
@@ -4407,7 +4352,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an o-o-o @graph id in an array', async () => {
+        it('with an o-o-o @graph id in an array', () => {
           const stream = streamifyString(`
 {
   "@graph": [{
@@ -4432,7 +4377,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with no @graph id in an array', async () => {
+        it('with no @graph id in an array', () => {
           const stream = streamifyString(`
 {
   "@graph": [{
@@ -4454,7 +4399,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with separate inner contexts should not modify each other', async () => {
+        it('with separate inner contexts should not modify each other', () => {
           const stream = streamifyString(`
 {
   "@context": { "@vocab": "http://vocab0.org/" },
@@ -4485,7 +4430,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with separate inner contexts should not modify each other (2)', async () => {
+        it('with separate inner contexts should not modify each other (2)', () => {
           const stream = streamifyString(`
 {
   "@graph": [
@@ -4516,7 +4461,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with separate inner contexts should not modify each other (3)', async () => {
+        it('with separate inner contexts should not modify each other (3)', () => {
           const stream = streamifyString(`
 {
   "@context": { "@vocab": "http://vocab.org/" },
@@ -4556,7 +4501,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('arrays in a graph', () => {
-        it('with a predicate in predicate with anonymous bnode in array', async () => {
+        it('with a predicate in predicate with anonymous bnode in array', () => {
           const stream = streamifyString(`
 {
   "@graph": [
@@ -4577,7 +4522,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('a top-level context', () => {
-        it('without other triples', async () => {
+        it('without other triples', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4587,7 +4532,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with a single unrelated triple', async () => {
+        it('with a single unrelated triple', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4600,7 +4545,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a single contextified triple', async () => {
+        it('with a single contextified triple', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4614,7 +4559,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('with an inner context', () => {
-          it('without other inner triples', async () => {
+          it('without other inner triples', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4624,7 +4569,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with a single unrelated triple', async () => {
+          it('with a single unrelated triple', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4642,7 +4587,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a single contextified triple', async () => {
+          it('with a single contextified triple', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4660,7 +4605,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a two contextified triples', async () => {
+          it('with a two contextified triples', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4681,7 +4626,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a two contextified triples with overlapping contexts', async () => {
+          it('with a two contextified triples with overlapping contexts', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4702,7 +4647,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should emit an error when a context parsing error occurs', async () => {
+          it('should emit an error when a context parsing error occurs', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4719,7 +4664,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with two separate inner contexts at the same level', async () => {
+          it('with two separate inner contexts at the same level', () => {
             const stream = streamifyString(`
 {
   "@id": "http://ex.org/s",
@@ -4750,7 +4695,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with overriding of @base', async () => {
+          it('with overriding of @base', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4786,7 +4731,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with complex overriding of @base', async () => {
+          it('with complex overriding of @base', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4840,7 +4785,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with complex overriding of @base (2)', async () => {
+          it('with complex overriding of @base (2)', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -4873,7 +4818,7 @@ describe('JsonLdParser', () => {
           });
         });
 
-        it('with @base without triples', async () => {
+        it('with @base without triples', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4883,7 +4828,7 @@ describe('JsonLdParser', () => {
           return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
         });
 
-        it('with @base and @vocab with triples', async () => {
+        it('with @base and @vocab with triples', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4899,7 +4844,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab with triples, with @base=null', async () => {
+        it('with @base and @vocab with triples, with @base=null', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4915,7 +4860,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab with triples, with @vocab=null', async () => {
+        it('with @base and @vocab with triples, with @vocab=null', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4932,7 +4877,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab with triples, with @vocab=null, should resolve @type to baseIRI', async () => {
+        it('with @base and @vocab with triples, with @vocab=null, should resolve @type to baseIRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4949,7 +4894,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab with triples, with @vocab=null, should resolve typed nodes to baseIRI', async () => {
+        it('with @base and @vocab with triples, with @vocab=null, should resolve typed nodes to baseIRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4966,7 +4911,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @vocab with triples, with a term set to null', async () => {
+        it('with @vocab with triples, with a term set to null', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -4983,7 +4928,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @vocab with triples, with a term @id set to null', async () => {
+        it('with @vocab with triples, with a term @id set to null', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5000,7 +4945,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @vocab with triples, with a term set to null with object values', async () => {
+        it('with @vocab with triples, with a term set to null with object values', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5019,7 +4964,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('for @vocab=""', () => {
-        it('with @base and @vocab should reuse the base IRI', async () => {
+        it('with @base and @vocab should reuse the base IRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5039,7 +4984,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and @vocab should reuse the base IRI in 1.1', async () => {
+        it('with @base and @vocab should reuse the base IRI in 1.1', () => {
           parser = new JsonLdParser({ processingMode: '1.1' });
           const stream = streamifyString(`
 {
@@ -5060,7 +5005,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @base and relative @vocab should throw in 1.0', async () => {
+        it('with @base and relative @vocab should throw in 1.0', () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -5078,7 +5023,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('for prefixes', () => {
-        it('with @prefix ending on non-gen-delim char should not error', async () => {
+        it('with @prefix ending on non-gen-delim char should not error', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5093,7 +5038,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @prefix ending on non-gen-delim char should not expand', async () => {
+        it('without @prefix ending on non-gen-delim char should not expand', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5108,7 +5053,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @prefix ending on gen-delim char should not expand', async () => {
+        it('without @prefix ending on gen-delim char should not expand', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5123,7 +5068,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('in compact form ending on non-gen-delim char should not expand', async () => {
+        it('in compact form ending on non-gen-delim char should not expand', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5138,7 +5083,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('in compact form ending on gen-delim char should expand', async () => {
+        it('in compact form ending on gen-delim char should expand', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -5153,7 +5098,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without @prefix in 1.0 ending on non-gen-delim char should not expand', async () => {
+        it('without @prefix in 1.0 ending on non-gen-delim char should not expand', () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -5169,7 +5114,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @prefix in 1.0 ending on non-gen-delim char should not expand', async () => {
+        it('with @prefix in 1.0 ending on non-gen-delim char should not expand', () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -5186,7 +5131,7 @@ describe('JsonLdParser', () => {
         });
       });
 
-      it('with a null inner context', async () => {
+      it('with a null inner context', () => {
         const stream = streamifyString(`
 {
   "@context": {
@@ -5215,7 +5160,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('an out-of-order context', () => {
-          it('with a single unrelated triple', async () => {
+          it('with a single unrelated triple', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -5228,7 +5173,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a single contextified triple', async () => {
+          it('with a single contextified triple', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": "http://ex.org/obj1",
@@ -5241,7 +5186,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @base and @vocab with triples', async () => {
+          it('with @base and @vocab with triples', () => {
             const stream = streamifyString(`
 {
   "@id": "",
@@ -5257,7 +5202,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context entry referring to itself, but should be resolved against @vocab', async () => {
+          it('with a context entry referring to itself, but should be resolved against @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5272,7 +5217,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context entry referring to itself, should ignore the base', async () => {
+          it('with a context entry referring to itself, should ignore the base', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
@@ -5289,7 +5234,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with context-based @type based on @vocab', async () => {
+          it('with context-based @type based on @vocab', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
@@ -5307,7 +5252,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with inline @type based on @vocab', async () => {
+          it('with inline @type based on @vocab', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, streamingProfile, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(`
@@ -5324,7 +5269,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with multiple contexts', async () => {
+          it('with multiple contexts', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(JSON.stringify({
@@ -5349,7 +5294,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with multiple contexts, one of which contains protected values', async () => {
+          it('with multiple contexts, one of which contains protected values', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(JSON.stringify({
@@ -5375,7 +5320,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with one context containing protected values', async () => {
+          it('with one context containing protected values', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, baseIRI: 'https://json-ld.org/test-suite/tests/manifest.json' });
             const stream = streamifyString(JSON.stringify({
@@ -5402,7 +5347,7 @@ describe('JsonLdParser', () => {
 
         describe('with an out-of-order inner context', () => {
 
-          it('with a single unrelated triple', async () => {
+          it('with a single unrelated triple', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -5420,7 +5365,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a single contextified triple', async () => {
+          it('with a single contextified triple', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -5438,7 +5383,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a contextified inner triple should inherit from the outer context', async () => {
+          it('with a contextified inner triple should inherit from the outer context', () => {
             const stream = streamifyString(`
 {
   "@id": "A",
@@ -5463,7 +5408,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a two contextified triples', async () => {
+          it('with a two contextified triples', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -5484,7 +5429,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a two contextified triples with overlapping contexts', async () => {
+          it('with a two contextified triples with overlapping contexts', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -5507,7 +5452,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('an out-of-order type-scoped context', () => {
-          it('with a context, predicate and contexted-type', async () => {
+          it('with a context, predicate and contexted-type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5529,7 +5474,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, predicate and non-contexted-type', async () => {
+          it('with a context, predicate and non-contexted-type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5548,7 +5493,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, contexted-type and predicate', async () => {
+          it('with a context, contexted-type and predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5570,7 +5515,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, non-contexted-type and predicate', async () => {
+          it('with a context, non-contexted-type and predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5589,7 +5534,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a predicate, context and contexted-type', async () => {
+          it('with a predicate, context and contexted-type', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -5611,7 +5556,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a predicate, context and non-contexted-type', async () => {
+          it('with a predicate, context and non-contexted-type', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -5630,7 +5575,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a predicate, contexted-type and context', async () => {
+          it('with a predicate, contexted-type and context', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -5652,7 +5597,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a predicate, non-contexted-type and context', async () => {
+          it('with a predicate, non-contexted-type and context', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -5671,7 +5616,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a contexted-type, predicate and context', async () => {
+          it('with a contexted-type, predicate and context', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -5693,7 +5638,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a non-contexted-type, predicate and context', async () => {
+          it('with a non-contexted-type, predicate and context', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -5712,7 +5657,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a contexted-type, context and predicate', async () => {
+          it('with a contexted-type, context and predicate', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -5734,7 +5679,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a non-contexted-type, context and predicate', async () => {
+          it('with a non-contexted-type, context and predicate', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -5753,7 +5698,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, and two sets of predicate and contexted-type', async () => {
+          it('with a context, and two sets of predicate and contexted-type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5786,7 +5731,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, predicate and 2 contexted-types in array', async () => {
+          it('with a context, predicate and 2 contexted-types in array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5810,7 +5755,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, predicate and contexted-type, followed by another predicate', async () => {
+          it('with a context, predicate and contexted-type, followed by another predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5834,7 +5779,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, predicate and contexted-type, followed by another predicate with inner node', async () => {
+          it('with a context, predicate and contexted-type, followed by another predicate with inner node', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5863,7 +5808,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, predicate and inner id and inner type', async () => {
+          it('with a context, predicate and inner id and inner type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -5901,7 +5846,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('an out-of-order context', () => {
-          it('with a single unrelated triple', async () => {
+          it('with a single unrelated triple', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": "http://ex.org/obj1",
@@ -5912,7 +5857,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with a single contextified triple', async () => {
+          it('with a single contextified triple', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": "http://ex.org/obj1",
@@ -5923,7 +5868,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with @base and @vocab with triples', async () => {
+          it('with @base and @vocab with triples', () => {
             const stream = streamifyString(`
 {
   "@id": "",
@@ -5939,7 +5884,7 @@ describe('JsonLdParser', () => {
 
         describe('with an out-of-order inner context', () => {
 
-          it('with a single unrelated triple', async () => {
+          it('with a single unrelated triple', () => {
             const stream = streamifyString(`
 {
   "http://ex.org/pred1": {
@@ -5955,7 +5900,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with a single contextified triple', async () => {
+          it('with a single contextified triple', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -5971,7 +5916,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with a two contextified triples', async () => {
+          it('with a two contextified triples', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -5988,7 +5933,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
           });
 
-          it('with a two contextified triples with overlapping contexts', async () => {
+          it('with a two contextified triples with overlapping contexts', () => {
             const stream = streamifyString(`
 {
   "SomeTerm": {
@@ -6007,7 +5952,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('an out-of-order type-scoped context', () => {
-          it('with a context, predicate and contexted-type', async () => {
+          it('with a context, predicate and contexted-type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6027,7 +5972,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a context, predicate and non-contexted-type without streamingProfileAllowOutOfOrderPlainType', async () => {
+          it('with a context, predicate and non-contexted-type without streamingProfileAllowOutOfOrderPlainType', () => {
             parser = new JsonLdParser(
               { dataFactory: DF, streamingProfile: true });
             const stream = streamifyString(`
@@ -6046,7 +5991,7 @@ describe('JsonLdParser', () => {
               '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a context, predicate and non-contexted-type with streamingProfileAllowOutOfOrderPlainType', async () => {
+          it('with a context, predicate and non-contexted-type with streamingProfileAllowOutOfOrderPlainType', () => {
             parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true, streamingProfileAllowOutOfOrderPlainType: true });
             const stream = streamifyString(`
 {
@@ -6066,7 +6011,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, contexted-type and predicate', async () => {
+          it('with a context, contexted-type and predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6088,7 +6033,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a context, non-contexted-type and predicate', async () => {
+          it('with a context, non-contexted-type and predicate', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6107,7 +6052,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a predicate, context and contexted-type', async () => {
+          it('with a predicate, context and contexted-type', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -6127,7 +6072,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a predicate, context and non-contexted-type', async () => {
+          it('with a predicate, context and non-contexted-type', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -6144,7 +6089,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a predicate, contexted-type and context', async () => {
+          it('with a predicate, contexted-type and context', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -6164,7 +6109,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a predicate, non-contexted-type and context', async () => {
+          it('with a predicate, non-contexted-type and context', () => {
             const stream = streamifyString(`
 {
   "pred1": "http://ex.org/obj1",
@@ -6181,7 +6126,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a contexted-type, predicate and context', async () => {
+          it('with a contexted-type, predicate and context', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -6201,7 +6146,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a non-contexted-type, predicate and context', async () => {
+          it('with a non-contexted-type, predicate and context', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -6218,7 +6163,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a contexted-type, context and predicate', async () => {
+          it('with a contexted-type, context and predicate', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -6238,7 +6183,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a non-contexted-type, context and predicate', async () => {
+          it('with a non-contexted-type, context and predicate', () => {
             const stream = streamifyString(`
 {
   "@type": "Foo",
@@ -6255,7 +6200,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
-          it('with a context, predicate and inner id and inner type', async () => {
+          it('with a context, predicate and inner id and inner type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6283,7 +6228,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('@type', () => {
-        it('on an anonymous node', async () => {
+        it('on an anonymous node', () => {
           const stream = streamifyString(`
 {
   "@type": "http://example.org/abc"
@@ -6294,7 +6239,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node', async () => {
+        it('on a named node', () => {
           const stream = streamifyString(`
 {
   "@type": "http://example.org/abc",
@@ -6307,7 +6252,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node should work with @vocab', async () => {
+        it('on a named node should work with @vocab', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6323,7 +6268,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node with a prefixed @type', async () => {
+        it('on a named node with a prefixed @type', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6339,7 +6284,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node with an aliased @type', async () => {
+        it('on a named node with an aliased @type', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6356,7 +6301,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node in a @graph', async () => {
+        it('on a named node in a @graph', () => {
           const stream = streamifyString(`
 {
   "@id": "http://example.org/myGraph",
@@ -6373,7 +6318,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node in an out-of-order @graph', async () => {
+        it('on a named node in an out-of-order @graph', () => {
           const stream = streamifyString(`
 {
   "@graph": {
@@ -6390,7 +6335,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on an out-of-order named node', async () => {
+        it('on an out-of-order named node', () => {
           const stream = streamifyString(`
 {
   "@type": "http://example.org/abc",
@@ -6403,7 +6348,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node with multiple @types should work with @vocab', async () => {
+        it('on a named node with multiple @types should work with @vocab', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6429,7 +6374,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node with multiple @types', async () => {
+        it('on a named node with multiple @types', () => {
           const stream = streamifyString(`
 {
   "@type": [
@@ -6452,7 +6397,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a named node with multiple aliased @type entries', async () => {
+        it('on a named node with multiple aliased @type entries', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6476,7 +6421,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('@type in the context', () => {
-        it('with value @id', async () => {
+        it('with value @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6490,7 +6435,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with value @id should be relative to baseIRI', async () => {
+        it('with value @id should be relative to baseIRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6506,7 +6451,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with value @vocab should be relative to vocabIRI', async () => {
+        it('with value @vocab should be relative to vocabIRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6522,7 +6467,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('without value @vocab should be relative to baseIRI', async () => {
+        it('without value @vocab should be relative to baseIRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6537,7 +6482,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should use context terms for @type: @vocab', async () => {
+        it('should use context terms for @type: @vocab', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6554,7 +6499,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should handle @type: @vocab with native value', async () => {
+        it('should handle @type: @vocab with native value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6570,7 +6515,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should not use context terms for @type: @id', async () => {
+        it('should not use context terms for @type: @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6587,7 +6532,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should handle @type: @id with native value', async () => {
+        it('should handle @type: @id with native value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6603,7 +6548,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on a native value', async () => {
+        it('on a native value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6617,7 +6562,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('on native values', async () => {
+        it('on native values', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6633,7 +6578,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('for @type: @none on a boolean', async () => {
+        it('for @type: @none on a boolean', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6647,7 +6592,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('for @type: @none on an @value with date', async () => {
+        it('for @type: @none on an @value with date', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6664,7 +6609,7 @@ describe('JsonLdParser', () => {
 
       describe('with blank node predicates', () => {
         describe('when produceGeneralizedRdf is false', () => {
-          it('should ignore blank node predicates', async () => {
+          it('should ignore blank node predicates', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6675,7 +6620,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('should ignore blank node predicates with multiple values', async () => {
+          it('should ignore blank node predicates with multiple values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6689,7 +6634,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('should ignore blank node predicates in a list', async () => {
+          it('should ignore blank node predicates in a list', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6701,7 +6646,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('should ignore blank node predicates in an anonymous list', async () => {
+          it('should ignore blank node predicates in an anonymous list', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6720,7 +6665,7 @@ describe('JsonLdParser', () => {
             parser = new JsonLdParser({ produceGeneralizedRdf: true });
           });
 
-          it('should not ignore blank node predicates', async () => {
+          it('should not ignore blank node predicates', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6733,7 +6678,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not ignore blank node predicates with multiple values', async () => {
+          it('should not ignore blank node predicates with multiple values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6750,7 +6695,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not ignore blank node predicates in a list', async () => {
+          it('should not ignore blank node predicates in a list', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6770,7 +6715,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not ignore blank node predicates in an anonymous list', async () => {
+          it('should not ignore blank node predicates in an anonymous list', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -6793,7 +6738,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('with keyword aliases', () => {
-        it('should alias @id', async () => {
+        it('should alias @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6808,7 +6753,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should multi-level alias @id', async () => {
+        it('should multi-level alias @id', () => {
           const stream = streamifyString(`
 {
   "@context": [
@@ -6824,7 +6769,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @id with a relative IRI', async () => {
+        it('should alias @id with a relative IRI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6840,7 +6785,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should multi-level alias @id with a relative IRI', async () => {
+        it('should multi-level alias @id with a relative IRI', () => {
           const stream = streamifyString(`
 {
   "@context": [
@@ -6857,7 +6802,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @id nested in @id', async () => {
+        it('should alias @id nested in @id', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6872,7 +6817,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @type', async () => {
+        it('should alias @type', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6888,7 +6833,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error on alias a reversed @type', async () => {
+        it('should error on alias a reversed @type', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6902,7 +6847,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_IRI_MAPPING));
         });
 
-        it('should alias @value', async () => {
+        it('should alias @value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6918,7 +6863,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @value and @language', async () => {
+        it('should alias @value and @language', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6935,7 +6880,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @list', async () => {
+        it('should alias @list', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6954,7 +6899,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @reverse', async () => {
+        it('should alias @reverse', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6971,7 +6916,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @graph', async () => {
+        it('should alias @graph', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -6993,7 +6938,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should alias @set', async () => {
+        it('should alias @set', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7002,8 +6947,7 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "http://ex.org/pred1": { "set": [ "a", "b", "c" ] }
 }`);
-          const output = await arrayifyStream(stream.pipe(parser));
-          expect(output).toBeRdfIsomorphic([
+          expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('a')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('b')),
             DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'), DF.literal('c')),
@@ -7012,7 +6956,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('quads with nested contexts', () => {
-        it('with an inner context in an object', async () => {
+        it('with an inner context in an object', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7035,7 +6979,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with an inner context in an array', async () => {
+        it('with an inner context in an array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7062,7 +7006,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('JSON literals', () => {
-        it('should error in 1.0', async () => {
+        it('should error in 1.0', () => {
           parser = new JsonLdParser({ processingMode: '1.0' });
           const stream = streamifyString(`
 {
@@ -7077,7 +7021,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_TYPE_MAPPING));
         });
 
-        it('with a single literal value', async () => {
+        it('with a single literal value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7093,7 +7037,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a single null value', async () => {
+        it('with a single null value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7109,7 +7053,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object', async () => {
+        it('with a JSON object', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7125,7 +7069,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object that contains an entry looking like a valid URI', async () => {
+        it('with a JSON object that contains an entry looking like a valid URI', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7142,7 +7086,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object that should be canonicalized', async () => {
+        it('with a JSON object that should be canonicalized', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7158,7 +7102,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON array', async () => {
+        it('with a JSON array', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7174,7 +7118,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with nested JSON', async () => {
+        it('with nested JSON', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7190,7 +7134,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object with a would-be-invalid predicate in strict mode', async () => {
+        it('with a JSON object with a would-be-invalid predicate in strict mode', () => {
           parser = new JsonLdParser({ strictValues: true });
           const stream = streamifyString(`
 {
@@ -7207,7 +7151,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object with a would-be-invalid predicate with array value in strict mode', async () => {
+        it('with a JSON object with a would-be-invalid predicate with array value in strict mode', () => {
           parser = new JsonLdParser({ strictValues: true });
           const stream = streamifyString(`
 {
@@ -7224,7 +7168,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with a JSON object in @value with strict values', async () => {
+        it('with a JSON object in @value with strict values', () => {
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, strictValues: true });
           const stream = streamifyString(`
 {
@@ -7244,7 +7188,7 @@ describe('JsonLdParser', () => {
 
       describe('containers', () => {
 
-        it('with @index in a string value should be ignored', async () => {
+        it('with @index in a string value should be ignored', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -7267,7 +7211,7 @@ describe('JsonLdParser', () => {
 
         describe('for languages', () => {
 
-          it('with @id and language map', async () => {
+          it('with @id and language map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7291,7 +7235,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map with array container entry', async () => {
+          it('with @id and language map with array container entry', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7315,7 +7259,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map with @set', async () => {
+          it('with @id and language map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7339,7 +7283,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map with an array value', async () => {
+          it('with @id and language map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7365,7 +7309,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map should not interpret language as predicates', async () => {
+          it('with @id and language map should not interpret language as predicates', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7390,7 +7334,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map with @none', async () => {
+          it('with @id and language map with @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7417,7 +7361,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map with aliased @none', async () => {
+          it('with @id and language map with aliased @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7445,7 +7389,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and language map containing an invalid value', async () => {
+          it('with @id and language map containing an invalid value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7463,7 +7407,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE));
           });
 
-          it('with @id and language map containing an invalid value in an array', async () => {
+          it('with @id and language map containing an invalid value in an array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7485,7 +7429,7 @@ describe('JsonLdParser', () => {
 
         describe('for indexes', () => {
 
-          it('with @id and index map', async () => {
+          it('with @id and index map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7509,7 +7453,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with @set', async () => {
+          it('with @id and index map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7533,7 +7477,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with an array value', async () => {
+          it('with @id and index map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7559,7 +7503,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with an empty value', async () => {
+          it('with @id and index map with an empty value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7574,7 +7518,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and index map with @none', async () => {
+          it('with @id and index map with @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7601,7 +7545,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with @value objects', async () => {
+          it('with @id and index map with @value objects', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7625,7 +7569,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with value nodes', async () => {
+          it('with @id and index map with value nodes', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7649,7 +7593,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should be removable by overriding with a type-scoped context', async () => {
+          it('should be removable by overriding with a type-scoped context', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7682,7 +7626,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with multiple raw value entries in one index', async () => {
+          it('with multiple raw value entries in one index', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7703,7 +7647,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with multiple @value entries in one index', async () => {
+          it('with multiple @value entries in one index', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7728,7 +7672,7 @@ describe('JsonLdParser', () => {
 
         describe('for property-based indexes', () => {
 
-          it('with @id and index map with one entry', async () => {
+          it('with @id and index map with one entry', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7753,7 +7697,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map', async () => {
+          it('with @id and index map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7798,7 +7742,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with @set', async () => {
+          it('with @id and index map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7843,7 +7787,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with a single element with array value', async () => {
+          it('with @id and index map with a single element with array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7877,7 +7821,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with an array value', async () => {
+          it('with @id and index map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7931,7 +7875,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with an empty value', async () => {
+          it('with @id and index map with an empty value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7946,7 +7890,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and index map with @none', async () => {
+          it('with @id and index map with @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -7989,7 +7933,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with one entry with invalid property', async () => {
+          it('with @id and index map with one entry with invalid property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8012,7 +7956,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with one entry where prop has @type: @id', async () => {
+          it('with @id and index map with one entry where prop has @type: @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8039,7 +7983,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with a keyword @index value should error', async () => {
+          it('with a keyword @index value should error', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8059,7 +8003,7 @@ describe('JsonLdParser', () => {
                 ERROR_CODES.INVALID_TERM_DEFINITION));
           });
 
-          it('with a non-string @index value should error', async () => {
+          it('with a non-string @index value should error', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8079,7 +8023,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.INVALID_TERM_DEFINITION));
           });
 
-          it('with @id and index map with a raw value should error', async () => {
+          it('with @id and index map with a raw value should error', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8097,7 +8041,7 @@ describe('JsonLdParser', () => {
                 ERROR_CODES.INVALID_VALUE_OBJECT));
           });
 
-          it('with @id and index map with a raw value in an array should error', async () => {
+          it('with @id and index map with a raw value in an array should error', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8115,7 +8059,7 @@ describe('JsonLdParser', () => {
                 ERROR_CODES.INVALID_VALUE_OBJECT));
           });
 
-          it('with @id and index map with a raw value with @type: @id', async () => {
+          it('with @id and index map with a raw value with @type: @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8135,7 +8079,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and index map with a raw value with @type: @id with invalid IRI', async () => {
+          it('with @id and index map with a raw value with @type: @id with invalid IRI', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8150,7 +8094,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and index map with a raw value with @type: @bla should error', async () => {
+          it('with @id and index map with a raw value with @type: @bla should error', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8171,7 +8115,7 @@ describe('JsonLdParser', () => {
 
         describe('for identifiers', () => {
 
-          it('with @id and identifier map', async () => {
+          it('with @id and identifier map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8209,7 +8153,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with @set', async () => {
+          it('with @id and identifier map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8247,7 +8191,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with an array value', async () => {
+          it('with @id and identifier map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8285,7 +8229,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with an empty array value', async () => {
+          it('with @id and identifier map with an empty array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8303,7 +8247,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and identifier map with a nested array value', async () => {
+          it('with @id and identifier map with a nested array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8341,7 +8285,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with invalid @id and identifier map', async () => {
+          it('with invalid @id and identifier map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8365,7 +8309,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and identifier map with @none', async () => {
+          it('with @id and identifier map with @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8413,7 +8357,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with multiple @none\'s', async () => {
+          it('with @id and identifier map with multiple @none\'s', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8451,7 +8395,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with values already having URI @id', async () => {
+          it('with @id and identifier map with values already having URI @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8485,7 +8429,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with values already having blank node @id', async () => {
+          it('with @id and identifier map with values already having blank node @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8519,7 +8463,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and identifier map with values already having @id but no other properties', async () => {
+          it('with @id and identifier map with values already having @id but no other properties', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8551,7 +8495,7 @@ describe('JsonLdParser', () => {
 
         describe('for types', () => {
 
-          it('with @id and type map', async () => {
+          it('with @id and type map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8590,7 +8534,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with @set', async () => {
+          it('with @id and type map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8629,7 +8573,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id', async () => {
+          it('with @id and type map with string values expand to @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8658,7 +8602,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to invalid @id', async () => {
+          it('with @id and type map with string values expand to invalid @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8675,7 +8619,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and type map with string values expand to @id without @type', async () => {
+          it('with @id and type map with string values expand to @id without @type', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8704,7 +8648,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id with @type: @id', async () => {
+          it('with @id and type map with string values expand to @id with @type: @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8733,7 +8677,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id with @type: @vocab', async () => {
+          it('with @id and type map with string values expand to @id with @type: @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8762,7 +8706,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id with @type: @vocab over blank nodes', async () => {
+          it('with @id and type map with string values expand to @id with @type: @vocab over blank nodes', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8791,7 +8735,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id with array values', async () => {
+          it('with @id and type map with string values expand to @id with array values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8819,7 +8763,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with string values expand to @id with @type: @vocab and array values', async () => {
+          it('with @id and type map with string values expand to @id with @type: @vocab and array values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8847,7 +8791,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map without inner @id\'s', async () => {
+          it('with @id and type map without inner @id\'s', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8884,7 +8828,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with an array value', async () => {
+          it('with @id and type map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8936,7 +8880,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with an array value', async () => {
+          it('with @id and type map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -8953,7 +8897,7 @@ describe('JsonLdParser', () => {
             return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
           });
 
-          it('with @id and type map with a nested array value', async () => {
+          it('with @id and type map with a nested array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9005,7 +8949,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and invalid type map', async () => {
+          it('with @id and invalid type map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9037,7 +8981,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with @none', async () => {
+          it('with @id and type map with @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9084,7 +9028,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and type map with multiple @none\'s', async () => {
+          it('with @id and type map with multiple @none\'s', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9119,7 +9063,7 @@ describe('JsonLdParser', () => {
 
         describe('for graphs', () => {
 
-          it('with @id and graph map', async () => {
+          it('with @id and graph map', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9142,7 +9086,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @set', async () => {
+          it('with @id and graph map with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9165,7 +9109,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with an array value', async () => {
+          it('with @id and graph map with an array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9198,7 +9142,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with an nested array value', async () => {
+          it('with @id and graph map with an nested array value', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9231,7 +9175,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with multiple values', async () => {
+          it('with @id and graph map with multiple values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9262,7 +9206,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with multiple values with an outer array', async () => {
+          it('with @id and graph map with multiple values with an outer array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9306,7 +9250,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map and blank node inner id', async () => {
+          it('with @id and graph map and blank node inner id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9328,7 +9272,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with an o-o-o inner id', async () => {
+          it('with @id and graph map with an o-o-o inner id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9351,7 +9295,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with multiple values and an o-o-o inner id', async () => {
+          it('with @id and graph map with multiple values and an o-o-o inner id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9382,7 +9326,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map and an o-o-o outer id', async () => {
+          it('with @id and graph map and an o-o-o outer id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9405,7 +9349,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map and an o-o-o outer and inner id', async () => {
+          it('with @id and graph map and an o-o-o outer and inner id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9428,7 +9372,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map and @graph key', async () => {
+          it('with @id and graph map and @graph key', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9453,7 +9397,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index', async () => {
+          it('with @id and graph map with @index', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9478,7 +9422,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple lead node values', async () => {
+          it('with @id and graph map with @index with multiple lead node values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9507,7 +9451,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index and @graph key', async () => {
+          it('with @id and graph map with @index and @graph key', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9534,7 +9478,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values', async () => {
+          it('with @id and graph map with @index with multiple values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9567,7 +9511,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values without id', async () => {
+          it('with @id and graph map with @index with multiple values without id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9597,7 +9541,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values without id with @set', async () => {
+          it('with @id and graph map with @index with multiple values without id with @set', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9627,7 +9571,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with inner arrays', async () => {
+          it('with @id and graph map with @index with multiple values with inner arrays', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9660,7 +9604,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with nested inner arrays', async () => {
+          it('with @id and graph map with @index with multiple values with nested inner arrays', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9693,7 +9637,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple inner array values', async () => {
+          it('with @id and graph map with @index with multiple inner array values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9726,7 +9670,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with complex inner arrays', async () => {
+          it('with @id and graph map with @index with multiple values with complex inner arrays', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9766,7 +9710,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with an outer array (1) should be ignored', async () => {
+          it('with @id and graph map with @index with multiple values with an outer array (1) should be ignored', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9793,7 +9737,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with an outer array (2) should be ignored', async () => {
+          it('with @id and graph map with @index with multiple values with an outer array (2) should be ignored', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9824,7 +9768,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with a nested outer array should be ignored', async () => {
+          it('with @id and graph map with @index with multiple values with a nested outer array should be ignored', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9851,7 +9795,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index with multiple values with nested inner and outer arrays', async () => {
+          it('with @id and graph map with @index with multiple values with nested inner and outer arrays', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9878,7 +9822,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index and @index prop', async () => {
+          it('with @id and graph map with @index and @index prop', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9905,7 +9849,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @index and @index prop as IRI', async () => {
+          it('with @id and graph map with @index and @index prop as IRI', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9933,7 +9877,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @id', async () => {
+          it('with @id and graph map with @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9958,7 +9902,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @id with multiple values', async () => {
+          it('with @id and graph map with @id with multiple values', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -9991,7 +9935,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @id with multiple values with complex inner arrays', async () => {
+          it('with @id and graph map with @id with multiple values with complex inner arrays', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10029,7 +9973,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @id and @none', async () => {
+          it('with @id and graph map with @id and @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10055,7 +9999,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('with @id and graph map with @id and aliased @none', async () => {
+          it('with @id and graph map with @id and aliased @none', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10084,7 +10028,7 @@ describe('JsonLdParser', () => {
         });
 
         describe('for combinations', () => {
-          it('an index container with a type-scoped context overriding a prop as a type container', async () => {
+          it('an index container with a type-scoped context overriding a prop as a type container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10127,7 +10071,7 @@ describe('JsonLdParser', () => {
 
       describe('@nest properties', () => {
 
-        it('(unaliased) with @id and one valid sub-property', async () => {
+        it('(unaliased) with @id and one valid sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10145,7 +10089,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and one valid sub-property', async () => {
+        it('with @id and one valid sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10164,7 +10108,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with o-o-o @id and one valid sub-property', async () => {
+        it('with o-o-o @id and one valid sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10183,7 +10127,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and one valid sub-property within an array with one entry', async () => {
+        it('with @id and one valid sub-property within an array with one entry', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10202,7 +10146,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and one valid sub-property within an array with two entries', async () => {
+        it('with @id and one valid sub-property within an array with two entries', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10226,7 +10170,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and two valid sub-properties', async () => {
+        it('with @id and two valid sub-properties', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10249,7 +10193,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and one valid sub-property with a sub-property', async () => {
+        it('with @id and one valid sub-property with a sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10274,7 +10218,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @id and one valid sub-property with a conflicting inner @id should error', async () => {
+        it('with @id and one valid sub-property with a conflicting inner @id should error', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10293,7 +10237,7 @@ describe('JsonLdParser', () => {
               ERROR_CODES.COLLIDING_KEYWORDS));
         });
 
-        it('with inner @id and one valid sub-property', async () => {
+        it('with inner @id and one valid sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10312,7 +10256,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('doubly nested, with @id and one valid sub-property', async () => {
+        it('doubly nested, with @id and one valid sub-property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10333,7 +10277,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error on a string value', async () => {
+        it('should error on a string value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10348,7 +10292,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_NEST_VALUE));
         });
 
-        it('should error on a number value', async () => {
+        it('should error on a number value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10363,7 +10307,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_NEST_VALUE));
         });
 
-        it('should error on a boolean value', async () => {
+        it('should error on a boolean value', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10378,7 +10322,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_NEST_VALUE));
         });
 
-        it('should error on a value node', async () => {
+        it('should error on a value node', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10393,7 +10337,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_NEST_VALUE));
         });
 
-        it('should error on an aliased value node', async () => {
+        it('should error on an aliased value node', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10413,7 +10357,7 @@ describe('JsonLdParser', () => {
 
       describe('embedded contexts', () => {
 
-        it('should override a single property', async () => {
+        it('should override a single property', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10436,7 +10380,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should override a single property and propagate to children', async () => {
+        it('should override a single property and propagate to children', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10464,7 +10408,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should override a single property and not propagate to children with @propagate: false', async () => {
+        it('should override a single property and not propagate to children with @propagate: false', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10493,7 +10437,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should use proper @vocab scope for defined terms', async () => {
+        it('should use proper @vocab scope for defined terms', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -10523,7 +10467,7 @@ describe('JsonLdParser', () => {
 
         describe('property scoped contexts', () => {
 
-          it('should add a single property', async () => {
+          it('should add a single property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10548,7 +10492,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should add a single property within an array', async () => {
+          it('should add a single property within an array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10573,7 +10517,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should override @vocab', async () => {
+          it('should override @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10598,7 +10542,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should propagate by default', async () => {
+          it('should propagate by default', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10628,7 +10572,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should propagate by default with nullification', async () => {
+          it('should propagate by default with nullification', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10652,7 +10596,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should propagate for @propagate: true', async () => {
+          it('should propagate for @propagate: true', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10683,7 +10627,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not propagate for @propagate: false', async () => {
+          it('should not propagate for @propagate: false', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10714,7 +10658,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not influence neighbour properties', async () => {
+          it('should not influence neighbour properties', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10747,7 +10691,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should add a single property in a 2-level deep nested scoped context', async () => {
+          it('should add a single property in a 2-level deep nested scoped context', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10782,7 +10726,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should add allow a protected property to be overridden', async () => {
+          it('should add allow a protected property to be overridden', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10809,7 +10753,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle an @id node within a property', async () => {
+          it('should handle an @id node within a property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10834,7 +10778,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle an @id node within a property in an array', async () => {
+          it('should handle an @id node within a property in an array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10859,7 +10803,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle an @id node with other properties within a property', async () => {
+          it('should handle an @id node with other properties within a property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10884,7 +10828,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle an @value node within a property', async () => {
+          it('should handle an @value node within a property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10913,7 +10857,7 @@ describe('JsonLdParser', () => {
 
         describe('type scoped contexts', () => {
 
-          it('should handle a single type and single property', async () => {
+          it('should handle a single type and single property', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10937,7 +10881,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a two types and single property with property overriding', async () => {
+          it('should handle a two types and single property with property overriding', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -10969,7 +10913,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a two types and single property with property overriding in lexical order', async () => {
+          it('should handle a two types and single property with property overriding in lexical order', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11001,7 +10945,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a two types and two properties', async () => {
+          it('should handle a two types and two properties', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11036,7 +10980,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should not propagate by default', async () => {
+          it('should not propagate by default', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11065,7 +11009,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should propagate on @propagate: true', async () => {
+          it('should propagate on @propagate: true', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11095,7 +11039,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a value node', async () => {
+          it('should handle a value node', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11122,7 +11066,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a property value datatype', async () => {
+          it('should handle a property value datatype', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11146,7 +11090,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle @base of @id', async () => {
+          it('should handle @base of @id', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11174,7 +11118,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle @base of @id with a nested node with other props', async () => {
+          it('should handle @base of @id with a nested node with other props', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11211,7 +11155,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle @base of @id with a nested node without other props', async () => {
+          it('should handle @base of @id with a nested node without other props', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11245,7 +11189,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should handle a graph container', async () => {
+          it('should handle a graph container', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11276,7 +11220,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should assign appropriate context to @value nodes', async () => {
+          it('should assign appropriate context to @value nodes', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11305,7 +11249,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('should assign appropriate context to @value nodes in an array', async () => {
+          it('should assign appropriate context to @value nodes in an array', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11340,7 +11284,7 @@ describe('JsonLdParser', () => {
 
         describe('different scoping combinations', () => {
 
-          it('type-scoping has priority over embedded context', async () => {
+          it('type-scoping has priority over embedded context', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11372,7 +11316,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('type-scoping has priority over property-scoping', async () => {
+          it('type-scoping has priority over property-scoping', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11406,7 +11350,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('embedded context has priority over property-scoping', async () => {
+          it('embedded context has priority over property-scoping', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11434,7 +11378,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('type-scoping and property-scoping', async () => {
+          it('type-scoping and property-scoping', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11463,7 +11407,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('type-scoping and property-scoping with @type: @vocab', async () => {
+          it('type-scoping and property-scoping with @type: @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11497,7 +11441,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('double type-scoping and property-scoping with @type: @vocab', async () => {
+          it('double type-scoping and property-scoping with @type: @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11540,7 +11484,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('double type-scoping and property-scoping with @type: @vocab (2)', async () => {
+          it('double type-scoping and property-scoping with @type: @vocab (2)', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11585,7 +11529,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('double type-scoping and property-scoping with @type: @vocab with blank nodes', async () => {
+          it('double type-scoping and property-scoping with @type: @vocab with blank nodes', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11628,7 +11572,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('double type-scoping and property-scoping with @type: @vocab without @vocab', async () => {
+          it('double type-scoping and property-scoping with @type: @vocab without @vocab', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -11678,7 +11622,7 @@ describe('JsonLdParser', () => {
 
       describe('protected terms', () => {
 
-        it('should error on protected term overrides', async () => {
+        it('should error on protected term overrides', () => {
           const stream = streamifyString(`
 {
   "@context": [
@@ -11698,7 +11642,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
-        it('should not error on protected term overrides with identical value', async () => {
+        it('should not error on protected term overrides with identical value', () => {
           const stream = streamifyString(`
 {
   "@context": [
@@ -11719,7 +11663,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error on protected term overrides in embedded contexts', async () => {
+        it('should error on protected term overrides in embedded contexts', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -11739,7 +11683,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
-        it('should not error on protected term overrides before a property scoped-context', async () => {
+        it('should not error on protected term overrides before a property scoped-context', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -11765,7 +11709,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should error on protected term overrides after a property scoped-context', async () => {
+        it('should error on protected term overrides after a property scoped-context', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -11789,7 +11733,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.PROTECTED_TERM_REDEFINITION));
         });
 
-        it('should not error on protected term, context null in a property scoped-context, and override', async () => {
+        it('should not error on protected term, context null in a property scoped-context, and override', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -11815,7 +11759,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('should not error when overriding with a compacted term', async () => {
+        it('should not error when overriding with a compacted term', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -11842,7 +11786,7 @@ describe('JsonLdParser', () => {
       });
 
       describe('array values', () => {
-        it('with raw values', async () => {
+        it('with raw values', () => {
           parser = new JsonLdParser({processingMode: '1.0'});
           const stream = streamifyString(`
 {
@@ -11859,7 +11803,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('with @value', async () => {
+        it('with @value', () => {
           parser = new JsonLdParser({processingMode: '1.0'});
           const stream = streamifyString(`
 {
@@ -11879,7 +11823,7 @@ describe('JsonLdParser', () => {
 
       describe('rdf star', () => {
         describe('embedded subject', () => {
-          it('as embedded subject when rdfstar is disabled', async () => {
+          it('as embedded subject when rdfstar is disabled', () => {
             parser = new JsonLdParser({ rdfstar: false });
             const stream = streamifyString(`
 {
@@ -11890,12 +11834,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found illegal @id '[object Object]'`,
                 ERROR_CODES.INVALID_ID_VALUE));
           });
 
-          it('as embedded subject with property and with subject', async () => {
+          it('as embedded subject with property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -11914,7 +11858,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded subject with property and without subject', async () => {
+          it('as embedded subject with property and without subject', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -11932,7 +11876,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded subject with @type property and with subject', async () => {
+          it('as embedded subject with @type property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -11951,7 +11895,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded subject with @type property and without subject', async () => {
+          it('as embedded subject with @type property and without subject', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -11969,7 +11913,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded subject with property and with subject inside @graph', async () => {
+          it('as embedded subject with property and with subject inside @graph', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:graph",
@@ -11992,7 +11936,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as invalid embedded subject without property', async () => {
+          it('as invalid embedded subject without property', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12001,12 +11945,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Invalid embedded node without property with @id ex:subjectEmbedded`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
 
-          it('as invalid embedded subject with two properties', async () => {
+          it('as invalid embedded subject with two properties', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12016,12 +11960,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
 
-          it('as invalid embedded subject with two @type properties', async () => {
+          it('as invalid embedded subject with two @type properties', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12031,12 +11975,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
 
-          it('as invalid embedded subject with a plain and @type property', async () => {
+          it('as invalid embedded subject with a plain and @type property', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12047,12 +11991,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Illegal multiple properties in an embedded node`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
 
-          it('as nested embedded subject with property and with subject', async () => {
+          it('as nested embedded subject with property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12082,7 +12026,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded object with property and with subject', async () => {
+          it('as embedded object with property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12103,7 +12047,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded object with property and with subject when rdfstar is disabled', async () => {
+          it('as embedded object with property and with subject when rdfstar is disabled', () => {
             parser = new JsonLdParser({ rdfstar: false });
             const stream = streamifyString(`
 {
@@ -12116,12 +12060,12 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found illegal @id '[object Object]'`,
                 ERROR_CODES.INVALID_ID_VALUE));
           });
 
-          it('as embedded object with property and without subject', async () => {
+          it('as embedded object with property and without subject', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12141,7 +12085,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as nested embedded object-subject with property and with subject', async () => {
+          it('as nested embedded object-subject with property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12169,7 +12113,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as nested embedded object-object with property and with subject', async () => {
+          it('as nested embedded object-object with property and with subject', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12199,7 +12143,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded object with property and with subject, and a connected property', async () => {
+          it('as embedded object with property and with subject, and a connected property', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12226,7 +12170,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as embedded subject with context-reverse with rdfstarReverseInEmbedded enabled', async () => {
+          it('as embedded subject with context-reverse with rdfstarReverseInEmbedded enabled', () => {
             parser = new JsonLdParser({ rdfstarReverseInEmbedded: true });
             const stream = streamifyString(`
 {
@@ -12249,7 +12193,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as invalid embedded subject with context-reverse', async () => {
+          it('as invalid embedded subject with context-reverse', () => {
             const stream = streamifyString(`
 {
   "@context": {
@@ -12262,12 +12206,12 @@ describe('JsonLdParser', () => {
   "ex:prop": "value2"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Illegal reverse property in embedded node in rel`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
 
-          it('as embedded subject with explicit-reverse with rdfstarReverseInEmbedded enabled', async () => {
+          it('as embedded subject with explicit-reverse with rdfstarReverseInEmbedded enabled', () => {
             parser = new JsonLdParser({ rdfstarReverseInEmbedded: true });
             const stream = streamifyString(`
 {
@@ -12287,7 +12231,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('as invalid embedded subject with explicit-reverse', async () => {
+          it('as invalid embedded subject with explicit-reverse', () => {
             const stream = streamifyString(`
 {
   "@id": {
@@ -12297,14 +12241,14 @@ describe('JsonLdParser', () => {
   "ex:prop": "value2"
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Illegal reverse property in embedded node in ex:rel`,
                 ERROR_CODES.INVALID_EMBEDDED_NODE));
           });
         });
 
         describe('annotation object', () => {
-          it('on nested node', async () => {
+          it('on nested node', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12334,7 +12278,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node when rdfstar is disabled', async () => {
+          it('on nested node when rdfstar is disabled', () => {
             parser = new JsonLdParser({ rdfstar: false });
             const stream = streamifyString(`
 {
@@ -12356,7 +12300,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node with @reverse', async () => {
+          it('on nested node with @reverse', () => {
             const stream = streamifyString(`
 {
   "@context": { "annotation": { "@reverse": "ex:annotation", "@type": "@id" } },
@@ -12387,7 +12331,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node where @annotation comes before @id', async () => {
+          it('on nested node where @annotation comes before @id', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12417,7 +12361,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node with @type in annotation', async () => {
+          it('on nested node with @type in annotation', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12447,7 +12391,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node with additional property', async () => {
+          it('on nested node with additional property', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12483,7 +12427,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node with two annotations as array', async () => {
+          it('on nested node with two annotations as array', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12523,7 +12467,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested node with two annotations as object', async () => {
+          it('on nested node with two annotations as object', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12563,7 +12507,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on @value', async () => {
+          it('on @value', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12593,7 +12537,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on @value with aliased @annotation', async () => {
+          it('on @value with aliased @annotation', () => {
             const stream = streamifyString(`
 {
   "@context": { "annotation": "@annotation" },
@@ -12624,7 +12568,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on nested @value', async () => {
+          it('on nested @value', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12672,7 +12616,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('on branched nested @value', async () => {
+          it('on branched nested @value', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:s",
@@ -12752,7 +12696,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
-          it('an invalid top-level @annotation', async () => {
+          it('an invalid top-level @annotation', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12760,12 +12704,12 @@ describe('JsonLdParser', () => {
   "@annotation": {"ex:prop": "value2"}
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Annotations can not be made on top-level nodes`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
 
-          it('an illegal @id inside an @annotation before the property', async () => {
+          it('an illegal @id inside an @annotation before the property', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12778,12 +12722,12 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found an illegal @id inside an annotation: ex:invalid-ann-id`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
 
-          it('an illegal @id inside an @annotation after the property', async () => {
+          it('an illegal @id inside an @annotation after the property', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12796,12 +12740,12 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found an illegal @id inside an annotation: ex:invalid-ann-id`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
 
-          it('an illegal string value', async () => {
+          it('an illegal string value', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12811,12 +12755,12 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found illegal annotation value: "abc"`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
 
-          it('an illegal @value value', async () => {
+          it('an illegal @value value', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12826,12 +12770,12 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found illegal annotation value: {"@value":"abc"}`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
 
-          it('an illegal annotation inside an @list', async () => {
+          it('an illegal annotation inside an @list', () => {
             const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12845,13 +12789,13 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-            await expect(arrayifyStream(stream.pipe(parser))).rejects
+            return expect(arrayifyStream(stream.pipe(parser))).rejects
               .toThrow(new ErrorCoded(`Found an illegal annotation inside a list`,
                 ERROR_CODES.INVALID_ANNOTATION));
           });
         });
 
-        it('on annotation containing an embedded node', async () => {
+        it('on annotation containing an embedded node', () => {
           const stream = streamifyString(`
 {
   "@context": {
@@ -12903,7 +12847,7 @@ describe('JsonLdParser', () => {
           ]);
         });
 
-        it('an illegal embedded node containing an annotation', async () => {
+        it('an illegal embedded node containing an annotation', () => {
           const stream = streamifyString(`
 {
   "@id": "ex:bob",
@@ -12918,7 +12862,7 @@ describe('JsonLdParser', () => {
   }
 }
 `);
-          await expect(arrayifyStream(stream.pipe(parser))).rejects
+          return expect(arrayifyStream(stream.pipe(parser))).rejects
             .toThrow(new ErrorCoded(`Found an illegal annotation inside an embedded node`,
               ERROR_CODES.INVALID_ANNOTATION));
         });
@@ -12928,7 +12872,7 @@ describe('JsonLdParser', () => {
     });
 
     describe('should not parse', () => {
-      it('an invalid document', async () => {
+      it('an invalid document', () => {
         const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid1"
@@ -12936,7 +12880,7 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('a document with duplicate @id definitions', async () => {
+      it('a document with duplicate @id definitions', () => {
         const stream = streamifyString(`
 {
   "@id": "http://ex.org/myid1",
@@ -12944,7 +12888,7 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('a document with an invalid version for the given processing mode', async () => {
+      it('a document with an invalid version for the given processing mode', () => {
         parser = new JsonLdParser({ processingMode: '1.0' });
         const stream = streamifyString(`
 {
@@ -12955,7 +12899,7 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('a document with @version set to 1.0 under default processing mode', async () => {
+      it('a document with @version set to 1.0 under default processing mode', () => {
         const stream = streamifyString(`
 {
   "@context": {
@@ -12965,7 +12909,7 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('an @id inside an @reverse', async () => {
+      it('an @id inside an @reverse', () => {
         const stream = streamifyString(`
 {
   "@reverse": {
@@ -12977,7 +12921,7 @@ describe('JsonLdParser', () => {
           'Found the @id \'http://ex.org/myid\' inside an @reverse property',
           ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
       });
-      it('an @graph inside an @reverse', async () => {
+      it('an @graph inside an @reverse', () => {
         const stream = streamifyString(`
 {
   "@reverse": {
@@ -12987,7 +12931,7 @@ describe('JsonLdParser', () => {
 }`);
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toBeTruthy();
       });
-      it('@reverse: true', async () => {
+      it('@reverse: true', () => {
         const stream = streamifyString(`
 {
   "http://example/prop": {
@@ -12998,7 +12942,7 @@ describe('JsonLdParser', () => {
           'Invalid value type for \'@reverse\' with value \'true\'',
           ERROR_CODES.INVALID_REVERSE_VALUE));
       });
-      it('@index: true', async () => {
+      it('@index: true', () => {
         const stream = streamifyString(`
 {
   "http://example/prop": {
@@ -13009,7 +12953,7 @@ describe('JsonLdParser', () => {
           'Invalid value type for \'@index\' with value \'true\'',
           ERROR_CODES.INVALID_INDEX_VALUE));
       });
-      it('a list in a reversed property', async () => {
+      it('a list in a reversed property', () => {
         const stream = streamifyString(`
 {
   "@context": {
@@ -13022,7 +12966,7 @@ describe('JsonLdParser', () => {
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
-      it('a singular list in a reversed property', async () => {
+      it('a singular list in a reversed property', () => {
         const stream = streamifyString(`
 {
   "@context": {
@@ -13035,7 +12979,7 @@ describe('JsonLdParser', () => {
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term',
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
-      it('an empty list in a reversed property', async () => {
+      it('an empty list in a reversed property', () => {
         const stream = streamifyString(`
 {
   "@context": {
@@ -13049,7 +12993,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
 
-      it('an @id with a non-string value', async () => {
+      it('an @id with a non-string value', () => {
         const stream = streamifyString(`
 {
   "@id": true
@@ -13059,7 +13003,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_ID_VALUE));
       });
 
-      it('an @type with a non-string value', async () => {
+      it('an @type with a non-string value', () => {
         const stream = streamifyString(`
 {
   "@type": true
@@ -13069,7 +13013,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_TYPE_VALUE));
       });
 
-      it('an @type with a non-string value in an array', async () => {
+      it('an @type with a non-string value in an array', () => {
         const stream = streamifyString(`
 {
   "@type": [ true ]
@@ -13079,7 +13023,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_TYPE_VALUE));
       });
 
-      it('@included with a raw value', async () => {
+      it('@included with a raw value', () => {
         const stream = streamifyString(`
 {
   "@included": "bla"
@@ -13089,7 +13033,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
 
-      it('@included with an @value', async () => {
+      it('@included with an @value', () => {
         const stream = streamifyString(`
 {
   "@included": { "@value": "bla" }
@@ -13099,7 +13043,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
 
-      it('@included with an @list', async () => {
+      it('@included with an @list', () => {
         const stream = streamifyString(`
 {
   "@included": { "@list": [ "bla" ] }
@@ -13109,7 +13053,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
 
-      it('@list with @id', async () => {
+      it('@list with @id', () => {
         const stream = streamifyString(`
 {
   "http://example/prop": {"@list": ["foo"], "@id": "http://example/bar"}
@@ -13120,7 +13064,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
       });
 
-      it('@id with @list', async () => {
+      it('@id with @list', () => {
         const stream = streamifyString(`
 {
   "http://example/prop": {"@id": "http://example/bar", "@list": ["foo"]}
@@ -13131,7 +13075,7 @@ describe('JsonLdParser', () => {
             ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
       });
 
-      it('unclosed JSON document', async () => {
+      it('unclosed JSON document', () => {
         const stream = streamifyString(`{`)
 
         return expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(/Unclosed document/)
@@ -13146,7 +13090,7 @@ describe('JsonLdParser', () => {
       parser = new JsonLdParser({ strictValues: true });
     });
 
-    it('should error on an unknown keyword', async () => {
+    it('should error on an unknown keyword', () => {
       const stream = streamifyString(`
 {
   "@unknown": "dummy"
@@ -13155,7 +13099,7 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Unknown keyword \'@unknown\' with value \'dummy\''));
     });
 
-    it('should error on a predicate that is not an IRI', async () => {
+    it('should error on a predicate that is not an IRI', () => {
       const stream = streamifyString(`
 {
   "bla": "dummy"
@@ -13164,7 +13108,7 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid predicate IRI: bla'));
     });
 
-    it('should error on a subject that is not an IRI', async () => {
+    it('should error on a subject that is not an IRI', () => {
       const stream = streamifyString(`
 {
   "@id": "dummy"
@@ -13173,7 +13117,7 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid resource IRI: dummy'));
     });
 
-    it('should error on an object that is not an IRI', async () => {
+    it('should error on an object that is not an IRI', () => {
       const stream = streamifyString(`
 {
   "http://ex.org/pred": { "@id": "dummy" }
@@ -13182,7 +13126,7 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid resource IRI: dummy'));
     });
 
-    it('should error on an @type that is not an IRI', async () => {
+    it('should error on an @type that is not an IRI', () => {
       const stream = streamifyString(`
 {
   "@type": "http://ex.org/ abc"
@@ -13191,7 +13135,7 @@ describe('JsonLdParser', () => {
         .toEqual(new Error('Invalid term IRI: http://ex.org/ abc'));
     });
 
-    it('should error on @reverse with literal values', async () => {
+    it('should error on @reverse with literal values', () => {
       const stream = streamifyString(`
 {
   "@id": "http://example.org/",
@@ -13204,7 +13148,7 @@ describe('JsonLdParser', () => {
           ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
     });
 
-    it('should error on conflicting indexes in the root when validateValueIndexes is false', async () => {
+    it('should error on conflicting indexes in the root when validateValueIndexes is false', () => {
       const stream = streamifyString(`
 [
   {
@@ -13221,7 +13165,7 @@ describe('JsonLdParser', () => {
         .toEqual(new ErrorCoded('Conflicting @index value for http://example/foo', ERROR_CODES.CONFLICTING_INDEXES));
     });
 
-    it('should not error on conflicting indexes in the root when validateValueIndexes is true', async () => {
+    it('should not error on conflicting indexes in the root when validateValueIndexes is true', () => {
       const stream = streamifyString(`
 [
   {
@@ -13236,7 +13180,7 @@ describe('JsonLdParser', () => {
       return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
     });
 
-    it('should not error on a predicate that is mapped to null', async () => {
+    it('should not error on a predicate that is mapped to null', () => {
       const stream = streamifyString(`
 {
   "@context": {
@@ -13247,7 +13191,7 @@ describe('JsonLdParser', () => {
       return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
     });
 
-    it('should not error on a subject that is mapped to null', async () => {
+    it('should not error on a subject that is mapped to null', () => {
       const stream = streamifyString(`
 {
   "@context": {
@@ -13258,7 +13202,7 @@ describe('JsonLdParser', () => {
       return expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([]);
     });
 
-    it('should not error on an anonymous list', async () => {
+    it('should not error on an anonymous list', () => {
       const stream = streamifyString(`
 {
   "@context": {"foo": {"@id": "http://example.com/foo"}},
@@ -13269,7 +13213,7 @@ describe('JsonLdParser', () => {
       ]);
     });
 
-    it('should not error on a reversed property', async () => {
+    it('should not error on a reversed property', () => {
       const stream = streamifyString(`
 {
   "@reverse": {
@@ -13598,7 +13542,7 @@ describe('JsonLdParser', () => {
       parser = new JsonLdParser();
     });
 
-    it('should parse a stream', async () => {
+    it('should parse a stream', () => {
       const stream = streamifyString(`
 {
   "@id": "http://example.org/myGraph",
@@ -13620,7 +13564,7 @@ describe('JsonLdParser', () => {
       ]);
     });
 
-    it('should parse another stream', async () => {
+    it('should parse another stream', () => {
       const stream = streamifyString(`
 {
   "@id": "http://example.org/node",
@@ -13638,7 +13582,7 @@ describe('JsonLdParser', () => {
     });
 
 
-    it('should parse a bad stream', async () => {
+    it('should parse a bad stream', () => {
       const stream = new EventEmitter();
       const result = parser.import(stream);
       stream.emit("data", `
@@ -13654,13 +13598,13 @@ describe('JsonLdParser', () => {
       ]);
     });
 
-    it('should forward error events', async () => {
+    it('should forward error events', () => {
       const stream = new PassThrough();
       stream._read = () => stream.emit('error', new Error('my error'));
       return expect(arrayifyStream(parser.import(stream))).rejects.toThrow(new Error('my error'));
     });
 
-    it('should forward error events with a bad stream', async () => {
+    it('should forward error events with a bad stream', () => {
       const stream = new EventEmitter();
       const result = parser.import(stream);
       stream.emit('error', new Error('my error'));
@@ -13668,7 +13612,7 @@ describe('JsonLdParser', () => {
     });
   });
 
-  it('should parse a VC with minified context', async () => {
+  it('should parse a VC with minified context', () => {
     const parser = new JsonLdParser();
     const stream = streamifyString(JSON.stringify({
       "@context": {
