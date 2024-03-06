@@ -105,6 +105,11 @@ describe('JsonLdParser', () => {
       expect((<any> parser).options.baseIRI).toEqual('BASE');
     });
 
+    it('should handle an ActivityStreams JSON response in the same way as JSON-LD', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/activity+json');
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
     it('should handle a JSON-LD response and allow option overrides', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', undefined, { baseIRI: 'base2' });
       expect((<any> parser).options.baseIRI).toEqual('base2');

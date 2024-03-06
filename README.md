@@ -181,6 +181,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `skipContextValidation`: If JSON-LD context validation should be skipped. This is useful when parsing large contexts that are known to be valid. _(Default: `false`)_
 * `rdfstar`: If embedded nodes and annotated objects should be parsed according to the [JSON-LD star specification](https://json-ld.github.io/json-ld-star/). _(Default: `true`)_
 * `rdfstarReverseInEmbedded`: If embedded nodes in JSON-LD star can have reverse properties. _(Default: `false`)_
+* `wellKnownContentTypes`: an array of content-types that can also be parsed as JSON-LD. _(Default: `['application/activity+json']`)_
 
 ```javascript
 new JsonLdParser({
