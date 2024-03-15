@@ -105,6 +105,11 @@ describe('JsonLdParser', () => {
       expect((<any> parser).options.baseIRI).toEqual('BASE');
     });
 
+    it('should handle an ActivityStreams JSON response in the same way as JSON-LD', () => {
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/activity+json');
+      expect((<any> parser).options.baseIRI).toEqual('BASE');
+    });
+
     it('should handle a JSON-LD response and allow option overrides', () => {
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/ld+json', undefined, { baseIRI: 'base2' });
       expect((<any> parser).options.baseIRI).toEqual('base2');
@@ -114,6 +119,13 @@ describe('JsonLdParser', () => {
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle'))
         .toThrow(new ErrorCoded(`Unsupported JSON-LD media type text/turtle`,
           ERROR_CODES.LOADING_DOCUMENT_FAILED))
+    });
+
+    it('should error on an application/activity+json without link header if the wellknowntypes do not include it', () => {
+      expect(() => JsonLdParser.fromHttpResponse('BASE', 'application/activity+json', undefined, {
+        wellKnownMediaTypes: []
+      })).toThrow(new ErrorCoded(`Missing context link header for media type application/activity+json on BASE`,
+      ERROR_CODES.LOADING_DOCUMENT_FAILED))
     });
 
     it('should error on a plain JSON response without link header', () => {

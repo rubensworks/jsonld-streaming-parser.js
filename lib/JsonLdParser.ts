@@ -106,8 +106,12 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   public static fromHttpResponse(baseIRI: string, mediaType: string,
                                  headers?: Headers, options?: IJsonLdParserOptions): JsonLdParser {
     let context: JsonLdContext | undefined;
-    // Special cases when receiving something else than the JSON-LD media type
-    if (mediaType !== 'application/ld+json') {
+    let wellKnownMediaTypes = ['application/activity+json'];
+    if (options && options.wellKnownMediaTypes) {
+      wellKnownMediaTypes = options.wellKnownMediaTypes;
+    }
+    // Special cases when receiving something else than the JSON-LD media type or the wellKnownMediaTypes
+    if (mediaType !== 'application/ld+json' && !wellKnownMediaTypes.includes(mediaType)) {
       // Only accept JSON or JSON extension types
       if (mediaType !== 'application/json' && !mediaType.endsWith('+json')) {
         throw new ErrorCoded(`Unsupported JSON-LD media type ${mediaType}`,
@@ -672,4 +676,10 @@ export interface IJsonLdParserOptions {
    * Defaults to false.
    */
   rdfstarReverseInEmbedded?: boolean;
+  /**
+   * If the APIs you interact with publish valid JSON-LD on media types that are not application/ld+json,
+   * provide those content-types in this array.
+   * Default to ['application/activity+json']
+   */
+  wellKnownMediaTypes?: string[];
 }
