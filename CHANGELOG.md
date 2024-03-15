@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v3.4.0"></a>
+## [v3.4.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.3.0...v3.4.0) - 2024-03-15
+
+### Added
+* [Add wellKnownMediaTypes configuration option](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/5eb098d6ed1303199258117e69c94ba9a42c3630)
+
 <a name="v3.3.0"></a>
 ## [v3.3.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.2.1...v3.3.0) - 2023-11-08
 
