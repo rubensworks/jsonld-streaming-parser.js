@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v4.0.0"></a>
+## [v4.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.4.0...v4.0.0) - 2024-09-27
+
+### BREAKING CHANGE
+* [Update to jsonld-context-parser v3](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/e2c9e1a1bf6b7429df7f6b870029ae39ac3295ce). This is not a breaking change for users of Node 18+
+
 <a name="v3.4.0"></a>
 ## [v3.4.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.3.0...v3.4.0) - 2024-03-15
 
