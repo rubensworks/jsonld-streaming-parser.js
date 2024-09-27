@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v4.0.1"></a>
+## [v4.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v4.0.0...v4.0.1) - 2024-09-27
+
+### Changed
+* [Update dependency @types/readable-stream to v4](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/7d0c9238255205f6960766fff9feaed9642a1a80)
+
 <a name="v4.0.0"></a>
 ## [v4.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v3.4.0...v4.0.0) - 2024-09-27
 
