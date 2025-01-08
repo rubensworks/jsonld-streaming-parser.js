@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v5.0.0"></a>
+## [v5.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v4.0.1...v5.0.0) - 2025-01-08
+
+### BREAKING CHANGES
+* [Make @direction output RDF 1.2 literals with base direction](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/bd5094ff91db46129958bc7b2d986f9ec5dd9c35)
+* [Update to rdf-data-factory v2](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/011dc1ea5778603e11465f01f0a817d0128b6573)
+    This includes a bump to @rdfjs/types@2.0.0, which requires TypeScript 5 and Node 14+
+
 <a name="v4.0.1"></a>
 ## [v4.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v4.0.0...v4.0.1) - 2024-09-27
 
