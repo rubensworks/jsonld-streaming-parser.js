@@ -795,7 +795,7 @@ describe('JsonLdParser', () => {
 }`);
               return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
-                  DF.literal('my value')),
+                  DF.literal('my value', { language: '', direction: 'rtl' })),
               ]);
             });
 
@@ -812,7 +812,7 @@ describe('JsonLdParser', () => {
 }`);
               return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
-                  DF.literal('my value')),
+                  DF.literal('my value', { language: '', direction: 'rtl' })),
               ]);
             });
 
@@ -829,7 +829,7 @@ describe('JsonLdParser', () => {
 }`);
               return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
-                  DF.literal('my value')),
+                  DF.literal('my value', { language: '', direction: 'ltr' })),
               ]);
             });
 
@@ -2122,7 +2122,7 @@ describe('JsonLdParser', () => {
 }]`);
               return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
-                  DF.literal('my value', 'en-us')),
+                  DF.literal('my value', { language: 'en-us', direction: 'rtl' })),
               ]);
             });
 
@@ -2137,7 +2137,7 @@ describe('JsonLdParser', () => {
 }]`);
               return expect(await arrayifyStream(stream.pipe(parser))).toBeRdfIsomorphic([
                 DF.quad(DF.namedNode('http://ex.org/myid'), DF.namedNode('http://ex.org/pred1'),
-                  DF.literal('my value')),
+                  DF.literal('my value', { language: '', direction: 'rtl' })),
               ]);
             });
 

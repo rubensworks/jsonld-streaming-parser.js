@@ -175,7 +175,7 @@ Optionally, the following parameters can be set in the `JsonLdParser` constructo
 * `allowSubjectList`: If RDF lists can appear in the subject position. _(Default: `false`)_
 * `validateValueIndexes`: If @index inside array nodes should be validated. I.e., nodes inside the same array with the same @id, should have equal @index values. This is not applicable to this parser as we don't do explicit flattening, but it is required to be spec-compliant. _(Default: `false`)_
 * `defaultGraph`: The default graph for constructing [quads](http://rdf.js.org/#dom-datafactory-quad). _(Default: `defaultGraph()`)_
-* `rdfDirection`: The [mode](https://w3c.github.io/json-ld-api/#dom-jsonldoptions-rdfdirection) under which `@direction` should be handled. If undefined, `@direction` is ignored. Alternatively, it can be set to either `'i18n-datatype'` or `'compound-literal'` _(Default: `undefined`)_
+* `rdfDirection`: The [mode](https://w3c.github.io/json-ld-api/#dom-jsonldoptions-rdfdirection) under which `@direction` should be handled. If undefined, `@direction` is considered a regular RDF 1.2 literal with a base direction. Alternatively, it can be set to either `'i18n-datatype'` or `'compound-literal'` _(Default: `undefined`)_
 * `normalizeLanguageTags`: Whether or not language tags should be normalized to lowercase. _(Default: `false` for JSON-LD 1.1 (and higher), `true` for JSON-LD 1.0)_
 * `streamingProfileAllowOutOfOrderPlainType`: When the streaming profile flag is enabled, `@type` entries MUST come before other properties since they may defined a type-scoped context. However, when this flag is enabled, `@type` entries that do NOT define a type-scoped context may appear anywhere just like a regular property.. _(Default: `false`)_
 * `skipContextValidation`: If JSON-LD context validation should be skipped. This is useful when parsing large contexts that are known to be valid. _(Default: `false`)_
@@ -197,7 +197,7 @@ new JsonLdParser({
   allowSubjectList: false,
   validateValueIndexes: false,
   defaultGraph: namedNode('http://example.org/graph'),
-  rdfDirection: 'i18n-datatype',
+  rdfDirection: undefined,
   normalizeLanguageTags: true,
   rdfstar: true,
 });

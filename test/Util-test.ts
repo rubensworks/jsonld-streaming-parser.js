@@ -469,12 +469,12 @@ describe('Util', () => {
 
         it('with a @value and valid @direction rtl should return a plain literal', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl' }, 0, []))
-            .resolves.toEqualRdfTermArray([DF.literal('abc')]);
+            .resolves.toEqualRdfTermArray([DF.literal('abc', { language: '', direction: 'rtl' })]);
         });
 
         it('with a @value and valid @direction ltr should return a plain literal', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'ltr' }, 0, []))
-            .resolves.toEqualRdfTermArray([DF.literal('abc')]);
+            .resolves.toEqualRdfTermArray([DF.literal('abc', { language: '', direction: 'ltr' })]);
         });
 
         it('with a @value and boolean @type should throw an error', async () => {
@@ -649,13 +649,13 @@ describe('Util', () => {
         it('with an @direction: rtl and rdfDirection undefined should return a plain literal', async () => {
           context = new JsonLdContextNormalized({ key: { '@direction': 'rtl' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-            .toEqualRdfTermArray([DF.literal('abc')]);
+            .toEqualRdfTermArray([DF.literal('abc', { language: '', direction: 'rtl' })]);
         });
 
         it('with an @direction: rtl, language and rdfDirection undefined should return a plain literal', async () => {
           context = new JsonLdContextNormalized({ key: { '@direction': 'rtl', '@language': 'en-us' } });
           return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-            .toEqualRdfTermArray([DF.literal('abc', 'en-us')]);
+            .toEqualRdfTermArray([DF.literal('abc', { language: 'en-us', direction: 'rtl' })]);
         });
 
         it('with an @direction: rtl and rdfDirection i18n-datatype should return a plain literal', async () => {
@@ -695,14 +695,14 @@ describe('Util', () => {
           it('with a raw value and @direction in the root context should return a plain literal', async () => {
             context = new JsonLdContextNormalized({ '@direction': 'rtl' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-              .toEqualRdfTermArray([DF.literal('abc')]);
+              .toEqualRdfTermArray([DF.literal('abc', { language: '', direction: 'rtl' })]);
           });
 
           it('with a raw value and @direction+@language in the root context should return a language literal',
             async () => {
               context = new JsonLdContextNormalized({ '@direction': 'rtl', '@language': 'en-us' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-                .toEqualRdfTermArray([DF.literal('abc', 'en-us')]);
+                .toEqualRdfTermArray([DF.literal('abc', { language: 'en-us', direction: 'rtl' })]);
             });
 
           it('with a raw value and @direction in the root context for rdfDirection i18n-datatype ' +
@@ -725,7 +725,7 @@ describe('Util', () => {
           it('with a raw value and @direction in the context entry should return a plain literal', async () => {
             context = new JsonLdContextNormalized({ 'key': { '@direction': 'rtl' }, '@direction': 'ltr' });
             return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-              .toEqualRdfTermArray([DF.literal('abc')]);
+              .toEqualRdfTermArray([DF.literal('abc', { language: '', direction: 'rtl' })]);
           });
 
           it('with a raw value and null @direction in the context entry should return a plain literal',
@@ -740,7 +740,7 @@ describe('Util', () => {
               context = new JsonLdContextNormalized(
                 { 'key': { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' });
               return expect(await util.valueToTerm(context, 'key', 'abc', 0, []))
-                .toEqualRdfTermArray([DF.literal('abc', 'en-us')]);
+                .toEqualRdfTermArray([DF.literal('abc', { language: 'en-us', direction: 'rtl' })]);
             });
 
           it('with a raw value and null @direction+@language in the context entry should return a language literal',

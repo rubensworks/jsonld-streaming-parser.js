@@ -344,7 +344,7 @@ export class Util {
         }
 
         // Check @language and @direction
-        if (valueLanguage && valueDirection && this.parsingContext.rdfDirection) {
+        if (valueLanguage && valueDirection) {
           if (valueType) {
             throw new ErrorCoded(`Can not have '@language', '@direction' and '@type' in a value: '${JSON
                 .stringify(value)}'`,
@@ -360,7 +360,7 @@ export class Util {
           }
 
           return [ this.dataFactory.literal(val, valueLanguage) ];
-        } else if (valueDirection && this.parsingContext.rdfDirection) { // Check @direction
+        } else if (valueDirection) { // Check @direction
           if (valueType) {
             throw new ErrorCoded(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`,
               ERROR_CODES.INVALID_VALUE_OBJECT);
@@ -645,7 +645,7 @@ export class Util {
     if (!defaultDatatype) {
       const contextLanguage = Util.getContextValueLanguage(context, key);
       const contextDirection = Util.getContextValueDirection(context, key);
-      if (contextDirection && this.parsingContext.rdfDirection) {
+      if (contextDirection) {
         return this.createLanguageDirectionLiteral(depth, this.intToString(value, defaultDatatype),
           contextLanguage, contextDirection);
       } else {
@@ -676,7 +676,7 @@ export class Util {
       }
       return this.dataFactory.literal(value,
         this.dataFactory.namedNode(`https://www.w3.org/ns/i18n#${language}_${direction}`));
-    } else {
+    } else if (this.parsingContext.rdfDirection === 'compound-literal') {
       // Reify the literal.
       const valueNode = this.dataFactory.blankNode();
       const graph = this.getDefaultGraph();
@@ -689,6 +689,8 @@ export class Util {
       this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode,
         this.dataFactory.namedNode(Util.RDF + 'direction'), this.dataFactory.literal(direction), graph));
       return valueNode;
+    } else {
+      return this.dataFactory.literal(value, { language: language || '', direction: <'ltr' | 'rtl' | ''> direction });
     }
   }
 
