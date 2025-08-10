@@ -39,7 +39,7 @@
     "@types/http-link-header": "^1.0.1",
     "@types/readable-stream": "^4.0.0",
     "buffer": "^6.0.3",
-    "canonicalize": "^1.0.1",
+    "canonicalize": "^2.0.0",
     "http-link-header": "^1.0.2",
     "jsonld-context-parser": "^3.0.0",
     "rdf-data-factory": "^2.0.0",
