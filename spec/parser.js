@@ -16,6 +16,7 @@ module.exports = {
         baseIRI,
         validateValueIndexes: true,
         normalizeLanguageTags: true, // To simplify testing
+        rdfDirection: 'disabled'
       }, options))));
   },
 };

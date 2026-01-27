@@ -35,7 +35,7 @@ export class ParsingContext {
   public readonly validateValueIndexes: boolean;
   public readonly rootContext: Promise<JsonLdContextNormalized>;
   public readonly defaultGraph?: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph;
-  public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal';
+  public readonly rdfDirection?: 'i18n-datatype' | 'compound-literal' | 'disabled';
   public readonly normalizeLanguageTags?: boolean;
   public readonly streamingProfileAllowOutOfOrderPlainType?: boolean;
   public readonly rdfstar: boolean;

@@ -645,7 +645,7 @@ export class Util {
     if (!defaultDatatype) {
       const contextLanguage = Util.getContextValueLanguage(context, key);
       const contextDirection = Util.getContextValueDirection(context, key);
-      if (contextDirection) {
+      if (contextDirection && this.parsingContext.rdfDirection !== 'disabled') {
         return this.createLanguageDirectionLiteral(depth, this.intToString(value, defaultDatatype),
           contextLanguage, contextDirection);
       } else {
