@@ -543,6 +543,11 @@ describe('Util', () => {
               ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
+        it('with a @value and ignoredkey should not throw an error', async () => {
+          return expect(await util.valueToTerm(context, 'key', { '@value': 'abc', 'ignoredkey': 'abc' }, 0, []))
+              .toEqual([ DF.literal('abc') ]);
+        });
+
         it('with a @value, @language and @type should throw an error', async () => {
           return expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en', '@type': 'abc' }, 0, []))
             .rejects.toThrow(new ErrorCoded('Can not have both \'@language\' and \'@type\' in a value: ' +

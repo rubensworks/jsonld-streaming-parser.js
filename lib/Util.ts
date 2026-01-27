@@ -289,8 +289,10 @@ export class Util {
             // This keyword is allowed, but is processed like normal nodes
             break;
           default:
-            throw new ErrorCoded(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`,
-              ERROR_CODES.INVALID_VALUE_OBJECT);
+            if (key.startsWith('@')) {
+              throw new ErrorCoded(`Unknown value entry '${key}' in @value: ${JSON.stringify(value)}`,
+                  ERROR_CODES.INVALID_VALUE_OBJECT);
+            }
           }
         }
 
