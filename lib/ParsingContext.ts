@@ -125,7 +125,7 @@ export class ParsingContext {
 
     this.parser = options.parser;
     if (options.context) {
-      this.rootContext = this.parseContext(options.context);
+      this.rootContext = this.parseContext(options.context, undefined, undefined, true);
       this.rootContext.then((context) => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve(new JsonLdContextNormalized(
@@ -138,10 +138,11 @@ export class ParsingContext {
    * @param {JsonLdContext} context A context to parse.
    * @param {JsonLdContextNormalized} parentContext An optional parent context.
    * @param {boolean} ignoreProtection If @protected term checks should be ignored.
+   * @param {boolean} allowDirectlyNestedContext If @context entries should be allowed. Useful for scoped context.
    * @return {Promise<JsonLdContextNormalized>} A promise resolving to the parsed context.
    */
   public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalizedRaw,
-                            ignoreProtection?: boolean)
+                            ignoreProtection?: boolean, allowDirectlyNestedContext?: boolean)
     : Promise<JsonLdContextNormalized> {
     return this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
@@ -149,6 +150,7 @@ export class ParsingContext {
       normalizeLanguageTags: this.normalizeLanguageTags,
       parentContext,
       processingMode: this.activeProcessingMode,
+      disallowDirectlyNestedContext: !allowDirectlyNestedContext,
     });
   }
 
@@ -202,7 +204,7 @@ export class ParsingContext {
       const key = keysOriginal[i];
       const contextKeyEntry = contextRaw[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-        const scopedContext = (await this.parseContext(contextKeyEntry, contextRaw, true)).getContextRaw();
+        const scopedContext = (await this.parseContext(contextKeyEntry, contextRaw, true, true)).getContextRaw();
         const propagate = !(key in scopedContext)
           || scopedContext[key]['@context']['@propagate']; // Propagation is true by default
 

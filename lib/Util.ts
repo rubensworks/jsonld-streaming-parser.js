@@ -490,7 +490,7 @@ export class Util {
     : Promise<JsonLdContextNormalized> {
     const contextKeyEntry = context.getContextRaw()[key];
     if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
-      context = await this.parsingContext.parseContext(contextKeyEntry, context.getContextRaw(), true);
+      context = await this.parsingContext.parseContext(contextKeyEntry, context.getContextRaw(), true, true);
     }
     return context;
   }
