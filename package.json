@@ -60,7 +60,7 @@
     "jest-rdf": "^2.0.0",
     "manual-git-changelog": "^1.0.1",
     "pre-commit": "^1.2.2",
-    "rdf-test-suite": "^1.21.0",
+    "rdf-test-suite": "^2.0.0",
     "streamify-string": "^1.0.1",
     "ts-jest": "^29.0.0",
     "ts-loader": "^9.3.1",
