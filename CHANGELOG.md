@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v5.0.1"></a>
+## [v5.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v5.0.0...v5.0.1) - 2026-01-27
+
+### Added
+* [Allow rdfDirection to be set to 'disabled'](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/ba5179e381634dd2eebc63409bf96d17674d9eb8)
+
+### Changed
+* [Update to jsonld-context-parser v3.1.0](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/fc9cb246d2e2ad26153ad1bba07b70b66a3a4e36)
+
+### Fixed
+* [Fix @value validation incorrectly considering non-@ keys](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/5f05dff013ee4f54392e9f29ea90bbef0116c96b)
+* [Fix redefinition of `@context` not throwing](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/3911d0a8efc93f1c554ab24e45539ae382e6a845)
+
 <a name="v5.0.0"></a>
 ## [v5.0.0](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v4.0.1...v5.0.0) - 2025-01-08
 
