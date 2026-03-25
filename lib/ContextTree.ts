@@ -9,7 +9,7 @@ import {JsonLdContextNormalized} from "jsonld-context-parser";
 export class ContextTree {
 
   private readonly subTrees: {[key: string]: ContextTree} = {};
-  private context: Promise<JsonLdContextNormalized> | null;
+  private context: Promise<JsonLdContextNormalized> | null = null;
 
   public getContext(keys: string[]): Promise<{ context: JsonLdContextNormalized, depth: number }> | null {
     if (keys.length > 0) {
