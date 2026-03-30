@@ -266,7 +266,7 @@ export class ParsingContext {
       // if it defines a property-scoped context that is applicable for the current key.
       // @see https://w3c.github.io/json-ld-api/tests/toRdf-manifest#tc012
       const lastKey = keys.at(-1);
-      if (lastKey in contextData.context.getContextRaw()) {
+      if (lastKey !== undefined && lastKey in contextData.context.getContextRaw()) {
         const lastKeyValue = contextData.context.getContextRaw()[lastKey];
         if (lastKeyValue && typeof lastKeyValue === 'object' && '@context' in lastKeyValue) {
           hasApplicablePropertyScopedContext = true;

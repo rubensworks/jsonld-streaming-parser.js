@@ -237,7 +237,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     // We use the validationStack to reuse validation results that were produced before with common key stacks.
     let inProperty = false;
     if (this.parsingContext.validationStack.length > 1) {
-      inProperty = this.parsingContext.validationStack.at(-1).property;
+      inProperty = this.parsingContext.validationStack.at(-1)!.property;
     }
     for (let i = Math.max(1, this.parsingContext.validationStack.length - 1); i < keys.length - 1; i++) {
       const validationResult = this.parsingContext.validationStack[i] ||
