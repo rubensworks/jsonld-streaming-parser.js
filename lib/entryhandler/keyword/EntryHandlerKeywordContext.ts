@@ -8,7 +8,7 @@ import { EntryHandlerKeyword } from './EntryHandlerKeyword';
  * Handles @context entries.
  */
 export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
-  constructor() {
+  public constructor() {
     super('@context');
   }
 
@@ -16,7 +16,14 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     return false;
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    _util: Util,
+    _key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+  ): Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
     if (parsingContext.streamingProfile &&
       (parsingContext.processingStack[depth] ||
@@ -32,9 +39,12 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     const parentContext: Promise<JsonLdContextNormalized> = parsingContext.getContext(keys);
 
     // Set the context for this scope
+    // eslint-disable-next-line ts/no-unsafe-argument
     const context = parsingContext.parseContext(value, (await parentContext).getContextRaw());
     parsingContext.contextTree.setContext(keys.slice(0, -1), context);
+    // eslint-disable-next-line ts/no-unsafe-argument
     parsingContext.emitContext(value);
+    // eslint-disable-next-line ts/await-thenable
     await parsingContext.validateContext(await context);
   }
 }

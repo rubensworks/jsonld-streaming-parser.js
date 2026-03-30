@@ -14,8 +14,14 @@ export class ContainerHandlerIndex implements IContainerHandler {
     return true;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
-    util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(
+    containers: Record<string, boolean>,
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: string[],
+    value: any,
+    depth: number,
+  ): Promise<void> {
     if (!Array.isArray(value)) {
       const graphContainer = '@graph' in containers;
 
@@ -57,7 +63,7 @@ export class ContainerHandlerIndex implements IContainerHandler {
           const indexValues = await util.valueToTerm(
             context,
             indexPropertyRaw,
-            // eslint-disable-next-line ts/no-unsafe-argument
+
             await util.getContainerKey(keys[depth], keys, depth),
             depth,
             keys,
@@ -67,18 +73,26 @@ export class ContainerHandlerIndex implements IContainerHandler {
             // When we're in a graph container, attach the index to the graph identifier
             const graphId = await util.getGraphContainerValue(keys, depth + 1);
             for (const indexValue of indexValues) {
-                parsingContext.emitQuad(
-                  depth,
-                  util.dataFactory.quad(graphId, indexProperty, indexValue, util.getDefaultGraph()),
-                );
-              }
+              parsingContext.emitQuad(
+                depth,
+                util.dataFactory.quad(graphId, indexProperty, indexValue, util.getDefaultGraph()),
+              );
+            }
           } else {
             // Otherwise, attach the index to the node identifier
             for (const indexValue of indexValues) {
-                await EntryHandlerPredicate.handlePredicateObject(
-                  parsingContext, util, keys, depth + 1, indexProperty, indexValue, false, false, false,
-                );
-              }
+              await EntryHandlerPredicate.handlePredicateObject(
+                parsingContext,
+                util,
+                keys,
+                depth + 1,
+                indexProperty,
+                indexValue,
+                false,
+                false,
+                false,
+              );
+            }
           }
         }
       }

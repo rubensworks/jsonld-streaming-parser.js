@@ -14,8 +14,14 @@ export class ContainerHandlerLanguage implements IContainerHandler {
     return false;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
-    util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(
+    containers: Record<string, boolean>,
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: string[],
+    value: any,
+    depth: number,
+  ): Promise<void> {
     // eslint-disable-next-line ts/no-unsafe-assignment
     const language = await util.getContainerKey(keys[depth], keys, depth);
 

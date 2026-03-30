@@ -14,8 +14,14 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
     return true;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
-    util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(
+    containers: Record<string, boolean>,
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: string[],
+    value: any,
+    depth: number,
+  ): Promise<void> {
     let id: RDF.Term;
 
     // First check if the child node already has a defined id.

@@ -13,8 +13,14 @@ export class ContainerHandlerType implements IContainerHandler {
     return false;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
-    util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(
+    containers: Record<string, boolean>,
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: string[],
+    value: any,
+    depth: number,
+  ): Promise<void> {
     if (!Array.isArray(value)) {
       if (typeof value === 'string') {
         // Determine the @type of the container
@@ -61,7 +67,15 @@ export class ContainerHandlerType implements IContainerHandler {
       if (type) {
         // Push the type to the stack using the rdf:type predicate
         await EntryHandlerPredicate.handlePredicateObject(
-          parsingContext, util, keys, depth + 1, util.rdfType, type, false, false, false,
+          parsingContext,
+          util,
+          keys,
+          depth + 1,
+          util.rdfType,
+          type,
+          false,
+          false,
+          false,
         );
       }
 

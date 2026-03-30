@@ -20,11 +20,23 @@ export abstract class EntryHandlerKeyword implements IEntryHandler<boolean> {
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
+  public async validate(
+    _parsingContext: ParsingContext,
+    _util: Util,
+    _keys: any[],
+    _depth: number,
+    _inProperty: boolean,
+  ): Promise<boolean> {
     return false;
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<boolean> {
+  public async test(
+    _parsingContext: ParsingContext,
+    _util: Util,
+    key: any,
+    _keys: any[],
+    _depth: number,
+  ): Promise<boolean> {
     return key === this.keyword;
   }
 
