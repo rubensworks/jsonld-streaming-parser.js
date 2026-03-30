@@ -1,14 +1,13 @@
-import * as RDF from "@rdfjs/types";
-import {ParsingContext} from "../ParsingContext";
-import {Util} from "../Util";
-import {IEntryHandler} from "./IEntryHandler";
+import type * as RDF from '@rdfjs/types';
 import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
+import type { ParsingContext } from '../ParsingContext';
+import { Util } from '../Util';
+import type { IEntryHandler } from './IEntryHandler';
 
 /**
  * Handles values that are part of an array.
  */
 export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
-
   public isPropertyHandler(): boolean {
     return false;
   }
@@ -17,18 +16,15 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
-    : Promise<boolean> {
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
     return this.test(parsingContext, util, null, keys, depth);
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
-    : Promise<boolean> {
+  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<boolean> {
     return typeof keys[depth] === 'number';
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
-    : Promise<any> {
+  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
     let parentKey = await util.unaliasKeywordParent(keys, depth);
 
     // Check if we have an anonymous list
@@ -49,11 +45,9 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
       if (listRootKey !== null) {
         // Emit the given objects as list elements
-        const values = await util.valueToTerm(await parsingContext.getContext(keys),
-          <string> listRootKey, value, depth, keys);
+        const values = await util.valueToTerm(await parsingContext.getContext(keys), <string> listRootKey, value, depth, keys);
         for (const object of values) {
-          await this.handleListElement(parsingContext, util, object, value, depth,
-            keys.slice(0, listRootDepth), listRootDepth);
+          await this.handleListElement(parsingContext, util, object, value, depth, keys.slice(0, listRootDepth), listRootDepth);
         }
 
         // If no values were found, emit a falsy list element to force an empty RDF list to be emitted.
@@ -106,8 +100,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
     }
   }
 
-  protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term | null,
-                                    valueOriginal: any, depth: number, listRootKeys: string[], listRootDepth: number) {
+  protected async handleListElement(parsingContext: ParsingContext, util: Util, value: RDF.Term | null, valueOriginal: any, depth: number, listRootKeys: string[], listRootDepth: number) {
     // Buffer our value as an RDF list using the listRootKey as predicate
     let listPointer = parsingContext.listPointerStack[depth];
 
@@ -116,12 +109,11 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
         const linkTerm: RDF.BlankNode = util.dataFactory.blankNode();
         listPointer = { value: linkTerm, listRootDepth, listId: linkTerm };
       } else {
-        // rdf:rest links are always emitted before the next element,
+        // Rdf:rest links are always emitted before the next element,
         // as the blank node identifier is only created at that point.
         // Because of this reason, the final rdf:nil is emitted when the stack depth is decreased.
         const newLinkTerm: RDF.Term = util.dataFactory.blankNode();
-        parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.value, util.rdfRest, newLinkTerm,
-          util.getDefaultGraph()));
+        parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer.value, util.rdfRest, newLinkTerm, util.getDefaultGraph()));
 
         // Update the list pointer for the next element
         listPointer.value = newLinkTerm;
@@ -130,8 +122,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
       // Emit a list element for the current value
       // Omit rdf:first if the value is invalid
       if (value) {
-        parsingContext.emitQuad(depth, util.dataFactory.quad(<RDF.Term>listPointer.value, util.rdfFirst, value,
-          util.getDefaultGraph()));
+        parsingContext.emitQuad(depth, util.dataFactory.quad(<RDF.Term>listPointer.value, util.rdfFirst, value, util.getDefaultGraph()));
       }
     } else {
       // A falsy list element if found.
@@ -145,9 +136,7 @@ export class EntryHandlerArrayValue implements IEntryHandler<boolean> {
 
     // Error if an annotation was defined
     if (parsingContext.rdfstar && parsingContext.annotationsBuffer[depth]) {
-      parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside a list`,
-        ERROR_CODES.INVALID_ANNOTATION));
+      parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside a list`, ERROR_CODES.INVALID_ANNOTATION));
     }
   }
-
 }

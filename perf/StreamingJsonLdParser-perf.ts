@@ -1,11 +1,11 @@
-import {JsonLdParser} from "../index";
-import {createReadStream} from "fs";
-import * as path from "path";
+import { createReadStream } from 'node:fs';
+import * as path from 'node:path';
+import { JsonLdParser } from '../index';
 
 const fileName = path.resolve(process.cwd(), process.argv[2]);
-const TIMER = 'Parsing file ' + fileName;
+const TIMER = `Parsing file ${fileName}`;
 
-// tslint:disable:no-console
+// Tslint:disable:no-console
 console.time(TIMER);
 
 let count = 0;
@@ -18,6 +18,6 @@ parsed.on('error', (e) => {
 });
 parsed.on('end', () => {
   console.timeEnd(TIMER);
-  console.log('* Quads parsed: ' + count);
-  console.log('* Memory usage: ' + Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB');
+  console.log(`* Quads parsed: ${count}`);
+  console.log(`* Memory usage: ${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`);
 });

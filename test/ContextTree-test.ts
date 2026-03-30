@@ -1,8 +1,7 @@
-import {ContextTree} from "../lib/ContextTree";
-import {JsonLdContextNormalized} from "jsonld-context-parser/lib/JsonLdContextNormalized";
+import { JsonLdContextNormalized } from 'jsonld-context-parser/lib/JsonLdContextNormalized';
+import { ContextTree } from '../lib/ContextTree';
 
 describe('ContextTree', () => {
-
   describe('an empty instance', () => {
     let tree: ContextTree;
 
@@ -10,52 +9,52 @@ describe('ContextTree', () => {
       tree = new ContextTree();
     });
 
-    it('should have no contexts', async () => {
+    it('should have no contexts', async() => {
       expect(tree.getContext([])).toBeFalsy();
-      expect(tree.getContext(['a'])).toBeFalsy();
-      expect(tree.getContext(['a', 'b'])).toBeFalsy();
+      expect(tree.getContext([ 'a' ])).toBeFalsy();
+      expect(tree.getContext([ 'a', 'b' ])).toBeFalsy();
     });
 
-    it('should should set a context at depth 1', async () => {
+    it('should should set a context at depth 1', async() => {
       const c = Promise.resolve(new JsonLdContextNormalized({}));
-      tree.setContext(['a'], c);
-      expect(await tree.getContext(['a'])).toEqual({ context: await c, depth: 1 });
-      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 1 });
+      tree.setContext([ 'a' ], c);
+      await expect(tree.getContext([ 'a' ])).resolves.toEqual({ context: await c, depth: 1 });
+      await expect(tree.getContext([ 'a', 'b' ])).resolves.toEqual({ context: await c, depth: 1 });
     });
 
-    it('should should set a context at depth 1 for an undefined key', async () => {
+    it('should should set a context at depth 1 for an undefined key', async() => {
       const c = Promise.resolve(new JsonLdContextNormalized({ a: 'b' }));
-      tree.setContext([undefined], c);
-      expect(await tree.getContext([<any>undefined])).toEqual({ context: await c, depth: 1 });
-      expect(await tree.getContext([<any>undefined, 'b'])).toEqual({ context: await c, depth: 1 });
+      tree.setContext([ undefined ], c);
+      await expect(tree.getContext([ <any>undefined ])).resolves.toEqual({ context: await c, depth: 1 });
+      await expect(tree.getContext([ <any>undefined, 'b' ])).resolves.toEqual({ context: await c, depth: 1 });
     });
 
-    it('should should set a context at depth 2', async () => {
+    it('should should set a context at depth 2', async() => {
       const c = Promise.resolve(new JsonLdContextNormalized({}));
-      tree.setContext(['a', 'b'], c);
-      expect(tree.getContext(['a'])).toBeFalsy();
-      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c, depth: 2 });
+      tree.setContext([ 'a', 'b' ], c);
+      expect(tree.getContext([ 'a' ])).toBeFalsy();
+      await expect(tree.getContext([ 'a', 'b' ])).resolves.toEqual({ context: await c, depth: 2 });
     });
 
-    it('should allow branched context setting', async () => {
+    it('should allow branched context setting', async() => {
       const c1 = Promise.resolve(new JsonLdContextNormalized({}));
       const c2 = Promise.resolve(new JsonLdContextNormalized({}));
-      tree.setContext(['a', 'b'], c1);
-      tree.setContext(['a', 'c'], c2);
+      tree.setContext([ 'a', 'b' ], c1);
+      tree.setContext([ 'a', 'c' ], c2);
 
-      expect(tree.getContext(['a'])).toBeFalsy();
-      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c1, depth: 2 });
-      expect(await tree.getContext(['a', 'c'])).toEqual({ context: await c2, depth: 2 });
+      expect(tree.getContext([ 'a' ])).toBeFalsy();
+      await expect(tree.getContext([ 'a', 'b' ])).resolves.toEqual({ context: await c1, depth: 2 });
+      await expect(tree.getContext([ 'a', 'c' ])).resolves.toEqual({ context: await c2, depth: 2 });
     });
 
-    it('should not allow overriding contexts', async () => {
+    it('should not allow overriding contexts', async() => {
       const c1 = Promise.resolve(new JsonLdContextNormalized({}));
       const c2 = Promise.resolve(new JsonLdContextNormalized({}));
-      tree.setContext(['a', 'b'], c1);
-      tree.setContext(['a', 'b'], c2);
+      tree.setContext([ 'a', 'b' ], c1);
+      tree.setContext([ 'a', 'b' ], c2);
 
-      expect(tree.getContext(['a'])).toBeFalsy();
-      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await c2, depth: 2 });
+      expect(tree.getContext([ 'a' ])).toBeFalsy();
+      await expect(tree.getContext([ 'a', 'b' ])).resolves.toEqual({ context: await c2, depth: 2 });
     });
   });
 
@@ -65,14 +64,14 @@ describe('ContextTree', () => {
 
     beforeEach(() => {
       tree = new ContextTree();
-      tree.setContext(['a', 'b'], root);
+      tree.setContext([ 'a', 'b' ], root);
     });
 
-    it('should return the root', async () => {
+    it('should return the root', async() => {
       expect(tree.getContext([])).toBeFalsy();
-      expect(tree.getContext(['a'])).toBeFalsy();
-      expect(await tree.getContext(['a', 'b'])).toEqual({ context: await root, depth: 2 });
-      expect(await tree.getContext(['a', 'b', 'c'])).toEqual({ context: await root, depth: 2 });
+      expect(tree.getContext([ 'a' ])).toBeFalsy();
+      await expect(tree.getContext([ 'a', 'b' ])).resolves.toEqual({ context: await root, depth: 2 });
+      await expect(tree.getContext([ 'a', 'b', 'c' ])).resolves.toEqual({ context: await root, depth: 2 });
     });
   });
 });

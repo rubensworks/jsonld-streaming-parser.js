@@ -1,14 +1,13 @@
-import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
-import {ParsingContext} from "../../ParsingContext";
-import {Util} from "../../Util";
-import {EntryHandlerPredicate} from "../EntryHandlerPredicate";
-import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
+import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
+import type { ParsingContext } from '../../ParsingContext';
+import { Util } from '../../Util';
+import { EntryHandlerPredicate } from '../EntryHandlerPredicate';
+import { EntryHandlerKeyword } from './EntryHandlerKeyword';
 
 /**
  * Handles @graph entries.
  */
 export class EntryHandlerKeywordType extends EntryHandlerKeyword {
-
   constructor() {
     super('@type');
   }
@@ -17,8 +16,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
     return false;
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
-    : Promise<any> {
+  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
     const keyOriginal = keys[depth];
 
     // The current identifier identifies an rdf:type predicate.
@@ -40,8 +38,7 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       }
       const type = util.createVocabOrBaseTerm(context, element);
       if (type) {
-        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-          predicate, type, reverse, isEmbedded, isAnnotation);
+        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth, predicate, type, reverse, isEmbedded, isAnnotation);
       }
     }
 
@@ -52,17 +49,18 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       const typeContext = Util.getContextValue(context, '@context', element, null);
       if (typeContext) {
         hasTypedScopedContext = true;
-        scopedContext = scopedContext.then((c) => parsingContext.parseContext(typeContext, c.getContextRaw()));
+        scopedContext = scopedContext.then(c => parsingContext.parseContext(typeContext, c.getContextRaw()));
       }
     }
 
     // Error if an out-of-order type-scoped context was found when support is not enabled.
-    if (parsingContext.streamingProfile
-      && (hasTypedScopedContext || !parsingContext.streamingProfileAllowOutOfOrderPlainType)
-      && (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
+    if (parsingContext.streamingProfile &&
+      (hasTypedScopedContext || !parsingContext.streamingProfileAllowOutOfOrderPlainType) &&
+      (parsingContext.processingStack[depth] || parsingContext.idStack[depth])) {
       parsingContext.emitError(
         new ErrorCoded('Found an out-of-order type-scoped context, while streaming is enabled.' +
-          '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
+          '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER),
+      );
     }
 
     // If at least least one type-scoped context applies, set them in the tree.
@@ -80,11 +78,10 @@ export class EntryHandlerKeywordType extends EntryHandlerKeyword {
       });
 
       // Set the new context in the context tree
-      parsingContext.contextTree.setContext(keys.slice(0, keys.length - 1), scopedContext);
+      parsingContext.contextTree.setContext(keys.slice(0, -1), scopedContext);
     }
 
     // Flag that type has been processed at this depth
     parsingContext.processingType[depth] = true;
   }
-
 }

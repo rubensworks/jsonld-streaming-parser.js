@@ -1,5 +1,5 @@
-import {ParsingContext} from "../ParsingContext";
-import {Util} from "../Util";
+import type { ParsingContext } from '../ParsingContext';
+import type { Util } from '../Util';
 
 /**
  * Handler for @container types.
@@ -9,7 +9,7 @@ export interface IContainerHandler {
   /**
    * If this container type can be combined with @graph containers.
    */
-  canCombineWithGraph(): boolean;
+  canCombineWithGraph: () => boolean;
 
   /**
    * Process the given value that has the given container type.
@@ -21,7 +21,6 @@ export interface IContainerHandler {
    * @param {number} depth The current stack depth.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
-  handle(containers: { [typeName: string]: boolean }, parsingContext: ParsingContext, util: Util,
-         keys: string[], value: any, depth: number): Promise<void>;
+  handle: (containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number) => Promise<void>;
 
 }

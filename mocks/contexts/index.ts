@@ -1,11 +1,11 @@
 /* istanbul ignore file */
 
-import { IDocumentLoader, IJsonLdContext } from 'jsonld-context-parser';
+import type { IDocumentLoader, IJsonLdContext } from 'jsonld-context-parser';
 import vc from './vc';
 
 const allContexts = {
-  "https://www.w3.org/2018/credentials/v1": vc,
-}
+  'https://www.w3.org/2018/credentials/v1': vc,
+};
 
 export default allContexts;
 

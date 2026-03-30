@@ -1,9 +1,8 @@
-import {JsonLdContextNormalized, ContextParser} from "jsonld-context-parser";
-import {ParsingContext} from "../lib/ParsingContext";
-import {ParsingContextMocked} from "../mocks/ParsingContextMocked";
+import { JsonLdContextNormalized, ContextParser } from 'jsonld-context-parser';
+import type { ParsingContext } from '../lib/ParsingContext';
+import { ParsingContextMocked } from '../mocks/ParsingContextMocked';
 
 describe('ParsingContext', () => {
-
   describe('an empty instance', () => {
     let parsingContext: ParsingContext;
 
@@ -15,9 +14,8 @@ describe('ParsingContext', () => {
     });
 
     describe('getContextPropagationAware', () => {
-
-      it('should return the root context when no contexts have been set', async () => {
-        return expect(await parsingContext.getContextPropagationAware(['']))
+      it('should return the root context when no contexts have been set', async() => {
+        await expect(parsingContext.getContextPropagationAware([ '' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
@@ -26,10 +24,9 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return the root context when a non-matching context has been set', async () => {
-        parsingContext.contextTree.setContext(['', 'a'],
-          Promise.resolve(new JsonLdContextNormalized({})));
-        return expect(await parsingContext.getContextPropagationAware(['']))
+      it('should return the root context when a non-matching context has been set', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({})));
+        await expect(parsingContext.getContextPropagationAware([ '' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
@@ -38,10 +35,9 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return a set context', async () => {
-        parsingContext.contextTree.setContext(['', 'a'],
-          Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+      it('should return a set context', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+        await expect(parsingContext.getContextPropagationAware([ '', 'a' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
@@ -50,10 +46,9 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should propagate to a direct parent', async () => {
-        parsingContext.contextTree.setContext(['', 'a'],
-          Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+      it('should propagate to a direct parent', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
@@ -62,10 +57,9 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should propagate to indirect parents', async () => {
-        parsingContext.contextTree.setContext(['', 'a'],
-          Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+      it('should propagate to indirect parents', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b', 'c', 'd' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
@@ -74,12 +68,12 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should skip a non-propagating parent', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should skip a non-propagating parent', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
@@ -88,12 +82,12 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return a non-propagating context if at that exact depth', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should return a non-propagating context if at that exact depth', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@propagate': false,
@@ -103,12 +97,12 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should skip an indirect non-propagating parent', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should skip an indirect non-propagating parent', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b', 'c', 'd' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
@@ -117,16 +111,16 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should skip multiple indirect non-propagating parent', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should skip multiple indirect non-propagating parent', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla1.org/',
         })));
-        parsingContext.contextTree.setContext(['', 'a', 'b', 'c'], Promise.resolve(new JsonLdContextNormalized({
+        parsingContext.contextTree.setContext([ '', 'a', 'b', 'c' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla2.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b', 'c', 'd' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
@@ -135,16 +129,16 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should ignore non-propagating contexts from above', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should ignore non-propagating contexts from above', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': false,
           '@vocab': 'http://bla1.org/',
         })));
-        parsingContext.contextTree.setContext(['', 'a', 'b', 'c'], Promise.resolve(new JsonLdContextNormalized({
+        parsingContext.contextTree.setContext([ '', 'a', 'b', 'c' ], Promise.resolve(new JsonLdContextNormalized({
           '@propagate': true,
           '@vocab': 'http://bla2.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b', 'c', 'd']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b', 'c', 'd' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@propagate': true,
@@ -154,24 +148,24 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return an empty context when the root is non-propagating', async () => {
+      it('should return an empty context when the root is non-propagating', async() => {
         parsingContext = new ParsingContextMocked({
           context: { '@vocab': 'http://vocab.org/', '@propagate': false },
           parser: <any> null,
         });
-        return expect(await parsingContext.getContextPropagationAware(['']))
+        await expect(parsingContext.getContextPropagationAware([ '' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({}),
             depth: 0,
           });
       });
 
-      it('should return an empty context when the root is non-propagating unless root is retrieved', async () => {
+      it('should return an empty context when the root is non-propagating unless root is retrieved', async() => {
         parsingContext = new ParsingContextMocked({
           context: { '@vocab': 'http://vocab.org/', '@propagate': false },
           parser: <any> null,
         });
-        return expect(await parsingContext.getContextPropagationAware([]))
+        await expect(parsingContext.getContextPropagationAware([])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@propagate': false,
@@ -181,13 +175,13 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return a non-propagating context if at that exact depth with a fallback context', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should return a non-propagating context if at that exact depth with a fallback context', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@__propagateFallback': { fallback: true },
           '@propagate': false,
           '@vocab': 'http://bla.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({
               '@__propagateFallback': { fallback: true },
@@ -198,199 +192,178 @@ describe('ParsingContext', () => {
           });
       });
 
-      it('should return the fallback context from a non-propagating context if calling from deeper', async () => {
-        parsingContext.contextTree.setContext(['', 'a'], Promise.resolve(new JsonLdContextNormalized({
+      it('should return the fallback context from a non-propagating context if calling from deeper', async() => {
+        parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({
           '@__propagateFallback': { fallback: true },
           '@propagate': false,
           '@vocab': 'http://bla.org/',
         })));
-        return expect(await parsingContext.getContextPropagationAware(['', 'a', 'b']))
+        await expect(parsingContext.getContextPropagationAware([ '', 'a', 'b' ])).resolves
           .toEqual({
             context: new JsonLdContextNormalized({ fallback: true }),
             depth: 2,
           });
       });
-
     });
 
     describe('getContext', () => {
-
       describe('for basic context trees', () => {
-
-        it('should return the root context when no contexts have been set', async () => {
-          return expect(await parsingContext.getContext(['']))
+        it('should return the root context when no contexts have been set', async() => {
+          await expect(parsingContext.getContext([ '' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
         });
 
-        it('should return the root context when a non-matching context has been set', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({})));
-          return expect(await parsingContext.getContext(['']))
+        it('should return the root context when a non-matching context has been set', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({})));
+          await expect(parsingContext.getContext([ '' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
         });
 
-        it('should return a set context with offset 0', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a'], 0))
+        it('should return a set context with offset 0', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 1', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 'b']))
+        it('should return a set context with offset 1', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 'b' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 0 and ignore one array key', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 1], 0))
+        it('should return a set context with offset 0 and ignore one array key', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 1 ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 1 and ignore one array key', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 'b', 1]))
+        it('should return a set context with offset 1 and ignore one array key', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 'b', 1 ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 0 and ignore multiple array keys', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 1, 0, 2], 0))
+        it('should return a set context with offset 0 and ignore multiple array keys', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 1, 0, 2 ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 1 and ignore multiple array key', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 'b', 1, 0, 2]))
+        it('should return a set context with offset 1 and ignore multiple array key', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 'b', 1, 0, 2 ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 0 and not ignore non-last array keys', async () => {
-          parsingContext.contextTree.setContext(['', 1, 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 1, 'a'], 0))
+        it('should return a set context with offset 0 and not ignore non-last array keys', async() => {
+          parsingContext.contextTree.setContext([ '', 1, 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 1, 'a' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should return a set context with offset 1 and not ignore non-last array keys', async () => {
-          parsingContext.contextTree.setContext(['', 1, 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 1, 'a', 'b']))
+        it('should return a set context with offset 1 and not ignore non-last array keys', async() => {
+          parsingContext.contextTree.setContext([ '', 1, 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 1, 'a', 'b' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
             }));
         });
 
-        it('should fail to return a set context with offset 2 and fallback to root', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
-          return expect(await parsingContext.getContext(['', 'a', 'b'], 2))
+        it('should fail to return a set context with offset 2 and fallback to root', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla.org/' })));
+          await expect(parsingContext.getContext([ '', 'a', 'b' ], 2)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
         });
 
-        it('should return for two nested set contexts with offset 0', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
-          parsingContext.contextTree.setContext(['', 'a', 'b', 'c'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
-          expect(await parsingContext.getContext(['', 'a'], 0))
+        it('should return for two nested set contexts with offset 0', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
+          parsingContext.contextTree.setContext([ '', 'a', 'b', 'c' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
+          await expect(parsingContext.getContext([ '', 'a' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b'], 0))
+          await expect(parsingContext.getContext([ '', 'a', 'b' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c'], 0))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla2.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c', 'd']))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c', 'd' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla2.org/',
             }));
         });
 
-        it('should return for two nested set contexts with offset 1', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
-          parsingContext.contextTree.setContext(['', 'a', 'b', 'c'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
-          expect(await parsingContext.getContext(['', 'a']))
+        it('should return for two nested set contexts with offset 1', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
+          parsingContext.contextTree.setContext([ '', 'a', 'b', 'c' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
+          await expect(parsingContext.getContext([ '', 'a' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b']))
+          await expect(parsingContext.getContext([ '', 'a', 'b' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c']))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c', 'd']))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c', 'd' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla2.org/',
             }));
         });
 
-        it('should return for two nested set contexts with offset 2', async () => {
-          parsingContext.contextTree.setContext(['', 'a'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
-          parsingContext.contextTree.setContext(['', 'a', 'b', 'c'],
-            Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
-          expect(await parsingContext.getContext(['', 'a'], 2))
+        it('should return for two nested set contexts with offset 2', async() => {
+          parsingContext.contextTree.setContext([ '', 'a' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla1.org/' })));
+          parsingContext.contextTree.setContext([ '', 'a', 'b', 'c' ], Promise.resolve(new JsonLdContextNormalized({ '@vocab': 'http://bla2.org/' })));
+          await expect(parsingContext.getContext([ '', 'a' ], 2)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b'], 2))
+          await expect(parsingContext.getContext([ '', 'a', 'b' ], 2)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c'], 2))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c' ], 2)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
-          expect(await parsingContext.getContext(['', 'a', 'b', 'c', 'd'], 2))
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'c', 'd' ], 2)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla1.org/',
             }));
         });
-
       });
 
       describe('for property-scoped contexts', () => {
-
         beforeEach(() => {
-          parsingContext.contextTree.setContext([''], Promise.resolve(new JsonLdContextNormalized({
+          parsingContext.contextTree.setContext([ '' ], Promise.resolve(new JsonLdContextNormalized({
             '@vocab': 'http://vocab.main.org/',
-            'a': {
+            a: {
               '@context': {
                 '@vocab': 'http://vocab.a.org/',
               },
@@ -399,11 +372,11 @@ describe('ParsingContext', () => {
           })));
         });
 
-        it('should ignore non-applicable properties', async () => {
-          return expect(await parsingContext.getContext(['', 'b', 'subKey']))
+        it('should ignore non-applicable properties', async() => {
+          await expect(parsingContext.getContext([ '', 'b', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.main.org/',
-              'a': {
+              a: {
                 '@context': {
                   '@vocab': 'http://vocab.a.org/',
                 },
@@ -412,50 +385,48 @@ describe('ParsingContext', () => {
             }));
         });
 
-        it('should consider an applicable property', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey']))
+        it('should consider an applicable property', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.a.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
             }));
         });
 
-        it('should consider an applicable property when called via sub-properties', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey1', 'subKey2', 'subKey3']))
+        it('should consider an applicable property when called via sub-properties', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey1', 'subKey2', 'subKey3' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.a.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
             }));
         });
 
-        it('should only parse a scoped context once for repeated getContext calls', async () => {
+        it('should only parse a scoped context once for repeated getContext calls', async() => {
           const spy = jest.spyOn(parsingContext, 'parseContext');
-          await parsingContext.getContext(['', 'a', 'subKey']);
-          await parsingContext.getContext(['', 'a', 'subKey']);
-          await parsingContext.getContext(['', 'a', 'subKey']);
-          return expect(spy).toHaveBeenCalledTimes(1);
+          await parsingContext.getContext([ '', 'a', 'subKey' ]);
+          await parsingContext.getContext([ '', 'a', 'subKey' ]);
+          await parsingContext.getContext([ '', 'a', 'subKey' ]);
+          expect(spy).toHaveBeenCalledTimes(1);
         });
 
-        it('should only parse a scoped context once depth-first getContext calls', async () => {
+        it('should only parse a scoped context once depth-first getContext calls', async() => {
           const spy = jest.spyOn(parsingContext, 'parseContext');
-          await parsingContext.getContext(['', 'a', 'subKey', 'subSubKey', 'subSubSubKey']);
-          await parsingContext.getContext(['', 'a', 'subKey', 'subSubKey']);
-          await parsingContext.getContext(['', 'a', 'subKey']);
-          return expect(spy).toHaveBeenCalledTimes(1);
+          await parsingContext.getContext([ '', 'a', 'subKey', 'subSubKey', 'subSubSubKey' ]);
+          await parsingContext.getContext([ '', 'a', 'subKey', 'subSubKey' ]);
+          await parsingContext.getContext([ '', 'a', 'subKey' ]);
+          expect(spy).toHaveBeenCalledTimes(1);
         });
-
       });
 
       describe('for non-propagating property-scoped contexts', () => {
-
         beforeEach(() => {
-          parsingContext.contextTree.setContext([''], Promise.resolve(new JsonLdContextNormalized({
+          parsingContext.contextTree.setContext([ '' ], Promise.resolve(new JsonLdContextNormalized({
             '@vocab': 'http://vocab.main.org/',
-            'a': {
+            a: {
               '@context': {
                 '@propagate': false,
                 '@vocab': 'http://vocab.a.org/',
@@ -465,11 +436,11 @@ describe('ParsingContext', () => {
           })));
         });
 
-        it('should ignore non-applicable properties', async () => {
-          return expect(await parsingContext.getContext(['', 'b', 'subKey']))
+        it('should ignore non-applicable properties', async() => {
+          await expect(parsingContext.getContext([ '', 'b', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.main.org/',
-              'a': {
+              a: {
                 '@context': {
                   '@propagate': false,
                   '@vocab': 'http://vocab.a.org/',
@@ -479,21 +450,21 @@ describe('ParsingContext', () => {
             }));
         });
 
-        it('should consider an applicable property', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey']))
+        it('should consider an applicable property', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.a.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
             }));
         });
 
-        it('should not consider an applicable property when called via sub-properties', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey1', 'subKey2', 'subKey3']))
+        it('should not consider an applicable property when called via sub-properties', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey1', 'subKey2', 'subKey3' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.main.org/',
-              'a': {
+              a: {
                 '@context': {
                   '@propagate': false,
                   '@vocab': 'http://vocab.a.org/',
@@ -502,18 +473,16 @@ describe('ParsingContext', () => {
               },
             }));
         });
-
       });
 
       describe('for nested property-scoped contexts', () => {
-
         beforeEach(() => {
-          parsingContext.contextTree.setContext([''], Promise.resolve(new JsonLdContextNormalized({
+          parsingContext.contextTree.setContext([ '' ], Promise.resolve(new JsonLdContextNormalized({
             '@vocab': 'http://vocab.main.org/',
-            'a': {
+            a: {
               '@context': {
                 '@vocab': 'http://vocab.a.org/',
-                'b': {
+                b: {
                   '@context': {
                     '@vocab': 'http://vocab.b.org/',
                   },
@@ -525,14 +494,14 @@ describe('ParsingContext', () => {
           })));
         });
 
-        it('should ignore non-applicable properties', async () => {
-          return expect(await parsingContext.getContext(['', 'b', 'subKey']))
+        it('should ignore non-applicable properties', async() => {
+          await expect(parsingContext.getContext([ '', 'b', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.main.org/',
-              'a': {
+              a: {
                 '@context': {
                   '@vocab': 'http://vocab.a.org/',
-                  'b': {
+                  b: {
                     '@context': {
                       '@vocab': 'http://vocab.b.org/',
                     },
@@ -544,14 +513,14 @@ describe('ParsingContext', () => {
             }));
         });
 
-        it('should consider an applicable property', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey']))
+        it('should consider an applicable property', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.a.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
-              'b': {
+              b: {
                 '@context': {
                   '@vocab': 'http://vocab.b.org/',
                 },
@@ -560,27 +529,27 @@ describe('ParsingContext', () => {
             }));
         });
 
-        it('should consider an applicable sub-property', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'b', 'subKey']))
+        it('should consider an applicable sub-property', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'subKey' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.b.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
-              'b': {
+              b: {
                 '@id': 'http://b.org',
               },
             }));
         });
 
-        it('should consider an applicable property when called via sub-properties', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'subKey1', 'subKey2', 'subKey3']))
+        it('should consider an applicable property when called via sub-properties', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'subKey1', 'subKey2', 'subKey3' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.a.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
-              'b': {
+              b: {
                 '@context': {
                   '@vocab': 'http://vocab.b.org/',
                 },
@@ -589,28 +558,26 @@ describe('ParsingContext', () => {
             }));
         });
 
-        it('should consider an applicable sub-property when called via sub-properties', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'b', 'subKey1', 'subKey2', 'subKey3']))
+        it('should consider an applicable sub-property when called via sub-properties', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'b', 'subKey1', 'subKey2', 'subKey3' ])).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://vocab.b.org/',
-              'a': {
+              a: {
                 '@id': 'http://a.org',
               },
-              'b': {
+              b: {
                 '@id': 'http://b.org',
               },
             }));
         });
-
       });
 
       describe('for type-scoped and property-scoped contexts', () => {
-
         beforeEach(() => {
           const contextParser = new ContextParser();
-          parsingContext.contextTree.setContext(['', 'a'], contextParser.parse({
+          parsingContext.contextTree.setContext([ '', 'a' ], contextParser.parse({
             '@vocab': 'http://bla.org/',
-            'bar': {
+            bar: {
               '@context': {
                 baz: { '@type': '@vocab' },
               },
@@ -618,17 +585,15 @@ describe('ParsingContext', () => {
           }));
         });
 
-        it('should consider the applicable property-scoped context', async () => {
-          return expect(await parsingContext.getContext(['', 'a', 'bar'], 0))
+        it('should consider the applicable property-scoped context', async() => {
+          await expect(parsingContext.getContext([ '', 'a', 'bar' ], 0)).resolves
             .toEqual(new JsonLdContextNormalized({
               '@vocab': 'http://bla.org/',
-              'bar': { '@id': 'http://bla.org/bar' },
-              'baz': { '@type': '@vocab', '@id': 'http://bla.org/baz' },
+              bar: { '@id': 'http://bla.org/bar' },
+              baz: { '@type': '@vocab', '@id': 'http://bla.org/baz' },
             }));
         });
       });
-
     });
-
   });
 });

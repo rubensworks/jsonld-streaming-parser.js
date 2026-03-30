@@ -1,12 +1,11 @@
-import {ParsingContext} from "../../ParsingContext";
-import {Util} from "../../Util";
-import {IEntryHandler} from "../IEntryHandler";
+import type { ParsingContext } from '../../ParsingContext';
+import type { Util } from '../../Util';
+import type { IEntryHandler } from '../IEntryHandler';
 
 /**
  * An abstract keyword entry handler.
  */
 export abstract class EntryHandlerKeyword implements IEntryHandler<boolean> {
-
   private readonly keyword: string;
 
   protected constructor(keyword: string) {
@@ -21,17 +20,14 @@ export abstract class EntryHandlerKeyword implements IEntryHandler<boolean> {
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
-    : Promise<boolean> {
+  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
     return false;
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
-    : Promise<boolean> {
+  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<boolean> {
     return key === this.keyword;
   }
 
   public abstract handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number,
-                         testResult: boolean): Promise<any>;
-
+    testResult: boolean): Promise<any>;
 }

@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "types": ["node", "jest"],
+    "target": "es2017",
     "lib": [
       "es6",
       "dom"
     ],
-    "noImplicitAny": false,
-    "target": "es2017"
+    "module": "commonjs",
+    "types": ["node", "jest"],
+    "noImplicitAny": false
   }
 }
