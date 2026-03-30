@@ -471,7 +471,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       // eslint-disable-next-line ts/no-unsafe-assignment
       const depth = this.jsonParser.stack.length;
       // Don't parse inner nodes inside @context
-      // eslint-disable-next-line ts/no-unsafe-argument, ts/no-unsafe-assignment
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const keys = Array.from({ length: depth + 1 }, (v, i) =>
         // eslint-disable-next-line ts/no-unsafe-return
         i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key);
