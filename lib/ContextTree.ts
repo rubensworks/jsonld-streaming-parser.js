@@ -24,10 +24,11 @@ export class ContextTree {
     return this.context ? this.context.then(context => ({ context, depth: 0 })) : null;
   }
 
-  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null) {
+  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null): void {
     if (keys.length === 0) {
       this.context = context;
     } else {
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const [ head, ...tail ] = keys;
       let subTree = this.subTrees[head];
       if (!subTree) {
@@ -37,7 +38,7 @@ export class ContextTree {
     }
   }
 
-  public removeContext(path: string[]) {
+  public removeContext(path: string[]): void {
     this.setContext(path, null);
   }
 }
