@@ -6,7 +6,13 @@ import { ContextTree } from './ContextTree';
 import type { IJsonLdParserOptions } from './JsonLdParser';
 import { JsonLdParser } from './JsonLdParser';
 
-export type AnnotationsBufferEntry = { predicate: RDF.Term; object: RDF.Term; reverse: boolean; nestedAnnotations: AnnotationsBufferEntry[]; depth: number };
+export type AnnotationsBufferEntry = {
+  predicate: RDF.Term;
+  object: RDF.Term;
+  reverse: boolean;
+  nestedAnnotations: AnnotationsBufferEntry[];
+  depth: number;
+};
 
 /**
  * Data holder for parsing information.
@@ -67,10 +73,22 @@ export class ParsingContext {
   public readonly jsonLiteralStack: boolean[];
   // Triples that don't know their subject @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedValuesBuffer: { predicate: RDF.Term; object: RDF.Term; reverse: boolean; isEmbedded: boolean }[][];
+  public readonly unidentifiedValuesBuffer: {
+    predicate: RDF.Term;
+    object: RDF.Term;
+    reverse: boolean;
+    isEmbedded: boolean;
+  }[][];
+
   // Quads that don't know their graph @id yet.
   // L0: stack depth; L1: values
-  public readonly unidentifiedGraphsBuffer: { subject: RDF.Term; predicate: RDF.Term; object: RDF.Term; isEmbedded: boolean }[][];
+  public readonly unidentifiedGraphsBuffer: {
+    subject: RDF.Term;
+    predicate: RDF.Term;
+    object: RDF.Term;
+    isEmbedded: boolean;
+  }[][];
+
   // Stack of annotation objects on incomplete nodes.
   public readonly annotationsBuffer: AnnotationsBufferEntry[][];
 
@@ -84,14 +102,17 @@ export class ParsingContext {
 
   private readonly parser: JsonLdParser;
 
-  constructor(options: IParsingContextOptions) {
+  public constructor(options: IParsingContextOptions) {
     // Initialize settings
-    this.contextParser = new ContextParser({ documentLoader: options.documentLoader, skipValidation: options.skipContextValidation });
+    this.contextParser = new ContextParser({
+      documentLoader: options.documentLoader,
+      skipValidation: options.skipContextValidation,
+    });
     this.streamingProfile = Boolean(options.streamingProfile);
     this.baseIRI = options.baseIRI;
     this.produceGeneralizedRdf = Boolean(options.produceGeneralizedRdf);
     this.allowSubjectList = Boolean(options.allowSubjectList);
-    this.processingMode = options.processingMode || JsonLdParser.DEFAULT_PROCESSING_MODE;
+    this.processingMode = options.processingMode ?? JsonLdParser.DEFAULT_PROCESSING_MODE;
     this.strictValues = Boolean(options.strictValues);
     this.validateValueIndexes = Boolean(options.validateValueIndexes);
     this.defaultGraph = options.defaultGraph;
@@ -126,7 +147,8 @@ export class ParsingContext {
     this.parser = options.parser;
     if (options.context) {
       this.rootContext = this.parseContext(options.context, undefined, undefined, true);
-      this.rootContext.then(context => this.validateContext(context));
+      // eslint-disable-next-line ts/no-floating-promises
+      void this.rootContext.then(context => this.validateContext(context));
     } else {
       this.rootContext = Promise.resolve(new JsonLdContextNormalized(
         this.baseIRI ? { '@base': this.baseIRI, '@__baseDocument': true } : {},
@@ -142,7 +164,12 @@ export class ParsingContext {
    * @param {boolean} allowDirectlyNestedContext If @context entries should be allowed. Useful for scoped context.
    * @return {Promise<JsonLdContextNormalized>} A promise resolving to the parsed context.
    */
-  public async parseContext(context: JsonLdContext, parentContext?: IJsonLdContextNormalizedRaw, ignoreProtection?: boolean, allowDirectlyNestedContext?: boolean): Promise<JsonLdContextNormalized> {
+  public async parseContext(
+    context: JsonLdContext,
+    parentContext?: IJsonLdContextNormalizedRaw,
+    ignoreProtection?: boolean,
+    allowDirectlyNestedContext?: boolean,
+  ): Promise<JsonLdContextNormalized> {
     return this.contextParser.parse(context, {
       baseIRI: this.baseIRI,
       ignoreProtection,
@@ -158,7 +185,7 @@ export class ParsingContext {
    * If not, an error will be thrown.
    * @param {JsonLdContextNormalized} context A context.
    */
-  public validateContext(context: JsonLdContextNormalized) {
+  public validateContext(context: JsonLdContextNormalized): void {
     const activeVersion: number = <number> <any> context.getContextRaw()['@version'];
     if (activeVersion) {
       if (this.activeProcessingMode && activeVersion > this.activeProcessingMode) {
@@ -194,32 +221,43 @@ export class ParsingContext {
     }
 
     // Determine the closest context
+    // eslint-disable-next-line ts/no-unsafe-argument
     const contextData = await this.getContextPropagationAware(keys);
     const context: JsonLdContextNormalized = contextData.context;
 
     // Process property-scoped contexts (high-to-low)
     let contextRaw: IJsonLdContextNormalizedRaw = context.getContextRaw();
     for (let i = contextData.depth; i < keysOriginal.length - offset; i++) {
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const key = keysOriginal[i];
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const contextKeyEntry = contextRaw[key];
       if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
+        // eslint-disable-next-line ts/no-unsafe-argument
         const scopedContext = (await this.parseContext(contextKeyEntry, contextRaw, true, true)).getContextRaw();
+        // Propagation is true by default
+        // eslint-disable-next-line ts/no-unsafe-assignment
         const propagate = !(key in scopedContext) ||
-          scopedContext[key]['@context']['@propagate']; // Propagation is true by default
+          scopedContext[key]['@context']['@propagate'];
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
           contextRaw = { ...scopedContext };
 
           // Clean up final context
           delete contextRaw['@propagate'];
+          // eslint-disable-next-line ts/no-unsafe-assignment
           contextRaw[key] = { ...contextRaw[key] };
           if ('@id' in contextKeyEntry) {
+            // eslint-disable-next-line ts/no-unsafe-assignment
             contextRaw[key]['@id'] = contextKeyEntry['@id'];
           }
           delete contextRaw[key]['@context'];
 
           if (propagate !== false) {
-            this.contextTree.setContext(keysOriginal.slice(0, i + offset), Promise.resolve(new JsonLdContextNormalized(contextRaw)));
+            this.contextTree.setContext(
+              keysOriginal.slice(0, i + offset),
+              Promise.resolve(new JsonLdContextNormalized(contextRaw)),
+            );
           }
         }
       }
@@ -250,6 +288,7 @@ export class ParsingContext {
       if (contextData && '@__propagateFallback' in contextData.context.getContextRaw()) {
         // If a propagation fallback context has been set,
         // fallback to that context and retry for the same depth.
+        // eslint-disable-next-line ts/no-unsafe-argument
         contextData.context = new JsonLdContextNormalized(contextData.context.getContextRaw()['@__propagateFallback']);
       } else {
         if (contextData) {
@@ -259,7 +298,7 @@ export class ParsingContext {
           keys = keys.slice(0, contextData.depth - 1);
         }
 
-        contextData = await this.contextTree.getContext(keys) || { context: await this.rootContext, depth: 0 };
+        contextData = await this.contextTree.getContext(keys) ?? { context: await this.rootContext, depth: 0 };
       }
 
       // Allow non-propagating contexts to propagate one level deeper
@@ -267,15 +306,21 @@ export class ParsingContext {
       // @see https://w3c.github.io/json-ld-api/tests/toRdf-manifest#tc012
       const lastKey = keys.at(-1);
       if (lastKey !== undefined && lastKey in contextData.context.getContextRaw()) {
+        // eslint-disable-next-line ts/no-unsafe-assignment
         const lastKeyValue = contextData.context.getContextRaw()[lastKey];
         if (lastKeyValue && typeof lastKeyValue === 'object' && '@context' in lastKeyValue) {
           hasApplicablePropertyScopedContext = true;
         }
       }
-    } while (contextData.depth > 0 && // Root context has a special case
-    contextData.context.getContextRaw()['@propagate'] === false && // Stop loop if propagation is true
-    contextData.depth !== originalDepth && // Stop loop if requesting exact depth of non-propagating
-    !hasApplicablePropertyScopedContext);
+    } while (
+      // Root context has a special case
+      contextData.depth > 0 &&
+      // Stop loop if propagation is true
+      contextData.context.getContextRaw()['@propagate'] === false &&
+      // Stop loop if requesting exact depth of non-propagating
+      contextData.depth !== originalDepth &&
+      !hasApplicablePropertyScopedContext
+    );
 
     // Special case for root context that does not allow propagation.
     // Fallback to empty context in that case.
@@ -296,7 +341,7 @@ export class ParsingContext {
    * @param {boolean} lastDepthCheck If the lastDepth check should be done for buffer draining.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean) {
+  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean): Promise<void> {
     await this.parser.newOnValueJob(keys, value, depth, lastDepthCheck);
   }
 
@@ -321,7 +366,7 @@ export class ParsingContext {
    * @param {number} depth The depth the quad was generated at.
    * @param {Quad} quad A quad to emit.
    */
-  public emitQuad(depth: number, quad: RDF.BaseQuad) {
+  public emitQuad(depth: number, quad: RDF.BaseQuad): void {
     if (depth === 1) {
       this.topLevelProperties = true;
     }
@@ -332,7 +377,7 @@ export class ParsingContext {
    * Emit the given error into the output stream.
    * @param {Error} error An error to emit.
    */
-  public emitError(error: Error) {
+  public emitError(error: Error): void {
     this.parser.emit('error', error);
   }
 
@@ -340,7 +385,7 @@ export class ParsingContext {
    * Emit the given context into the output stream under the 'context' event.
    * @param {JsonLdContext} context A context to emit.
    */
-  public emitContext(context: JsonLdContext) {
+  public emitContext(context: JsonLdContext): void {
     this.parser.emit('context', context);
   }
 
@@ -350,7 +395,12 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedValuesBuffer}.
    */
-  public getUnidentifiedValueBufferSafe(depth: number): { predicate: RDF.Term; object: RDF.Term; reverse: boolean; isEmbedded: boolean }[] {
+  public getUnidentifiedValueBufferSafe(depth: number): {
+    predicate: RDF.Term;
+    object: RDF.Term;
+    reverse: boolean;
+    isEmbedded: boolean;
+  }[] {
     let buffer = this.unidentifiedValuesBuffer[depth];
     if (!buffer) {
       buffer = [];
@@ -365,7 +415,12 @@ export class ParsingContext {
    * @return {{predicate: Term; object: Term; reverse: boolean}[]} An element of
    *                                                               {@link ParsingContext.unidentifiedGraphsBuffer}.
    */
-  public getUnidentifiedGraphBufferSafe(depth: number): { subject: RDF.Term; predicate: RDF.Term; object: RDF.Term; isEmbedded: boolean }[] {
+  public getUnidentifiedGraphBufferSafe(depth: number): {
+    subject: RDF.Term;
+    predicate: RDF.Term;
+    object: RDF.Term;
+    isEmbedded: boolean;
+  }[] {
     let buffer = this.unidentifiedGraphsBuffer[depth];
     if (!buffer) {
       buffer = [];
@@ -404,7 +459,7 @@ export class ParsingContext {
    * @param depth The target depth.
    * @param depthOffset The origin depth, relative to `depth`.
    */
-  public shiftStack(depth: number, depthOffset: number) {
+  public shiftStack(depth: number, depthOffset: number): void {
     // Copy the id stack value up one level so that the next job can access the id.
     const deeperIdStack = this.idStack[depth + depthOffset];
     if (deeperIdStack) {
