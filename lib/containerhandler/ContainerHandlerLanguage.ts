@@ -14,11 +14,14 @@ export class ContainerHandlerLanguage implements IContainerHandler {
     return false;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
+    util: Util, keys: string[], value: any, depth: number): Promise<void> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const language = await util.getContainerKey(keys[depth], keys, depth);
 
     if (Array.isArray(value)) {
       // No type-checking needed, will be handled on each value when this handler is called recursively.
+      // eslint-disable-next-line ts/no-unsafe-assignment
       value = value.map(subValue => ({ '@value': subValue, '@language': language }));
     } else {
       if (typeof value !== 'string') {
@@ -27,10 +30,12 @@ export class ContainerHandlerLanguage implements IContainerHandler {
           ERROR_CODES.INVALID_LANGUAGE_MAP_VALUE,
         );
       }
+      // eslint-disable-next-line ts/no-unsafe-assignment
       value = { '@value': value, '@language': language };
     }
     await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, true);
 
-    parsingContext.emittedStack[depth] = false; // We have emitted a level higher
+    // We have emitted a level higher
+    parsingContext.emittedStack[depth] = false;
   }
 }

@@ -14,7 +14,8 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
     return true;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
+    util: Util, keys: string[], value: any, depth: number): Promise<void> {
     let id: RDF.Term;
 
     // First check if the child node already has a defined id.
@@ -23,14 +24,16 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
       id = parsingContext.idStack[depth + 1][0];
     } else {
       // Create the identifier
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const keyUnaliased = await util.getContainerKey(keys[depth], keys, depth);
       const maybeId = keyUnaliased === null ?
         util.dataFactory.blankNode() :
-        await util.resourceToTerm(await parsingContext.getContext(keys), keys[depth]);
+        util.resourceToTerm(await parsingContext.getContext(keys), keys[depth]);
 
       // Do nothing if the id is invalid
       if (!maybeId) {
-        parsingContext.emittedStack[depth] = false; // Don't emit the predicate owning this container.
+        // Don't emit the predicate owning this container.
+        parsingContext.emittedStack[depth] = false;
         return;
       }
       id = maybeId;
@@ -52,7 +55,8 @@ export class ContainerHandlerIdentifier implements IContainerHandler {
 
     // Flush any pending flush buffers
     if (!await parsingContext.handlePendingContainerFlushBuffers()) {
-      parsingContext.emittedStack[depth] = false; // Don't emit the predicate owning this container.
+      // Don't emit the predicate owning this container.
+      parsingContext.emittedStack[depth] = false;
     }
   }
 }

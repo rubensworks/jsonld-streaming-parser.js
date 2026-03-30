@@ -13,7 +13,8 @@ export class ContainerHandlerType implements IContainerHandler {
     return false;
   }
 
-  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number): Promise<void> {
+  public async handle(containers: Record<string, boolean>, parsingContext: ParsingContext,
+    util: Util, keys: string[], value: any, depth: number): Promise<void> {
     if (!Array.isArray(value)) {
       if (typeof value === 'string') {
         // Determine the @type of the container
@@ -22,8 +23,8 @@ export class ContainerHandlerType implements IContainerHandler {
 
         // String values refer to node references
         const id = containerTypeType === '@vocab' ?
-          await util.createVocabOrBaseTerm(context, value) :
-          await util.resourceToTerm(context, value);
+          util.createVocabOrBaseTerm(context, value) :
+          util.resourceToTerm(context, value);
         if (id) {
           // Handle the value of this node as @id, which will also cause the predicate from above to be emitted.
           const subValue = { '@id': id.termType === 'NamedNode' ? id.value : value };
@@ -40,28 +41,35 @@ export class ContainerHandlerType implements IContainerHandler {
 
         // Handle the value of this node, which will also cause the predicate from above to be emitted.
         if (!entryHasIdentifier) {
-          delete parsingContext.idStack[depth]; // Force new (blank node) identifier
+          // Force new (blank node) identifier
+          delete parsingContext.idStack[depth];
         }
         await parsingContext.newOnValueJob(keys.slice(0, -1), value, depth - 1, true);
         if (!entryHasIdentifier) {
-          parsingContext.idStack[depth + 1] = parsingContext.idStack[depth]; // Copy the id to the child node, for @type
+          // Copy the id to the child node, for @type
+          parsingContext.idStack[depth + 1] = parsingContext.idStack[depth];
         }
       }
 
       // Identify the type to emit.
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const keyOriginal = await util.getContainerKey(keys[depth], keys, depth);
       const type = keyOriginal === null ?
         null :
+        // eslint-disable-next-line ts/no-unsafe-argument
         util.createVocabOrBaseTerm(await parsingContext.getContext(keys), keyOriginal);
       if (type) {
         // Push the type to the stack using the rdf:type predicate
-        await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth + 1, util.rdfType, type, false, false, false);
+        await EntryHandlerPredicate.handlePredicateObject(
+          parsingContext, util, keys, depth + 1, util.rdfType, type, false, false, false,
+        );
       }
 
       // Flush any pending flush buffers
       await parsingContext.handlePendingContainerFlushBuffers();
     }
 
-    parsingContext.emittedStack[depth] = false; // Don't emit the predicate owning this container.
+    // Don't emit the predicate owning this container.
+    parsingContext.emittedStack[depth] = false;
   }
 }

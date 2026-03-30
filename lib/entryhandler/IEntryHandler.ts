@@ -29,7 +29,8 @@ export interface IEntryHandler<T> {
    * @param {boolean} inProperty If the current depth is part of a valid property node.
    * @return {Promise<boolean>} A promise resolving to a boolean representing if the key is valid.
    */
-  validate: (parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean) => Promise<boolean>;
+  validate: (parsingContext: ParsingContext, util: Util,
+    keys: any[], depth: number, inProperty: boolean) => Promise<boolean>;
 
   /**
    * Check if this handler can handle the given key.
@@ -56,6 +57,7 @@ export interface IEntryHandler<T> {
    * @param {T} testResult The test result from {@link IEntryHandler#test}.
    * @return {Promise<any>} A promise resolving when the handling is done.
    */
-  handle: (parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number, testResult: T) => Promise<any>;
+  handle: (parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any,
+    depth: number, testResult: T) => Promise<any>;
 
 }

@@ -21,6 +21,7 @@ export interface IContainerHandler {
    * @param {number} depth The current stack depth.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
-  handle: (containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util, keys: string[], value: any, depth: number) => Promise<void>;
+  handle: (containers: Record<string, boolean>, parsingContext: ParsingContext, util: Util,
+    keys: string[], value: any, depth: number) => Promise<void>;
 
 }
