@@ -13,8 +13,14 @@ module.exports = {
         new ErrorSkipped(`Test with spec version ${options.specVersion} was skipped, only 1.1 is supported.`),
       );
     }
+    // To simplify testing
     return require('arrayify-stream').default(require('streamify-string')(data)
-      .pipe(new JsonLdParser({ baseIRI, validateValueIndexes: true, normalizeLanguageTags: true, // To simplify testing
-        rdfDirection: 'disabled', ...options })));
+      .pipe(new JsonLdParser({
+        baseIRI,
+        validateValueIndexes: true,
+        normalizeLanguageTags: true,
+        rdfDirection: 'disabled',
+        ...options,
+      })));
   },
 };

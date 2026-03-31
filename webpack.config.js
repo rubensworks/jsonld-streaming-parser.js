@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-nodejs-modules
 const path = require('node:path');
 
 module.exports = {
@@ -6,9 +7,9 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.tsx?$/u,
         use: 'ts-loader',
-        exclude: /node_modules/,
+        exclude: /node_modules/u,
       },
     ],
   },
