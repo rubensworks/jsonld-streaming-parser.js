@@ -1,15 +1,18 @@
-import { JsonLdParser } from '../index';
-import arrayifyStream from 'arrayify-stream';
-import type * as RDF from '@rdfjs/types';
+/* eslint-disable import/no-nodejs-modules */
 import { EventEmitter } from 'node:events';
-import { DataFactory } from 'rdf-data-factory';
+import { PassThrough } from 'node:stream';
+import type * as RDF from '@rdfjs/types';
+import arrayifyStream from 'arrayify-stream';
 import each from 'jest-each';
 import 'jest-rdf';
-import { PassThrough } from 'node:stream';
 import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
+import { DataFactory } from 'rdf-data-factory';
+import { JsonLdParser } from '../index';
 import { ParsingContext } from '../lib/ParsingContext';
 import { Util } from '../lib/Util';
 import { MockedDocumentLoader } from '../mocks/contexts';
+
+/* eslint-enable import/no-nodejs-modules */
 
 const streamifyString = require('streamify-string');
 
@@ -120,6 +123,7 @@ describe('JsonLdParser', () => {
         .toThrow(new ErrorCoded(`Unsupported JSON-LD media type text/turtle`, ERROR_CODES.LOADING_DOCUMENT_FAILED));
     });
 
+    // eslint-disable-next-line max-len
     it('should error on an application/activity+json without link header if the wellknowntypes do not include it', () => {
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'application/activity+json', undefined, {
         wellKnownMediaTypes: [],
@@ -136,12 +140,18 @@ describe('JsonLdParser', () => {
         .toThrow(new ErrorCoded(`Missing context link header for media type text/turtle+json on BASE`, ERROR_CODES.LOADING_DOCUMENT_FAILED));
     });
 
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line max-len
     it('should handle a plain JSON response without link header when ignoreMissingContextLinkHeader is true', () => {
+      // eslint-disable-next-line max-len
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', undefined, { ignoreMissingContextLinkHeader: true });
       expect((<any> parser).options.baseIRI).toBe('BASE');
     });
 
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line max-len
     it('should handle a JSON extension type without link header when ignoreMissingContextLinkHeader is true', () => {
+      // eslint-disable-next-line max-len
       const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', undefined, { ignoreMissingContextLinkHeader: true });
       expect((<any> parser).options.baseIRI).toBe('BASE');
     });
@@ -152,13 +162,13 @@ describe('JsonLdParser', () => {
     });
 
     it('should handle on a JSON response with link header', () => {
-      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' }));
       expect((<any> parser).options.baseIRI).toBe('BASE');
       expect((<any> parser).options.context).toBe('my-context.jsonld');
     });
 
     it('should handle on a JSON response with link header when ignoreMissingContextLinkHeader is true', () => {
-      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' }));
       expect((<any> parser).options.baseIRI).toBe('BASE');
       expect((<any> parser).options.context).toBe('my-context.jsonld');
     });
@@ -170,37 +180,37 @@ describe('JsonLdParser', () => {
     });
 
     it('should handle on a JSON extension type with link header', () => {
-      const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', new Headers({ link: '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }));
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', new Headers({ link: '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"' }));
       expect((<any> parser).options.baseIRI).toBe('BASE');
       expect((<any> parser).options.context).toBe('my-context.jsonld');
     });
 
     it('should handle on a JSON response with link header and other headers', () => {
-      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"', a: 'b' }));
+      const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', new Headers({ link: '<my-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"', a: 'b' }));
       expect((<any> parser).options.baseIRI).toBe('BASE');
       expect((<any> parser).options.context).toBe('my-context.jsonld');
     });
 
     it('should error on a JSON response with multiple valid link headers', () => {
       const headers = new Headers();
-      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
-      headers.append('Link', '<my-context2.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      headers.append('Link', '<my-context1.jsonld>; rel="http://www.w3.org/ns/json-ld#context"');
+      headers.append('Link', '<my-context2.jsonld>; rel="http://www.w3.org/ns/json-ld#context"');
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'application/json', headers))
         .toThrow(new ErrorCoded(`Multiple JSON-LD context link headers were found on BASE`, ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS));
     });
 
     it('should error on a JSON extension type with multiple valid link headers', () => {
       const headers = new Headers();
-      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
-      headers.append('Link', '<my-context2.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
+      headers.append('Link', '<my-context1.jsonld>; rel="http://www.w3.org/ns/json-ld#context"');
+      headers.append('Link', '<my-context2.jsonld>; rel="http://www.w3.org/ns/json-ld#context"');
       expect(() => JsonLdParser.fromHttpResponse('BASE', 'text/turtle+json', headers))
         .toThrow(new ErrorCoded(`Multiple JSON-LD context link headers were found on BASE`, ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS));
     });
 
     it('should handle on a JSON response with one JSON-LD context link header and other link headers', () => {
       const headers = new Headers();
-      headers.append('Link', '<my-context1.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"');
-      headers.append('Link', '<my-context2.jsonld>; rel=\"SOMETHING ELSE\"');
+      headers.append('Link', '<my-context1.jsonld>; rel="http://www.w3.org/ns/json-ld#context"');
+      headers.append('Link', '<my-context2.jsonld>; rel="SOMETHING ELSE"');
       const parser = JsonLdParser.fromHttpResponse('BASE', 'application/json', headers);
       expect((<any> parser).options.baseIRI).toBe('BASE');
       expect((<any> parser).options.context).toBe('my-context1.jsonld');
@@ -242,7 +252,10 @@ describe('JsonLdParser', () => {
       expect(parser.util.dataFactory).toBeTruthy();
     });
 
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line max-len
     it('should have a default root context', async() => {
+      // eslint-disable-next-line max-len
       await expect(parser.parsingContext.rootContext).resolves.toEqual(new JsonLdContextNormalized({ '@base': undefined }));
     });
   });
@@ -292,6 +305,7 @@ describe('JsonLdParser', () => {
     [ false ],
   ])).describe('when instantiated with a data factory and streamingProfile %s', (streamingProfile: boolean) => {
     // Enable the following instead if you want to run tests more conveniently with IDE integration
+  // eslint-disable-next-line jest/no-commented-out-tests
   // describe('when instantiated with a data factory and streamingProfile %s', () => {
   // const streamingProfile = true;
     let parser: any;
@@ -1688,7 +1702,10 @@ describe('JsonLdParser', () => {
   "term": {"@list": ["http://example/bar"]}
 }`);
           parser = new JsonLdParser({ dataFactory: DF, streamingProfile, allowSubjectList: false });
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line max-len
           await expect(arrayifyStream(stream.pipe(parser))).rejects
+            // eslint-disable-next-line max-len
             .toThrow(new ErrorCoded('Found illegal list value in subject position at term', ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
         });
 
@@ -2807,6 +2824,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          // eslint-disable-next-line max-len
           it('without @id, single outer value, and a single inner value, and a non-list outer value before', async() => {
             const stream = streamifyString(`
 {
@@ -5720,10 +5738,14 @@ describe('JsonLdParser', () => {
   "pred1": "http://ex.org/obj1",
   "@type": "Foo"
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
+          // eslint-disable-next-line max-len
           it('with a context, predicate and non-contexted-type without streamingProfileAllowOutOfOrderPlainType', async() => {
             parser = new JsonLdParser(
               { dataFactory: DF, streamingProfile: true },
@@ -5746,7 +5768,9 @@ describe('JsonLdParser', () => {
             ));
           });
 
+          // eslint-disable-next-line max-len
           it('with a context, predicate and non-contexted-type with streamingProfileAllowOutOfOrderPlainType', async() => {
+            // eslint-disable-next-line max-len
             parser = new JsonLdParser({ dataFactory: DF, streamingProfile: true, streamingProfileAllowOutOfOrderPlainType: true });
             const stream = streamifyString(`
 {
@@ -5819,7 +5843,10 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5835,7 +5862,10 @@ describe('JsonLdParser', () => {
   },
   "@type": "Foo"
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5854,7 +5884,10 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5870,7 +5903,10 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5889,7 +5925,10 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5905,7 +5944,10 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5924,7 +5966,10 @@ describe('JsonLdParser', () => {
   },
   "pred1": "http://ex.org/obj1"
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5940,7 +5985,10 @@ describe('JsonLdParser', () => {
   },
   "pred1": "http://ex.org/obj1"
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
 
@@ -5963,7 +6011,10 @@ describe('JsonLdParser', () => {
     "@type": "Type"
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(new ErrorCoded('Found an out-of-order ' +
+              // eslint-disable-next-line max-len
               'type-scoped context, while streaming is enabled.(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
           });
         });
@@ -6530,7 +6581,10 @@ describe('JsonLdParser', () => {
   "@id": "http://ex.org/myid",
   "a": "http://ex.org/bla",
 }`);
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line max-len
           await expect(arrayifyStream(stream.pipe(parser))).rejects
+            // eslint-disable-next-line max-len
             .toThrow(new ErrorCoded('Invalid @reverse value, must be absolute IRI or blank node: \'@type\'', ERROR_CODES.INVALID_IRI_MAPPING));
         });
 
@@ -7548,7 +7602,10 @@ describe('JsonLdParser', () => {
     }
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              // eslint-disable-next-line max-len
               new ErrorCoded('Keywords can not be used as @index value, got: @keyword', ERROR_CODES.INVALID_TERM_DEFINITION),
             );
           });
@@ -7654,7 +7711,10 @@ describe('JsonLdParser', () => {
     "Value1": "ex:id1"
   }
 }`);
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line max-len
             await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(
+              // eslint-disable-next-line max-len
               new ErrorCoded('A context @type must be an absolute IRI, found: \'p\': \'@bla\'', ERROR_CODES.INVALID_TYPE_MAPPING),
             );
           });
@@ -8297,6 +8357,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          // eslint-disable-next-line jest/no-identical-title
           it('with @id and type map with an array value', async() => {
             const stream = streamifyString(`
 {
@@ -9020,6 +9081,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with @id and graph map with @index with multiple values with an outer array (1) should be ignored', async() => {
             const stream = streamifyString(`
 {
@@ -9046,6 +9108,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with @id and graph map with @index with multiple values with an outer array (2) should be ignored', async() => {
             const stream = streamifyString(`
 {
@@ -9075,6 +9138,7 @@ describe('JsonLdParser', () => {
             ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with @id and graph map with @index with multiple values with a nested outer array should be ignored', async() => {
             const stream = streamifyString(`
 {
@@ -12100,7 +12164,10 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": ["http://example/bar"]}
 }`);
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
         await expect(arrayifyStream(stream.pipe(parser))).rejects
+          // eslint-disable-next-line max-len
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term', ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
       it('a singular list in a reversed property', async() => {
@@ -12112,7 +12179,10 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": "http://example/bar"}
 }`);
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
         await expect(arrayifyStream(stream.pipe(parser))).rejects
+          // eslint-disable-next-line max-len
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term', ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
       it('an empty list in a reversed property', async() => {
@@ -12124,7 +12194,10 @@ describe('JsonLdParser', () => {
   "@id": "http://example/foo",
   "term": {"@list": []}
 }`);
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
         await expect(arrayifyStream(stream.pipe(parser))).rejects
+          // eslint-disable-next-line max-len
           .toThrow(new ErrorCoded('Found illegal list value in subject position at term', ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
       });
 
@@ -12169,7 +12242,10 @@ describe('JsonLdParser', () => {
 {
   "@included": { "@value": "bla" }
 }`);
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
         await expect(arrayifyStream(stream.pipe(parser))).rejects
+          // eslint-disable-next-line max-len
           .toThrow(new ErrorCoded('Found an illegal @included @value node \'{"@value":"bla"}\'', ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
 
@@ -12178,7 +12254,10 @@ describe('JsonLdParser', () => {
 {
   "@included": { "@list": [ "bla" ] }
 }`);
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
         await expect(arrayifyStream(stream.pipe(parser))).rejects
+          // eslint-disable-next-line max-len
           .toThrow(new ErrorCoded('Found an illegal @included @list node \'{"@list":["bla"]}\'', ERROR_CODES.INVALID_INCLUDED_VALUE));
       });
 
@@ -12209,7 +12288,7 @@ describe('JsonLdParser', () => {
       it('unclosed JSON document', async() => {
         const stream = streamifyString(`{`);
 
-        await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(/Unclosed document/);
+        await expect(arrayifyStream(stream.pipe(parser))).rejects.toThrow(/Unclosed document/u);
       });
     });
   });
@@ -12274,7 +12353,10 @@ describe('JsonLdParser', () => {
     "http://xmlns.com/foaf/0.1/knows": "Name"
   }
 }`);
+      // eslint-disable-next-line max-len
+      // eslint-disable-next-line max-len
       await expect(arrayifyStream(stream.pipe(parser))).rejects
+        // eslint-disable-next-line max-len
         .toEqual(new ErrorCoded('Found illegal literal in subject position: Name', ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE));
     });
 
@@ -12425,6 +12507,7 @@ describe('JsonLdParser', () => {
         expect(parser.read(1)).toBeFalsy();
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after {', (done) => {
         parser.write('{', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12432,6 +12515,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id', (done) => {
         parser.write('"@id": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12439,6 +12523,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id value', (done) => {
         parser.write('"http://example.org",', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12446,6 +12531,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after predicate', (done) => {
         parser.write('"http://example.com/p": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12453,6 +12539,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after object', (done) => {
         parser.write('"http://example.com/o",', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12464,6 +12551,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after another predicate', (done) => {
         parser.write('"http://example.com/p2": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12471,6 +12559,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after another object', (done) => {
         parser.write('"http://example.com/o2"', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12482,6 +12571,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should end after }', (done) => {
         parser.write('}', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12508,6 +12598,7 @@ describe('JsonLdParser', () => {
         expect(parser.read(1)).toBeFalsy();
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after {', (done) => {
         parser.write('{', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12515,6 +12606,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id', (done) => {
         parser.write('"@id": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12522,6 +12614,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id value', (done) => {
         parser.write('"http://example.org",', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12529,6 +12622,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after predicate', (done) => {
         parser.write('"http://example.com/p": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12536,6 +12630,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after [', (done) => {
         parser.write('[', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12543,6 +12638,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after object', (done) => {
         parser.write('"http://example.com/o",', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12554,6 +12650,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after another object', (done) => {
         parser.write('"http://example.com/o2"', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12565,6 +12662,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after ]', (done) => {
         parser.write(']', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12572,6 +12670,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should end after }', (done) => {
         parser.write('}', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12598,6 +12697,7 @@ describe('JsonLdParser', () => {
         expect(parser.read(1)).toBeFalsy();
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after {', (done) => {
         parser.write('{', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12605,6 +12705,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after a context', (done) => {
         parser.write('"@context": { "p": "http://example.org/p", "@base": "http://base.org/" },', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12612,6 +12713,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id', (done) => {
         parser.write('"@id": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12619,6 +12721,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after @id value', (done) => {
         parser.write('"id",', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12626,6 +12729,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after predicate', (done) => {
         parser.write('"p": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12633,6 +12737,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after object', (done) => {
         parser.write('"ooo",', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12644,6 +12749,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit nothing after another predicate', (done) => {
         parser.write('"http://example.com/p2": ', () => {
           expect(parser.read(1)).toBeFalsy();
@@ -12651,6 +12757,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should emit a quad after another object', (done) => {
         parser.write('"http://example.com/o2"', () => {
           expect(parser.read(1)).toEqualRdfQuad(DF.quad(
@@ -12662,6 +12769,7 @@ describe('JsonLdParser', () => {
         });
       });
 
+      // eslint-disable-next-line jest/no-done-callback
       it('should end after }', (done) => {
         parser.write('}', () => {
           expect(parser.read(1)).toBeFalsy();
