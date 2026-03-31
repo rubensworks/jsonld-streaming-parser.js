@@ -10,7 +10,7 @@ import { DataFactory } from 'rdf-data-factory';
 import { EntryHandlerContainer } from './entryhandler/EntryHandlerContainer';
 import type { AnnotationsBufferEntry, ParsingContext } from './ParsingContext';
 
-// eslint-disable-next-line ts/no-require-imports, ts/no-unsafe-assignment
+// eslint-disable-next-line ts/no-require-imports, ts/no-unsafe-assignment, ts/no-var-requires
 const canonicalizeJson: (value: unknown) => string | undefined = require('canonicalize');
 
 /**
@@ -66,9 +66,7 @@ export class Util {
     if (!entry) {
       return fallback;
     }
-    // eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-member-access
     const type = (<Record<string, unknown>>entry)[contextKey];
-    // eslint-disable-next-line ts/no-unsafe-return
     return type === undefined ? fallback : type;
   }
 
@@ -123,7 +121,7 @@ export class Util {
    * @return {string} The node type.
    */
   public static getContextValueDirection(context: JsonLdContextNormalized, key: string): string {
-    // eslint-disable-next-line ts/no-unsafe-return, ts/prefer-nullish-coalescing
+    // eslint-disable-next-line ts/no-unsafe-return
     return Util.getContextValue(context, '@direction', key, context.getContextRaw()['@direction'] || null);
   }
 
@@ -214,13 +212,17 @@ export class Util {
       const indexHashes: Record<string, any> = {};
       for (const entry of value) {
         if (entry && typeof entry === 'object') {
+          // eslint-disable-next-line ts/no-unsafe-assignment
           const id = entry['@id'];
+          // eslint-disable-next-line ts/no-unsafe-assignment
           const index = entry['@index'];
           if (id && index) {
+            // eslint-disable-next-line ts/no-unsafe-assignment
             const existingIndexValue = indexHashes[id];
             if (existingIndexValue && existingIndexValue !== index) {
               throw new ErrorCoded(`Conflicting @index value for ${id}`, ERROR_CODES.CONFLICTING_INDEXES);
             }
+            // eslint-disable-next-line ts/no-unsafe-assignment
             indexHashes[id] = index;
           }
         }
@@ -237,7 +239,13 @@ export class Util {
    * @param {string[]} keys The path of keys.
    * @return {Promise<RDF.Term[]>} An RDF term array.
    */
-  public async valueToTerm(context: JsonLdContextNormalized, key: string, value: any, depth: number, keys: string[]): Promise<RDF.Term[]> {
+  public async valueToTerm(
+    context: JsonLdContextNormalized,
+    key: string,
+    value: any,
+    depth: number,
+    keys: string[],
+  ): Promise<RDF.Term[]> {
     // Skip further processing if we have an @type: @json
     if (Util.getContextValueType(context, key) === '@json') {
       return [ this.dataFactory.literal(this.valueToJsonString(value), this.rdfJson) ];
@@ -270,33 +278,46 @@ export class Util {
 
         // Handle local context in the value
         if ('@context' in value) {
-          context = await this.parsingContext.parseContext(value['@context'], (await this.parsingContext.getContext(keys, 0)).getContextRaw());
+          context = await this.parsingContext.parseContext(
+            // eslint-disable-next-line ts/no-unsafe-argument
+            value['@context'],
+            (await this.parsingContext.getContext(keys, 0)).getContextRaw(),
+          );
         }
 
         // In all other cases, we have a hash
-        value = await this.unaliasKeywords(value, keys, depth, context); // Un-alias potential keywords in this hash
+        // Un-alias potential keywords in this hash
+        // eslint-disable-next-line ts/no-unsafe-argument
+        value = await this.unaliasKeywords(value, keys, depth, context);
         if ('@value' in value) {
           let val;
           let valueLanguage;
           let valueDirection;
           let valueType;
-          let valueIndex; // We don't use the index, but we need to check its type for spec-compliance
+          // We don't use the index, but we need to check its type for spec-compliance
+          let valueIndex;
           for (key in value) {
+            // eslint-disable-next-line ts/no-unsafe-assignment
             const subValue = value[key];
             switch (key) {
               case '@value':
+                // eslint-disable-next-line ts/no-unsafe-assignment
                 val = subValue;
                 break;
               case '@language':
+                // eslint-disable-next-line ts/no-unsafe-assignment
                 valueLanguage = subValue;
                 break;
               case '@direction':
+                // eslint-disable-next-line ts/no-unsafe-assignment
                 valueDirection = subValue;
                 break;
               case '@type':
+                // eslint-disable-next-line ts/no-unsafe-assignment
                 valueType = subValue;
                 break;
               case '@index':
+                // eslint-disable-next-line ts/no-unsafe-assignment
                 valueIndex = subValue;
                 break;
               case '@annotation':
@@ -336,12 +357,18 @@ export class Util {
               );
             }
 
-            if (!ContextParser.validateLanguage(valueLanguage, this.parsingContext.strictValues, ERROR_CODES.INVALID_LANGUAGE_TAGGED_STRING)) {
+            if (!ContextParser.validateLanguage(
+              valueLanguage,
+              this.parsingContext.strictValues,
+              ERROR_CODES.INVALID_LANGUAGE_TAGGED_STRING,
+            )) {
               return [];
             }
 
             // Language tags are always normalized to lowercase in 1.0.
+            // eslint-disable-next-line ts/prefer-nullish-coalescing
             if (this.parsingContext.normalizeLanguageTags || this.parsingContext.activeProcessingMode === 1) {
+              // eslint-disable-next-line ts/no-unsafe-assignment
               valueLanguage = valueLanguage.toLowerCase();
             }
           }
@@ -365,21 +392,30 @@ export class Util {
             }
 
             return this.nullableTermToArray(this
+              // eslint-disable-next-line ts/no-unsafe-argument
               .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
-          } if (valueLanguage) { // Check @language
+          }
+          // Check @language
+          if (valueLanguage) {
             if (valueType) {
               throw new ErrorCoded(`Can not have both '@language' and '@type' in a value: '${JSON.stringify(value)}'`, ERROR_CODES.INVALID_VALUE_OBJECT);
             }
 
+            // eslint-disable-next-line ts/no-unsafe-argument
             return [ this.dataFactory.literal(val, valueLanguage) ];
-          } if (valueDirection) { // Check @direction
+          }
+          // Check @direction
+          if (valueDirection) {
             if (valueType) {
               throw new ErrorCoded(`Can not have both '@direction' and '@type' in a value: '${JSON.stringify(value)}'`, ERROR_CODES.INVALID_VALUE_OBJECT);
             }
 
             return this.nullableTermToArray(this
+              // eslint-disable-next-line ts/no-unsafe-argument
               .createLanguageDirectionLiteral(depth, val, valueLanguage, valueDirection));
-          } if (valueType) { // Validate @type
+          }
+          // Validate @type
+          if (valueType) {
             if (typeof valueType !== 'string') {
               throw new ErrorCoded(`The value of an '@type' must be a string, got '${JSON.stringify(valueType)}'`, ERROR_CODES.INVALID_TYPED_VALUE);
             }
@@ -390,24 +426,30 @@ export class Util {
             if (typeTerm.termType !== 'NamedNode') {
               throw new ErrorCoded(`Illegal value type (${typeTerm.termType}): ${valueType}`, ERROR_CODES.INVALID_TYPED_VALUE);
             }
+            // eslint-disable-next-line ts/no-unsafe-argument
             return [ this.dataFactory.literal(val, typeTerm) ];
           }
           // We don't pass the context, because context-based things like @language should be ignored
           return await this.valueToTerm(new JsonLdContextNormalized({}), key, val, depth, keys);
-        } if ('@set' in value) {
+        }
+        if ('@set' in value) {
         // No other entries are allow in this value
+          // eslint-disable-next-line ts/no-unsafe-argument
           if (Object.keys(value).length > 1) {
             throw new ErrorCoded(`Found illegal neighbouring entries next to @set for key: '${key}'`, ERROR_CODES.INVALID_SET_OR_LIST_OBJECT);
           }
 
           // No need to do anything here, this is handled at the deeper level.
           return [];
-        } if ('@list' in value) {
+        }
+        if ('@list' in value) {
         // No other entries are allowed in this value
+          // eslint-disable-next-line ts/no-unsafe-argument
           if (Object.keys(value).length > 1) {
             throw new ErrorCoded(`Found illegal neighbouring entries next to @list for key: '${key}'`, ERROR_CODES.INVALID_SET_OR_LIST_OBJECT);
           }
 
+          // eslint-disable-next-line ts/no-unsafe-assignment
           const listValue = value['@list'];
           // We handle lists at value level so we can emit earlier, so this is handled already when we get here.
           // Empty anonymous lists are emitted at this place, because our streaming algorithm doesn't detect those.
@@ -418,28 +460,41 @@ export class Util {
             return this.parsingContext.idStack[depth + 1] || [];
           }
           // We only have a single list element here, so emit this directly as single element
-          return await this.valueToTerm(await this.parsingContext.getContext(keys), key, listValue, depth - 1, keys.slice(0, -1));
-        } if ('@reverse' in value && typeof value['@reverse'] === 'boolean') {
+          return await this.valueToTerm(
+            await this.parsingContext.getContext(keys),
+            key,
+            listValue,
+            depth - 1,
+            keys.slice(0, -1),
+          );
+        }
+        if ('@reverse' in value && typeof value['@reverse'] === 'boolean') {
         // We handle reverse properties at value level so we can emit earlier,
         // so this is handled already when we get here.
           return [];
-        } if ('@graph' in Util.getContextValueContainer(await this.parsingContext.getContext(keys), key)) {
+        }
+        if ('@graph' in Util.getContextValueContainer(await this.parsingContext.getContext(keys), key)) {
         // We are processing a graph container
           const graphContainerEntries = this.parsingContext.graphContainerTermStack[depth + 1];
           return graphContainerEntries ? Object.values(graphContainerEntries) : [ this.dataFactory.blankNode() ];
-        } if ('@id' in value) {
+        }
+        if ('@id' in value) {
         // Use deeper context if the value node contains other properties next to @id.
+          // eslint-disable-next-line ts/no-unsafe-argument
           if (Object.keys(value).length > 1) {
             context = await this.parsingContext.getContext(keys, 0);
           }
           // Handle local context in the value
           if ('@context' in value) {
+            // eslint-disable-next-line ts/no-unsafe-argument
             context = await this.parsingContext.parseContext(value['@context'], context.getContextRaw());
           }
 
           if (value['@type'] === '@vocab') {
+            // eslint-disable-next-line ts/no-unsafe-argument
             return this.nullableTermToArray(this.createVocabOrBaseTerm(context, value['@id']));
           }
+          // eslint-disable-next-line ts/no-unsafe-assignment
           const valueId = value['@id'];
           let valueTerm: RDF.Term | null;
           if (typeof valueId === 'object') {
@@ -449,12 +504,14 @@ export class Util {
               throw new ErrorCoded(`Found illegal @id '${value}'`, ERROR_CODES.INVALID_ID_VALUE);
             }
           } else {
+            // eslint-disable-next-line ts/no-unsafe-argument
             valueTerm = this.resourceToTerm(context, valueId);
           }
           return this.nullableTermToArray(valueTerm);
         }
         // Only make a blank node if at least one triple was emitted at the value's level.
         if (this.parsingContext.emittedStack[depth + 1] ||
+          // eslint-disable-next-line ts/no-unsafe-argument
           (value && typeof value === 'object' && Object.keys(value).length === 0)) {
           return (this.parsingContext.idStack[depth + 1] ||
             (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
@@ -462,13 +519,33 @@ export class Util {
         return [];
 
       case 'string':
-        return this.nullableTermToArray(this.stringValueToTerm(depth, await this.getContextSelfOrPropertyScoped(context, key), key, value, null));
+        return this.nullableTermToArray(this.stringValueToTerm(
+          depth,
+          await this.getContextSelfOrPropertyScoped(context, key),
+          key,
+          // eslint-disable-next-line ts/no-unsafe-argument
+          value,
+          null,
+        ));
       case 'boolean':
-        return this.nullableTermToArray(this.stringValueToTerm(depth, await this.getContextSelfOrPropertyScoped(context, key), key, Boolean(value).toString(), this.dataFactory.namedNode(Util.XSD_BOOLEAN)));
+        return this.nullableTermToArray(this.stringValueToTerm(
+          depth,
+          await this.getContextSelfOrPropertyScoped(context, key),
+          key,
+          Boolean(value).toString(),
+          this.dataFactory.namedNode(Util.XSD_BOOLEAN),
+        ));
       case 'number':
-        return this.nullableTermToArray(this.stringValueToTerm(depth, await this.getContextSelfOrPropertyScoped(context, key), key, value, this.dataFactory.namedNode(
-          value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE,
-        )));
+        return this.nullableTermToArray(this.stringValueToTerm(
+          depth,
+          await this.getContextSelfOrPropertyScoped(context, key),
+          key,
+          // eslint-disable-next-line ts/no-unsafe-argument
+          value,
+          this.dataFactory.namedNode(
+            value % 1 === 0 && value < 1e21 ? Util.XSD_INTEGER : Util.XSD_DOUBLE,
+          ),
+        ));
       default:
         this.parsingContext.emitError(new Error(`Could not determine the RDF type of a ${type}`));
         return [];
@@ -484,9 +561,14 @@ export class Util {
    * @param context A context.
    * @param key A JSON key.
    */
-  public async getContextSelfOrPropertyScoped(context: JsonLdContextNormalized, key: string): Promise<JsonLdContextNormalized> {
+  public async getContextSelfOrPropertyScoped(
+    context: JsonLdContextNormalized,
+    key: string,
+  ): Promise<JsonLdContextNormalized> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const contextKeyEntry = context.getContextRaw()[key];
     if (contextKeyEntry && typeof contextKeyEntry === 'object' && '@context' in contextKeyEntry) {
+      // eslint-disable-next-line ts/no-unsafe-argument
       context = await this.parsingContext.parseContext(contextKeyEntry, context.getContextRaw(), true, true);
     }
     return context;
@@ -598,7 +680,7 @@ export class Util {
         if (isInteger && (!datatype || datatype.value !== Util.XSD_DOUBLE)) {
           return Number(value).toString();
         }
-        return value.toExponential(15).replace(/(\d)0*e\+?/, '$1E');
+        return value.toExponential(15).replace(/(\d)0*e\+?/u, '$1E');
       }
       return value > 0 ? 'INF' : '-INF';
     }
@@ -614,7 +696,13 @@ export class Util {
    * @param {NamedNode} defaultDatatype The default datatype for the given value.
    * @return {RDF.Term} An RDF term or null.
    */
-  public stringValueToTerm(depth: number, context: JsonLdContextNormalized, key: string, value: string | number, defaultDatatype: RDF.NamedNode | null): RDF.Term | null {
+  public stringValueToTerm(
+    depth: number,
+    context: JsonLdContextNormalized,
+    key: string,
+    value: string | number,
+    defaultDatatype: RDF.NamedNode | null,
+  ): RDF.Term | null {
     // Check the datatype from the context
     const contextType = Util.getContextValueType(context, key);
     if (contextType) {
@@ -636,9 +724,17 @@ export class Util {
       const contextLanguage = Util.getContextValueLanguage(context, key);
       const contextDirection = Util.getContextValueDirection(context, key);
       if (contextDirection && this.parsingContext.rdfDirection !== 'disabled') {
-        return this.createLanguageDirectionLiteral(depth, this.intToString(value, defaultDatatype), contextLanguage, contextDirection);
+        return this.createLanguageDirectionLiteral(
+          depth,
+          this.intToString(value, defaultDatatype),
+          contextLanguage,
+          contextDirection,
+        );
       }
-      return this.dataFactory.literal(this.intToString(value, defaultDatatype), <string | RDF.NamedNode> contextLanguage);
+      return this.dataFactory.literal(
+        this.intToString(value, defaultDatatype),
+        <string | RDF.NamedNode> contextLanguage,
+      );
     }
 
     // If all else fails, make a literal based on the default content type
@@ -654,14 +750,20 @@ export class Util {
    * @param {string} direction A direction.
    * @return {Term} An RDF term.
    */
-  public createLanguageDirectionLiteral(depth: number, value: string, language: string | null, direction: string): RDF.Term {
+  public createLanguageDirectionLiteral(
+    depth: number,
+    value: string,
+    language: string | null,
+    direction: string,
+  ): RDF.Term {
     if (this.parsingContext.rdfDirection === 'i18n-datatype') {
       // Create a datatyped literal, by encoding the language and direction into https://www.w3.org/ns/i18n#.
       if (!language) {
         language = '';
       }
       return this.dataFactory.literal(value, this.dataFactory.namedNode(`https://www.w3.org/ns/i18n#${language}_${direction}`));
-    } if (this.parsingContext.rdfDirection === 'compound-literal') {
+    }
+    if (this.parsingContext.rdfDirection === 'compound-literal') {
       // Reify the literal.
       const valueNode = this.dataFactory.blankNode();
       const graph = this.getDefaultGraph();
@@ -672,8 +774,11 @@ export class Util {
       this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode, this.dataFactory.namedNode(`${Util.RDF}direction`), this.dataFactory.literal(direction), graph));
       return valueNode;
     }
-    // eslint-disable-next-line ts/no-unsafe-argument
-    return this.dataFactory.literal(value, <any>{ language: language || '', direction: <'ltr' | 'rtl' | ''> direction });
+    return this.dataFactory.literal(
+      value,
+      // eslint-disable-next-line ts/no-unsafe-argument
+      <any>{ language: language ?? '', direction: <'ltr' | 'rtl' | ''> direction },
+    );
   }
 
   /**
@@ -682,7 +787,6 @@ export class Util {
    * @return {string} A canonical JSON string.
    */
   public valueToJsonString(value: any): string {
-    // eslint-disable-next-line ts/no-non-null-assertion
     return canonicalizeJson(value)!;
   }
 
@@ -697,31 +801,44 @@ export class Util {
    *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<string>} A promise resolving to the key itself, or another key.
    */
-  public async unaliasKeyword(key: any, keys: string[], depth: number, disableCache?: boolean, context?: JsonLdContextNormalized): Promise<any> {
+  public async unaliasKeyword(
+    key: any,
+    keys: string[],
+    depth: number,
+    disableCache?: boolean,
+    context?: JsonLdContextNormalized,
+  ): Promise<any> {
     // Numbers can not be an alias
     if (Number.isInteger(key)) {
+      // eslint-disable-next-line ts/no-unsafe-return
       return key;
     }
 
     // Try to grab from cache if it was already un-aliased before.
     if (!disableCache) {
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const cachedUnaliasedKeyword = this.parsingContext.unaliasedKeywordCacheStack[depth];
       if (cachedUnaliasedKeyword) {
+        // eslint-disable-next-line ts/no-unsafe-return
         return cachedUnaliasedKeyword;
       }
     }
 
     if (!ContextUtil.isPotentialKeyword(key)) {
-      context = context || await this.parsingContext.getContext(keys);
+      context = context ?? await this.parsingContext.getContext(keys);
+      // eslint-disable-next-line ts/no-unsafe-assignment
       let unliased = context.getContextRaw()[key];
       if (unliased && typeof unliased === 'object') {
+        // eslint-disable-next-line ts/no-unsafe-assignment
         unliased = unliased['@id'];
       }
       if (ContextUtil.isValidKeyword(unliased)) {
+        // eslint-disable-next-line ts/no-unsafe-assignment
         key = unliased;
       }
     }
 
+    // eslint-disable-next-line ts/no-unsafe-return, ts/no-unsafe-assignment
     return disableCache ? key : (this.parsingContext.unaliasedKeywordCacheStack[depth] = key);
   }
 
@@ -733,6 +850,7 @@ export class Util {
    * @return {Promise<any>} A promise resolving to the parent key, or another key.
    */
   public async unaliasKeywordParent(keys: any[], depth: number): Promise<any> {
+    // eslint-disable-next-line ts/no-unsafe-return, ts/no-unsafe-argument
     return await this.unaliasKeyword(depth > 0 && keys[depth - 1], keys, depth - 1);
   }
 
@@ -745,9 +863,15 @@ export class Util {
    *                                           will fallback to retrieving the context for the given keys.
    * @return {Promise<{[p: string]: any}>} A promise resolving to the new hash.
    */
-  public async unaliasKeywords(hash: Record<string, any>, keys: string[], depth: number, context?: JsonLdContextNormalized): Promise<Record<string, any>> {
+  public async unaliasKeywords(
+    hash: Record<string, any>,
+    keys: string[],
+    depth: number,
+    context?: JsonLdContextNormalized,
+  ): Promise<Record<string, any>> {
     const newHash: Record<string, any> = {};
     for (const key in hash) {
+      // eslint-disable-next-line ts/no-unsafe-assignment
       newHash[await this.unaliasKeyword(key, keys, depth + 1, true, context)] = hash[key];
     }
     return newHash;
@@ -764,6 +888,7 @@ export class Util {
    */
   public async isLiteral(keys: any[], depth: number): Promise<boolean> {
     for (let i = depth; i >= 0; i--) {
+      // eslint-disable-next-line ts/no-unsafe-argument
       if (await this.unaliasKeyword(keys[i], keys, i) === '@annotation') {
         // Literals may have annotations, which require processing of inner nodes.
         return false;
@@ -784,6 +909,7 @@ export class Util {
    */
   public async getDepthOffsetGraph(depth: number, keys: any[]): Promise<number> {
     for (let i = depth - 1; i > 0; i--) {
+      // eslint-disable-next-line ts/no-unsafe-argument
       if (await this.unaliasKeyword(keys[i], keys, i) === '@graph') {
         // Skip further processing if we are already in an @graph-@id or @graph-@index container
         const containers = (await EntryHandlerContainer.getContainerHandler(this.parsingContext, keys, i)).containers;
@@ -802,7 +928,7 @@ export class Util {
    * This should be called when applying @reverse'd properties.
    * @param {Term} subject A subject.
    */
-  public validateReverseSubject(subject: RDF.Term) {
+  public validateReverseSubject(subject: RDF.Term): void {
     if (subject.termType === 'Literal') {
       throw new ErrorCoded(`Found illegal literal in subject position: ${subject.value}`, ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE);
     }
@@ -813,7 +939,7 @@ export class Util {
    * @return {Term} An RDF term.
    */
   public getDefaultGraph(): RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph {
-    return this.parsingContext.defaultGraph || this.dataFactory.defaultGraph();
+    return this.parsingContext.defaultGraph ?? this.dataFactory.defaultGraph();
   }
 
   /**
@@ -822,7 +948,10 @@ export class Util {
    * @param keys The current keys.
    * @param depth The current depth.
    */
-  public async getGraphContainerValue(keys: any[], depth: number): Promise<RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph> {
+  public async getGraphContainerValue(
+    keys: any[],
+    depth: number,
+  ): Promise<RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph> {
     // Default to default graph
     let graph: RDF.NamedNode | RDF.BlankNode | RDF.DefaultGraph | null = this.getDefaultGraph();
 
@@ -839,9 +968,11 @@ export class Util {
       if (!graph) {
         let graphId: RDF.NamedNode | RDF.BlankNode | null = null;
         if ('@id' in containers) {
+          // eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-argument
           const keyUnaliased = await this.getContainerKey(keys[depthContainer], keys, depthContainer);
           if (keyUnaliased !== null) {
-            graphId = await this.resourceToTerm(await this.parsingContext.getContext(keys), keyUnaliased);
+            // eslint-disable-next-line ts/no-unsafe-argument
+            graphId = this.resourceToTerm(await this.parsingContext.getContext(keys), keyUnaliased);
           }
         }
         if (!graphId) {
@@ -874,11 +1005,14 @@ export class Util {
   public async getPropertiesDepth(keys: any[], depth: number): Promise<number> {
     let lastValidDepth = depth;
     for (let i = depth - 1; i > 0; i--) {
-      if (typeof keys[i] !== 'number') { // Skip array keys
+      // Skip array keys
+      if (typeof keys[i] !== 'number') {
+        // eslint-disable-next-line ts/no-unsafe-argument, ts/no-unsafe-assignment
         const parentKey = await this.unaliasKeyword(keys[i], keys, i);
         if (parentKey === '@reverse') {
           return i;
-        } if (parentKey === '@nest') {
+        }
+        if (parentKey === '@nest') {
           lastValidDepth = i;
         } else {
           return lastValidDepth;
@@ -897,7 +1031,9 @@ export class Util {
    *         Null will be returned for @none entries, with aliasing taken into account.
    */
   public async getContainerKey(key: any, keys: string[], depth: number): Promise<any> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const keyUnaliased = await this.unaliasKeyword(key, keys, depth);
+    // eslint-disable-next-line ts/no-unsafe-return
     return keyUnaliased === '@none' ? null : keyUnaliased;
   }
 
@@ -969,7 +1105,7 @@ export class Util {
   }
 
   // This is a separate function to enable recursion
-  protected emitAnnotation(depth: number, quad: RDF.BaseQuad, annotation: AnnotationsBufferEntry) {
+  protected emitAnnotation(depth: number, quad: RDF.BaseQuad, annotation: AnnotationsBufferEntry): void {
     // Construct annotation quad
     let annotationQuad;
     if (annotation.reverse) {
