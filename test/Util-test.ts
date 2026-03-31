@@ -1,6 +1,6 @@
+import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
 import { DataFactory } from 'rdf-data-factory';
 import 'jest-rdf';
-import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
 import { Util } from '../lib/Util';
 import { ParsingContextMocked } from '../mocks/ParsingContextMocked';
 
@@ -27,6 +27,7 @@ describe('Util', () => {
     });
 
     it('should return @list when defined as such', async() => {
+      // eslint-disable-next-line max-len
       expect(Util.getContextValueContainer(new JsonLdContextNormalized({ abc: { '@container': { '@list': true }}}), 'abc')).toEqual({ '@list': true });
     });
   });
@@ -218,7 +219,7 @@ describe('Util', () => {
       describe('for an unknown type', () => {
         it('should emit an error', async() => {
           jest.spyOn(util.parsingContext, 'emitError');
-          await util.valueToTerm(context, 'key', Symbol(), 0);
+          await util.valueToTerm(context, 'key', Symbol('test'), 0);
           expect(util.parsingContext.emitError).toHaveBeenCalledTimes(1);
         });
       });
@@ -235,6 +236,7 @@ describe('Util', () => {
             .toEqualRdfTermArray([ DF.blankNode() ]);
         });
 
+        // eslint-disable-next-line max-len
         it('without an @id should put a blank node on the id stack when a value was emitted at a deeper depth', async() => {
           util.parsingContext.emittedStack[1] = true;
           await util.valueToTerm(context, 'key', {}, 0, []);
@@ -263,6 +265,7 @@ describe('Util', () => {
             .toEqualRdfTermArray([ DF.namedNode('http://ex.org/') ]);
         });
 
+        // eslint-disable-next-line jest/no-identical-title
         it('with a relative @id with @base in context should return a named node', async() => {
           context = new JsonLdContextNormalized({ '@base': 'http://ex.org/' });
           await expect(util.valueToTerm(context, 'key', { '@id': '.' }, 0, [])).resolves
@@ -285,6 +288,7 @@ describe('Util', () => {
           util = new Util({ dataFactory: DF, parsingContext: new ParsingContextMocked(
             { baseIRI: 'http://ex.org/', parser: <any>null },
           ) });
+          // eslint-disable-next-line max-len
           await expect(util.valueToTerm(await util.parsingContext.getContext([]), 'key', { '@id': 'abc' }, 0, [])).resolves
             .toEqualRdfTermArray([ DF.namedNode('http://ex.org/abc') ]);
         });
@@ -362,6 +366,7 @@ describe('Util', () => {
             .toEqualRdfTermArray([ DF.literal('abc', 'en-us') ]);
         });
 
+        // eslint-disable-next-line max-len
         it('with an @value and @language should return a non-lowercased language-tagged string literal in 1.1', async() => {
           util.parsingContext.activeProcessingMode = 1.1;
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en-US' }, 0, [])).resolves
@@ -401,12 +406,14 @@ describe('Util', () => {
         it('with a @value object should throw an error', async() => {
           context = new JsonLdContextNormalized({ key: { '@language': 'en-us' }, '@language': 'nl-be' });
           await expect(util.valueToTerm(context, 'key', { '@value': {}}, 0, []))
+            // eslint-disable-next-line max-len
             .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'{}\'', ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
         it('with a @value array should throw an error', async() => {
           context = new JsonLdContextNormalized({ key: { '@language': 'en-us' }, '@language': 'nl-be' });
           await expect(util.valueToTerm(context, 'key', { '@value': []}, 0, []))
+            // eslint-disable-next-line max-len
             .rejects.toThrow(new ErrorCoded('The value of an \'@value\' can not be an object, got \'[]\'', ERROR_CODES.INVALID_VALUE_OBJECT_VALUE));
         });
 
@@ -424,6 +431,7 @@ describe('Util', () => {
         it('with a boolean @value and valid @language should throw an error', async() => {
           await expect(util.valueToTerm(context, 'key', { '@value': true, '@language': 'en-us' }, 0, []))
             .rejects.toThrow(
+              // eslint-disable-next-line max-len
               new ErrorCoded('When an \'@language\' is set, the value of \'@value\' must be a string, got \'true\'', ERROR_CODES.INVALID_LANGUAGE_TAGGED_VALUE),
             );
         });
@@ -474,6 +482,7 @@ describe('Util', () => {
 
         it('with a @value and boolean @type should throw an error', async() => {
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@type': true }, 0, []))
+            // eslint-disable-next-line max-len
             .rejects.toThrow(new ErrorCoded('The value of an \'@type\' must be a string, got \'true\'', ERROR_CODES.INVALID_TYPED_VALUE));
         });
 
@@ -490,6 +499,7 @@ describe('Util', () => {
         it('with a @value and boolean @index should throw an error when validateValueIndexes is true', async() => {
           util.parsingContext.validateValueIndexes = true;
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@index': true }, 0, []))
+            // eslint-disable-next-line max-len
             .rejects.toThrow(new ErrorCoded('The value of an \'@index\' must be a string, got \'true\'', ERROR_CODES.INVALID_INDEX_VALUE));
         });
 
@@ -531,6 +541,7 @@ describe('Util', () => {
 
         it('with a @value and @id should throw an error', async() => {
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@id': 'abc' }, 0, []))
+            // eslint-disable-next-line max-len
             .rejects.toThrow(new ErrorCoded('Unknown value entry \'@id\' in @value: {"@value":"abc","@id":"abc"}', ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
@@ -547,6 +558,7 @@ describe('Util', () => {
 
         it('with a @value, @direction and @type should throw an error', async() => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
+          // eslint-disable-next-line max-len
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@direction': 'rtl', '@type': 'abc' }, 0, []))
             .rejects.toThrow(new ErrorCoded('Can not have both \'@direction\' and \'@type\' in a value: ' +
               '\'{"@value":"abc","@direction":"rtl","@type":"abc"}\'', ERROR_CODES.INVALID_VALUE_OBJECT));
@@ -554,8 +566,10 @@ describe('Util', () => {
 
         it('with a @value, @language, @direction and @type should throw an error', async() => {
           util.parsingContext.rdfDirection = 'i18n-datatype';
+          // eslint-disable-next-line max-len
           await expect(util.valueToTerm(context, 'key', { '@value': 'abc', '@language': 'en', '@direction': 'rtl', '@type': 'abc' }, 0, []))
             .rejects.toThrow(new ErrorCoded('Can not have \'@language\', \'@direction\' ' +
+              // eslint-disable-next-line max-len
               'and \'@type\' in a value: \'{"@value":"abc","@language":"en","@direction":"rtl","@type":"abc"}\'', ERROR_CODES.INVALID_VALUE_OBJECT));
         });
 
@@ -673,6 +687,7 @@ describe('Util', () => {
               .toEqualRdfTermArray([ DF.literal('abc', 'en-us') ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with a raw value and null @language in the context entry should return a literal without language', async() => {
             context = new JsonLdContextNormalized({ key: { '@language': null }, '@language': 'nl-be' });
             await expect(util.valueToTerm(context, 'key', 'abc', 0, [])).resolves
@@ -685,6 +700,7 @@ describe('Util', () => {
               .toEqualRdfTermArray([ DF.literal('abc', { language: '', direction: 'rtl' }) ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with a raw value and @direction+@language in the root context should return a language literal', async() => {
             context = new JsonLdContextNormalized({ '@direction': 'rtl', '@language': 'en-us' });
             await expect(util.valueToTerm(context, 'key', 'abc', 0, [])).resolves
@@ -719,6 +735,7 @@ describe('Util', () => {
               .toEqualRdfTermArray([ DF.literal('abc') ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with a raw value and @direction+@language in the context entry should return a language literal', async() => {
             context = new JsonLdContextNormalized(
               { key: { '@direction': 'rtl', '@language': 'en-us' }, '@direction': 'ltr' },
@@ -727,6 +744,7 @@ describe('Util', () => {
               .toEqualRdfTermArray([ DF.literal('abc', { language: 'en-us', direction: 'rtl' }) ]);
           });
 
+          // eslint-disable-next-line max-len
           it('with a raw value and null @direction+@language in the context entry should return a language literal', async() => {
             context = new JsonLdContextNormalized(
               { key: { '@direction': null, '@language': 'en-us' }, '@direction': 'ltr' },
@@ -927,11 +945,13 @@ describe('Util', () => {
 
         it('should error when other entries are present', async() => {
           await expect(util.valueToTerm(context, 'key', { '@list': [ 1, 2 ], a: 'b' }, 0, [])).rejects
+            // eslint-disable-next-line max-len
             .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @list for key: \'key\'', ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
 
         it('should error when @id is present', async() => {
           await expect(util.valueToTerm(context, 'key', { '@list': [ 1, 2 ], '@id': 'b' }, 0, [])).rejects
+            // eslint-disable-next-line max-len
             .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @list for key: \'key\'', ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
       });
@@ -943,6 +963,7 @@ describe('Util', () => {
 
         it('should error when other entries are present', async() => {
           await expect(util.valueToTerm(context, 'key', { '@set': [ 1, 2 ], a: 'b' }, 0, [])).rejects
+            // eslint-disable-next-line max-len
             .toThrow(new ErrorCoded('Found illegal neighbouring entries next to @set for key: \'key\'', ERROR_CODES.INVALID_SET_OR_LIST_OBJECT));
         });
       });
@@ -964,6 +985,7 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @reverse parent', async() => {
+        // eslint-disable-next-line max-len
         util.parsingContext.contextTree.setContext([ null, 'a' ], Promise.resolve(new JsonLdContextNormalized({ reverse: '@reverse' })));
         await expect(util.getPropertiesDepth([ null, 'a', 'reverse', 'b' ], 3)).resolves.toBe(2);
       });
@@ -973,6 +995,7 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for an aliased @nest parent', async() => {
+        // eslint-disable-next-line max-len
         util.parsingContext.contextTree.setContext([ null, 'a' ], Promise.resolve(new JsonLdContextNormalized({ nest: '@nest' })));
         await expect(util.getPropertiesDepth([ null, 'a', 'nest', 'b' ], 3)).resolves.toBe(2);
       });
@@ -994,6 +1017,7 @@ describe('Util', () => {
       });
 
       it('should return depth - 1 for multiple @nest parents and arrays', async() => {
+        // eslint-disable-next-line max-len
         await expect(util.getPropertiesDepth([ null, 'a', '@nest', 0, '@nest', 0, 0, '@nest', 0, 'b' ], 9)).resolves.toBe(2);
       });
     });

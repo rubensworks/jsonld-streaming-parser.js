@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { EntryHandlerKeywordUnknownFallback } from '../../../lib/entryhandler/keyword/EntryHandlerKeywordUnknownFallback';
 
 describe('EntryHandlerKeywordUnknownFallback', () => {
