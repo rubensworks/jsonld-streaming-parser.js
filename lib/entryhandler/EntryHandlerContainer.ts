@@ -79,7 +79,11 @@ export class EntryHandlerContainer implements IEntryHandler<{
    *          and the `fallback` flag that indicates if the default container type was returned
    *            (i.e., no dedicated container type is defined).
    */
-  public static async getContainerHandler(parsingContext: ParsingContext, keys: any[], depth: number): Promise<{ containers: Record<string, boolean>; depth: number; fallback: boolean }> {
+  public static async getContainerHandler(
+    parsingContext: ParsingContext,
+    keys: any[],
+    depth: number,
+  ): Promise<{ containers: Record<string, boolean>; depth: number; fallback: boolean }> {
     const fallback = {
       containers: { '@set': true },
       depth,
@@ -92,30 +96,35 @@ export class EntryHandlerContainer implements IEntryHandler<{
     // Iterate from deeper to higher
     const context = await parsingContext.getContext(keys, 2);
     for (let i = depth - 1; i >= 0; i--) {
-      if (typeof keys[i] !== 'number') { // Skip array keys
+      // Skip array keys
+      if (typeof keys[i] !== 'number') {
         // @graph containers without any other types are one level less deep, and require special handling
-        const containersSelf = Util.getContextValue(context, '@container', keys[i], false);
-        if (containersSelf && EntryHandlerContainer.isSimpleGraphContainer(containersSelf)) {
+        // eslint-disable-next-line ts/no-unsafe-assignment
+        const containersSelf = Util.getContextValue(context, '@container', <string>keys[i], false);
+
+        if (containersSelf && EntryHandlerContainer.isSimpleGraphContainer(<Record<string, boolean>>containersSelf)) {
           return {
-            containers: containersSelf,
+            containers: <Record<string, boolean>>containersSelf,
             depth: i + 1,
             fallback: false,
           };
         }
 
-        const containersParent = Util.getContextValue(context, '@container', keys[i - 1], false);
+        // eslint-disable-next-line ts/no-unsafe-assignment
+        const containersParent = Util.getContextValue(context, '@container', <string>keys[i - 1], false);
         if (containersParent) {
           // We had an invalid container next iteration, so we now have to check if we were in an @graph container
-          const graphContainer = '@graph' in containersParent;
+
+          const graphContainer = '@graph' in <Record<string, boolean>>containersParent;
 
           // We're in a regular container
           for (const containerHandleName in EntryHandlerContainer.CONTAINER_HANDLERS) {
-            if (containersParent[containerHandleName]) {
+            if ((<Record<string, boolean>>containersParent)[containerHandleName]) {
               if (graphContainer) {
                 // Only accept graph containers if their combined handlers can handle them.
                 if (EntryHandlerContainer.CONTAINER_HANDLERS[containerHandleName].canCombineWithGraph()) {
                   return {
-                    containers: containersParent,
+                    containers: <Record<string, boolean>>containersParent,
                     depth: i,
                     fallback: false,
                   };
@@ -127,7 +136,7 @@ export class EntryHandlerContainer implements IEntryHandler<{
                 return fallback;
               }
               return {
-                containers: containersParent,
+                containers: <Record<string, boolean>>containersParent,
                 depth: i,
                 fallback: false,
               };
@@ -136,7 +145,8 @@ export class EntryHandlerContainer implements IEntryHandler<{
 
           // Fail if no valid container handlers were found
           return fallback;
-        } // If we have the fallback container value
+        }
+        // If we have the fallback container value
         if (checkGraphContainer) {
           // Return false if we were already expecting a @graph-@id of @graph-@index container
           return fallback;
@@ -177,12 +187,24 @@ export class EntryHandlerContainer implements IEntryHandler<{
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
+  public async validate(
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: any[],
+    depth: number,
+    _inProperty: boolean,
+  ): Promise<boolean> {
     return Boolean(await this.test(parsingContext, util, null, keys, depth));
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<{ containers: Record<string, boolean>; handler: IContainerHandler } | null> {
-    const containers = Util.getContextValueContainer(await parsingContext.getContext(keys, 2), keys[depth - 1]);
+  public async test(
+    parsingContext: ParsingContext,
+    _util: Util,
+    _key: any,
+    keys: any[],
+    depth: number,
+  ): Promise<{ containers: Record<string, boolean>; handler: IContainerHandler } | null> {
+    const containers = Util.getContextValueContainer(await parsingContext.getContext(keys, 2), <string>keys[depth - 1]);
     for (const containerName in EntryHandlerContainer.CONTAINER_HANDLERS) {
       if (containers[containerName]) {
         return {
@@ -194,7 +216,15 @@ export class EntryHandlerContainer implements IEntryHandler<{
     return null;
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number, testResult: { containers: Record<string, boolean>; handler: IContainerHandler }): Promise<any> {
-    return testResult.handler.handle(testResult.containers, parsingContext, util, keys, value, depth);
+  public async handle(
+    parsingContext: ParsingContext,
+    util: Util,
+    _key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+    testResult: { containers: Record<string, boolean>; handler: IContainerHandler },
+  ): Promise<any> {
+    return testResult.handler.handle(testResult.containers, parsingContext, util, <string[]>keys, value, depth);
   }
 }

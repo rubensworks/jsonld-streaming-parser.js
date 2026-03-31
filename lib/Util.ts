@@ -1,11 +1,17 @@
 import type * as RDF from '@rdfjs/types';
-import { ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized, Util as ContextUtil } from 'jsonld-context-parser';
+import {
+  ContextParser,
+  ERROR_CODES,
+  ErrorCoded,
+  JsonLdContextNormalized,
+  Util as ContextUtil,
+} from 'jsonld-context-parser';
 import { DataFactory } from 'rdf-data-factory';
 import { EntryHandlerContainer } from './entryhandler/EntryHandlerContainer';
 import type { AnnotationsBufferEntry, ParsingContext } from './ParsingContext';
 
-// Tslint:disable-next-line:no-var-requires
-const canonicalizeJson = require('canonicalize');
+// eslint-disable-next-line ts/no-require-imports, ts/no-unsafe-assignment
+const canonicalizeJson: (value: unknown) => string | undefined = require('canonicalize');
 
 /**
  * Utility functions and methods.
@@ -26,8 +32,9 @@ export class Util {
 
   private readonly parsingContext: ParsingContext;
 
-  constructor(options: { parsingContext: ParsingContext; dataFactory?: RDF.DataFactory<RDF.BaseQuad> }) {
+  public constructor(options: { parsingContext: ParsingContext; dataFactory?: RDF.DataFactory<RDF.BaseQuad> }) {
     this.parsingContext = options.parsingContext;
+    // eslint-disable-next-line ts/prefer-nullish-coalescing
     this.dataFactory = options.dataFactory || new DataFactory();
 
     this.rdfFirst = this.dataFactory.namedNode(`${Util.RDF}first`);
@@ -48,12 +55,20 @@ export class Util {
    * @return {string} The value of the given contextKey in the entry behind key in the given context,
    *                  or the given fallback value.
    */
-  public static getContextValue<FB>(context: JsonLdContextNormalized, contextKey: string, key: string, fallback: FB): string | any | FB {
+  public static getContextValue<TFB>(
+    context: JsonLdContextNormalized,
+    contextKey: string,
+    key: string,
+    fallback: TFB,
+  ): any {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const entry = context.getContextRaw()[key];
     if (!entry) {
       return fallback;
     }
-    const type = entry[contextKey];
+    // eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-member-access
+    const type = (<Record<string, unknown>>entry)[contextKey];
+    // eslint-disable-next-line ts/no-unsafe-return
     return type === undefined ? fallback : type;
   }
 
@@ -70,6 +85,7 @@ export class Util {
    */
   public static getContextValueContainer(context: JsonLdContextNormalized, key: string):
   Record<string, boolean> {
+    // eslint-disable-next-line ts/no-unsafe-return
     return Util.getContextValue(context, '@container', key, { '@set': true });
   }
 
@@ -80,10 +96,12 @@ export class Util {
    * @return {string} The node type.
    */
   public static getContextValueType(context: JsonLdContextNormalized, key: string): string | null {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const valueType = Util.getContextValue(context, '@type', key, null);
     if (valueType === '@none') {
       return null;
     }
+    // eslint-disable-next-line ts/no-unsafe-return
     return valueType;
   }
 
@@ -94,6 +112,7 @@ export class Util {
    * @return {string} The node type.
    */
   public static getContextValueLanguage(context: JsonLdContextNormalized, key: string): string | null {
+    // eslint-disable-next-line ts/no-unsafe-return, ts/prefer-nullish-coalescing
     return Util.getContextValue(context, '@language', key, context.getContextRaw()['@language'] || null);
   }
 
@@ -104,6 +123,7 @@ export class Util {
    * @return {string} The node type.
    */
   public static getContextValueDirection(context: JsonLdContextNormalized, key: string): string {
+    // eslint-disable-next-line ts/no-unsafe-return, ts/prefer-nullish-coalescing
     return Util.getContextValue(context, '@direction', key, context.getContextRaw()['@direction'] || null);
   }
 

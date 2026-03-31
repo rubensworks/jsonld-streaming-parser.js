@@ -67,6 +67,13 @@ module.exports = config([
           format: [ 'camelCase' ],
           leadingUnderscore: 'allow',
         },
+        {
+          // Allow leading underscore for unused parameters (required by unused-imports/no-unused-vars)
+          selector: 'parameter',
+          format: [ 'camelCase' ],
+          leadingUnderscore: 'allow',
+          trailingUnderscore: 'forbid',
+        },
       ],
     },
   },

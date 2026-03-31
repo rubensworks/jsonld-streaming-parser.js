@@ -7,15 +7,24 @@ import { EntryHandlerKeyword } from './EntryHandlerKeyword';
  * Handles @included entries.
  */
 export class EntryHandlerKeywordIncluded extends EntryHandlerKeyword {
-  constructor() {
+  public constructor() {
     super('@included');
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    util: Util,
+    _key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+  ): Promise<any> {
     if (typeof value !== 'object') {
       parsingContext.emitError(new ErrorCoded(`Found illegal @included '${value}'`, ERROR_CODES.INVALID_INCLUDED_VALUE));
     }
-    const valueUnliased = await util.unaliasKeywords(value, keys, depth, await parsingContext.getContext(keys));
+    const parentContext = await parsingContext.getContext(keys);
+    // eslint-disable-next-line ts/no-unsafe-argument
+    const valueUnliased = await util.unaliasKeywords(value, <string[]>keys, depth, <any>parentContext);
     if ('@value' in valueUnliased) {
       parsingContext.emitError(new ErrorCoded(`Found an illegal @included @value node '${JSON.stringify(value)}'`, ERROR_CODES.INVALID_INCLUDED_VALUE));
     }

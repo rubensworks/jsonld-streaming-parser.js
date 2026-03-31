@@ -7,7 +7,7 @@ import { EntryHandlerKeyword } from './EntryHandlerKeyword';
  * Handles @id entries.
  */
 export class EntryHandlerKeywordId extends EntryHandlerKeyword {
-  constructor() {
+  public constructor() {
     super('@id');
   }
 
@@ -15,11 +15,18 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
     return false;
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    util: Util,
+    _key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+  ): Promise<any> {
     if (typeof value !== 'string') {
       // JSON-LD-star allows @id object values
       if (parsingContext.rdfstar && typeof value === 'object') {
-        const valueKeys = Object.keys(value);
+        const valueKeys = Object.keys(<Record<string, unknown>>value);
         if (valueKeys.length === 1 && valueKeys[0] === '@id') {
           parsingContext.emitError(new ErrorCoded(`Invalid embedded node without property with @id ${value['@id']}`, ERROR_CODES.INVALID_EMBEDDED_NODE));
         }
@@ -58,6 +65,7 @@ export class EntryHandlerKeywordId extends EntryHandlerKeyword {
     }
 
     // Save our @id on the stack
+    // eslint-disable-next-line ts/await-thenable
     parsingContext.idStack[depthProperties] = util.nullableTermToArray(await util.resourceToTerm(
       await parsingContext.getContext(keys),
       value,

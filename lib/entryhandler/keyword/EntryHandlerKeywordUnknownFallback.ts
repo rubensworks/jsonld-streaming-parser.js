@@ -24,8 +24,15 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean): Promise<boolean> {
-    const key = await util.unaliasKeyword(keys[depth], keys, depth);
+  public async validate(
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: any[],
+    depth: number,
+    inProperty: boolean,
+  ): Promise<boolean> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
+    const key = await util.unaliasKeyword(<string>keys[depth], <string[]>keys, depth);
     if (ContextUtil.isPotentialKeyword(key)) {
       // Don't emit anything inside free-floating lists
       if (!inProperty && key === '@list') {
@@ -37,13 +44,27 @@ export class EntryHandlerKeywordUnknownFallback implements IEntryHandler<boolean
     return false;
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<boolean> {
+  public async test(
+    _parsingContext: ParsingContext,
+    _util: Util,
+    key: any,
+    _keys: any[],
+    _depth: number,
+  ): Promise<boolean> {
     return ContextUtil.isPotentialKeyword(key);
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number): Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    _util: Util,
+    key: any,
+    _keys: any[],
+    value: any,
+    depth: number,
+  ): Promise<any> {
     const keywordType = EntryHandlerKeywordUnknownFallback.VALID_KEYWORDS_TYPES[key];
     if (keywordType !== undefined) {
+      // eslint-disable-next-line valid-typeof
       if (keywordType && typeof value !== keywordType.type) {
         parsingContext.emitError(new ErrorCoded(`Invalid value type for '${key}' with value '${value}'`, keywordType.errorCode));
       }
