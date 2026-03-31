@@ -672,7 +672,8 @@ export class Util {
       this.parsingContext.emitQuad(depth, this.dataFactory.quad(valueNode, this.dataFactory.namedNode(`${Util.RDF}direction`), this.dataFactory.literal(direction), graph));
       return valueNode;
     }
-    return this.dataFactory.literal(value, { language: language || '', direction: <'ltr' | 'rtl' | ''> direction });
+    // eslint-disable-next-line ts/no-unsafe-argument
+    return this.dataFactory.literal(value, <any>{ language: language || '', direction: <'ltr' | 'rtl' | ''> direction });
   }
 
   /**
@@ -681,7 +682,8 @@ export class Util {
    * @return {string} A canonical JSON string.
    */
   public valueToJsonString(value: any): string {
-    return canonicalizeJson(value);
+    // eslint-disable-next-line ts/no-non-null-assertion
+    return canonicalizeJson(value)!;
   }
 
   /**
