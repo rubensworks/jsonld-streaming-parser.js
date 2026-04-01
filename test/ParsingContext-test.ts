@@ -420,6 +420,27 @@ describe('ParsingContext', () => {
           await parsingContext.getContext([ '', 'a', 'subKey' ]);
           expect(spy).toHaveBeenCalledTimes(1);
         });
+
+        describe('without @id in the context entry', () => {
+          beforeEach(() => {
+            parsingContext.contextTree.setContext([ '' ], Promise.resolve(new JsonLdContextNormalized({
+              '@vocab': 'http://vocab.main.org/',
+              a: {
+                '@context': {
+                  '@vocab': 'http://vocab.a.org/',
+                },
+              },
+            })));
+          });
+
+          it('should consider an applicable property without @id', async() => {
+            await expect(parsingContext.getContext([ '', 'a', 'subKey' ])).resolves
+              .toEqual(new JsonLdContextNormalized({
+                '@vocab': 'http://vocab.a.org/',
+                a: {},
+              }));
+          });
+        });
       });
 
       describe('for non-propagating property-scoped contexts', () => {
