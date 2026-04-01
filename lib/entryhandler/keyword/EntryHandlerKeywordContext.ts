@@ -1,14 +1,14 @@
-import {ERROR_CODES, ErrorCoded, JsonLdContextNormalized} from "jsonld-context-parser";
-import {ParsingContext} from "../../ParsingContext";
-import {Util} from "../../Util";
-import {EntryHandlerKeyword} from "./EntryHandlerKeyword";
+import type { JsonLdContextNormalized } from 'jsonld-context-parser';
+import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
+import type { ParsingContext } from '../../ParsingContext';
+import type { Util } from '../../Util';
+import { EntryHandlerKeyword } from './EntryHandlerKeyword';
 
 /**
  * Handles @context entries.
  */
 export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
-
-  constructor() {
+  public constructor() {
     super('@context');
   }
 
@@ -16,13 +16,19 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     return false;
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number)
-    : Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    _util: Util,
+    _key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+  ): Promise<any> {
     // Error if an out-of-order context was found when support is not enabled.
-    if (parsingContext.streamingProfile
-      && (parsingContext.processingStack[depth]
-        || parsingContext.processingType[depth]
-        || parsingContext.idStack[depth] !== undefined)) {
+    if (parsingContext.streamingProfile &&
+      (parsingContext.processingStack[depth] ||
+        parsingContext.processingType[depth] ||
+        parsingContext.idStack[depth] !== undefined)) {
       parsingContext.emitError(new ErrorCoded('Found an out-of-order context, while streaming is enabled.' +
         '(disable `streamingProfile`)', ERROR_CODES.INVALID_STREAMING_KEY_ORDER));
     }
@@ -33,10 +39,12 @@ export class EntryHandlerKeywordContext extends EntryHandlerKeyword {
     const parentContext: Promise<JsonLdContextNormalized> = parsingContext.getContext(keys);
 
     // Set the context for this scope
+    // eslint-disable-next-line ts/no-unsafe-argument
     const context = parsingContext.parseContext(value, (await parentContext).getContextRaw());
     parsingContext.contextTree.setContext(keys.slice(0, -1), context);
+    // eslint-disable-next-line ts/no-unsafe-argument
     parsingContext.emitContext(value);
+    // eslint-disable-next-line ts/await-thenable
     await parsingContext.validateContext(await context);
   }
-
 }

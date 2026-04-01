@@ -1,10 +1,11 @@
-import {EntryHandlerKeywordUnknownFallback} from "../../../lib/entryhandler/keyword/EntryHandlerKeywordUnknownFallback";
+/* eslint-disable max-len */
+import { EntryHandlerKeywordUnknownFallback } from '../../../lib/entryhandler/keyword/EntryHandlerKeywordUnknownFallback';
 
 describe('EntryHandlerKeywordUnknownFallback', () => {
   const handler = new EntryHandlerKeywordUnknownFallback();
 
   describe('isPropertyHandler', () => {
-    it('should return false', async () => {
+    it('should return false', async() => {
       expect(handler.isPropertyHandler()).toBe(false);
     });
   });

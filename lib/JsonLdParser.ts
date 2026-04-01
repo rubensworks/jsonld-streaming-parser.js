@@ -1,32 +1,34 @@
-import * as RDF from "@rdfjs/types";
-// tslint:disable-next-line:no-var-requires
-const Parser = require('@bergos/jsonparse');
-import {ERROR_CODES, ErrorCoded, IDocumentLoader, JsonLdContext, Util as ContextUtil} from "jsonld-context-parser";
-import {PassThrough, Transform, Readable} from "readable-stream";
-import {EntryHandlerArrayValue} from "./entryhandler/EntryHandlerArrayValue";
-import {EntryHandlerContainer} from "./entryhandler/EntryHandlerContainer";
-import {EntryHandlerInvalidFallback} from "./entryhandler/EntryHandlerInvalidFallback";
-import {EntryHandlerPredicate} from "./entryhandler/EntryHandlerPredicate";
-import {IEntryHandler} from "./entryhandler/IEntryHandler";
-import {EntryHandlerKeywordContext} from "./entryhandler/keyword/EntryHandlerKeywordContext";
-import {EntryHandlerKeywordGraph} from "./entryhandler/keyword/EntryHandlerKeywordGraph";
-import {EntryHandlerKeywordId} from "./entryhandler/keyword/EntryHandlerKeywordId";
-import {EntryHandlerKeywordIncluded} from "./entryhandler/keyword/EntryHandlerKeywordIncluded";
-import EventEmitter = NodeJS.EventEmitter;
-import {EntryHandlerKeywordNest} from "./entryhandler/keyword/EntryHandlerKeywordNest";
-import {EntryHandlerKeywordType} from "./entryhandler/keyword/EntryHandlerKeywordType";
-import {EntryHandlerKeywordUnknownFallback} from "./entryhandler/keyword/EntryHandlerKeywordUnknownFallback";
-import {EntryHandlerKeywordValue} from "./entryhandler/keyword/EntryHandlerKeywordValue";
-import {ParsingContext} from "./ParsingContext";
-import {Util} from "./Util";
-import {parse as parseLinkHeader} from "http-link-header";
+import type * as RDF from '@rdfjs/types';
+import { parse as parseLinkHeader } from 'http-link-header';
+import type { IDocumentLoader, JsonLdContext } from 'jsonld-context-parser';
+import { ERROR_CODES, ErrorCoded, Util as ContextUtil } from 'jsonld-context-parser';
+import type { Readable } from 'readable-stream';
+import { PassThrough, Transform } from 'readable-stream';
+import { EntryHandlerArrayValue } from './entryhandler/EntryHandlerArrayValue';
+import { EntryHandlerContainer } from './entryhandler/EntryHandlerContainer';
+import { EntryHandlerInvalidFallback } from './entryhandler/EntryHandlerInvalidFallback';
+import { EntryHandlerPredicate } from './entryhandler/EntryHandlerPredicate';
+import type { IEntryHandler } from './entryhandler/IEntryHandler';
 import { EntryHandlerKeywordAnnotation } from './entryhandler/keyword/EntryHandlerKeywordAnnotation';
+import { EntryHandlerKeywordContext } from './entryhandler/keyword/EntryHandlerKeywordContext';
+import { EntryHandlerKeywordGraph } from './entryhandler/keyword/EntryHandlerKeywordGraph';
+import { EntryHandlerKeywordId } from './entryhandler/keyword/EntryHandlerKeywordId';
+import { EntryHandlerKeywordIncluded } from './entryhandler/keyword/EntryHandlerKeywordIncluded';
+import { EntryHandlerKeywordNest } from './entryhandler/keyword/EntryHandlerKeywordNest';
+import { EntryHandlerKeywordType } from './entryhandler/keyword/EntryHandlerKeywordType';
+import { EntryHandlerKeywordUnknownFallback } from './entryhandler/keyword/EntryHandlerKeywordUnknownFallback';
+import { EntryHandlerKeywordValue } from './entryhandler/keyword/EntryHandlerKeywordValue';
+import { ParsingContext } from './ParsingContext';
+import { Util } from './Util';
+import EventEmitter = NodeJS.EventEmitter;
+
+// eslint-disable-next-line ts/no-require-imports, ts/no-var-requires, ts/no-unsafe-assignment, ts/naming-convention
+const Parser = require('@bergos/jsonparse');
 
 /**
  * A stream transformer that parses JSON-LD (text) streams to an {@link RDF.Stream}.
  */
 export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RDF.Stream> {
-
   public static readonly DEFAULT_PROCESSING_MODE: string = '1.1';
   public static readonly ENTRY_HANDLERS: IEntryHandler<any>[] = [
     new EntryHandlerArrayValue(),
@@ -52,9 +54,9 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   // Jobs that are not started yet that process a @context (only used if streamingProfile is false)
   private readonly contextJobs: (() => Promise<void>)[][];
   // Jobs that are not started yet that process a @type (only used if streamingProfile is false)
-  private readonly typeJobs: { job: () => Promise<void>, keys: string[] }[];
+  private readonly typeJobs: { job: () => Promise<void>; keys: string[] }[];
   // Jobs that are not started yet because of a missing @context or @type (only used if streamingProfile is false)
-  private readonly contextAwaitingJobs: { job: () => Promise<void>, keys: string[]; depth: number }[];
+  private readonly contextAwaitingJobs: { job: () => Promise<void>; keys: string[]; depth: number }[];
 
   // The last depth that was processed.
   private lastDepth: number;
@@ -63,13 +65,14 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
   // A promise representing the last job
   private lastOnValueJob: Promise<void>;
 
-  constructor(options?: IJsonLdParserOptions) {
+  public constructor(options?: IJsonLdParserOptions) {
     super({ readableObjectMode: true });
-    options = options || {};
+    options = options ?? {};
     this.options = options;
     this.parsingContext = new ParsingContext({ parser: this, ...options });
     this.util = new Util({ dataFactory: options.dataFactory, parsingContext: this.parsingContext });
 
+    // eslint-disable-next-line ts/no-unsafe-assignment
     this.jsonParser = new Parser();
     this.contextJobs = [];
     this.typeJobs = [];
@@ -83,9 +86,9 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
 
     this.on('end', () => {
       if (typeof this.jsonParser.mode !== 'undefined') {
-        this.emit('error', new Error('Unclosed document'))
+        this.emit('error', new Error('Unclosed document'));
       }
-    })
+    });
   }
 
   /**
@@ -103,10 +106,14 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @param headers Optional HTTP headers.
    * @param options Optional parser options.
    */
-  public static fromHttpResponse(baseIRI: string, mediaType: string,
-                                 headers?: Headers, options?: IJsonLdParserOptions): JsonLdParser {
+  public static fromHttpResponse(
+    baseIRI: string,
+    mediaType: string,
+    headers?: Headers,
+    options?: IJsonLdParserOptions,
+  ): JsonLdParser {
     let context: JsonLdContext | undefined;
-    let wellKnownMediaTypes = ['application/activity+json'];
+    let wellKnownMediaTypes = [ 'application/activity+json' ];
     if (options && options.wellKnownMediaTypes) {
       wellKnownMediaTypes = options.wellKnownMediaTypes;
     }
@@ -114,28 +121,25 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     if (mediaType !== 'application/ld+json' && !wellKnownMediaTypes.includes(mediaType)) {
       // Only accept JSON or JSON extension types
       if (mediaType !== 'application/json' && !mediaType.endsWith('+json')) {
-        throw new ErrorCoded(`Unsupported JSON-LD media type ${mediaType}`,
-          ERROR_CODES.LOADING_DOCUMENT_FAILED);
+        throw new ErrorCoded(`Unsupported JSON-LD media type ${mediaType}`, ERROR_CODES.LOADING_DOCUMENT_FAILED);
       }
 
       // We need exactly one JSON-LD context in the link header
       if (headers && headers.has('Link')) {
-        headers.forEach((value, key) => {
+        for (const [ key, value ] of headers.entries()) {
           if (key === 'link') {
             const linkHeader = parseLinkHeader(value);
             for (const link of linkHeader.get('rel', 'http://www.w3.org/ns/json-ld#context')) {
               if (context) {
-                throw new ErrorCoded('Multiple JSON-LD context link headers were found on ' + baseIRI,
-                  ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS);
+                throw new ErrorCoded(`Multiple JSON-LD context link headers were found on ${baseIRI}`, ERROR_CODES.MULTIPLE_CONTEXT_LINK_HEADERS);
               }
               context = link.uri;
             }
           }
-        });
+        }
       }
       if (!context && !options?.ignoreMissingContextLinkHeader) {
-        throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`,
-          ERROR_CODES.LOADING_DOCUMENT_FAILED);
+        throw new ErrorCoded(`Missing context link header for media type ${mediaType} on ${baseIRI}`, ERROR_CODES.LOADING_DOCUMENT_FAILED);
       }
     }
 
@@ -143,7 +147,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     let streamingProfile: boolean | undefined;
     if (headers && headers.has('Content-Type')) {
       const contentType = <string> headers.get('Content-Type');
-      const match = /; *profile=([^"]*)/.exec(contentType);
+      const match = /; *profile=([^"]*)/u.exec(contentType);
       if (match && match[1] === 'http://www.w3.org/ns/json-ld#streaming') {
         streamingProfile = true;
       }
@@ -153,7 +157,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       baseIRI,
       context,
       streamingProfile,
-      ... options ? options : {},
+      ...options,
     });
   }
 
@@ -163,24 +167,24 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @return {RDF.Stream} A quad stream.
    */
   public import(stream: EventEmitter): RDF.Stream {
-    if('pipe' in stream) {
-      stream.on('error', (error) => parsed.emit('error', error));
+    if ('pipe' in stream) {
+      stream.on('error', error => parsed.emit('error', error));
       const parsed = (<Readable>stream).pipe(new JsonLdParser(this.options));
       return parsed;
-    } else {
-      const output = new PassThrough({ readableObjectMode: true });
-      stream.on('error', (error) => parsed.emit('error', error));
-      stream.on('data', (data) => output.push(data));
-      stream.on('end', () => output.push(null));
-      const parsed = output.pipe(new JsonLdParser(this.options));
-      return parsed;
     }
+    const output = new PassThrough({ readableObjectMode: true });
+    stream.on('error', error => parsed.emit('error', error));
+    stream.on('data', data => output.push(data));
+    stream.on('end', () => output.push(null));
+    const parsed = output.pipe(new JsonLdParser(this.options));
+    return parsed;
   }
 
   public _transform(chunk: any, encoding: string, callback: (error?: Error | null, data?: any) => void): void {
     this.jsonParser.write(chunk);
     this.lastOnValueJob
-      .then(() => callback(), (error) => callback(error));
+      .then(() => callback(), // eslint-disable-next-line ts/no-unsafe-argument
+        error => callback(error));
   }
 
   /**
@@ -194,8 +198,8 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @param {boolean} lastDepthCheck If the lastDepth check should be done for buffer draining.
    * @return {Promise<void>} A promise resolving when the job is done.
    */
-  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean) {
-    let flushStacks: boolean = true;
+  public async newOnValueJob(keys: any[], value: any, depth: number, lastDepthCheck: boolean): Promise<void> {
+    let flushStacks = true;
 
     // When we go up the stack, emit all unidentified values
     // We need to do this before the new job, because the new job may require determined values from the flushed jobs.
@@ -205,8 +209,12 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       if (listPointer) {
         // Terminate the list if the had at least one value
         if (listPointer.value) {
-          this.push(this.util.dataFactory.quad(listPointer.value, this.util.rdfRest, this.util.rdfNil,
-            this.util.getDefaultGraph()));
+          this.push(this.util.dataFactory.quad(
+            listPointer.value,
+            this.util.rdfRest,
+            this.util.rdfNil,
+            this.util.getDefaultGraph(),
+          ));
         }
 
         // Add the list id to the id stack, so it can be used higher up in the stack
@@ -218,7 +226,11 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
 
       // Flush the buffer for lastDepth
       // If the parent key is a special type of container, postpone flushing until that parent is handled.
-      if (await EntryHandlerContainer.isBufferableContainerHandler(this.parsingContext, this.lastKeys, this.lastDepth)) {
+      if (await EntryHandlerContainer.isBufferableContainerHandler(
+        this.parsingContext,
+        this.lastKeys,
+        this.lastDepth,
+      )) {
         this.parsingContext.pendingContainerFlushBuffers
           .push({ depth: this.lastDepth, keys: this.lastKeys.slice(0, this.lastKeys.length) });
         flushStacks = false;
@@ -227,26 +239,27 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       }
     }
 
+    // eslint-disable-next-line ts/no-unsafe-assignment, ts/no-unsafe-argument
     const key = await this.util.unaliasKeyword(keys[depth], keys, depth);
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const parentKey = await this.util.unaliasKeywordParent(keys, depth);
     this.parsingContext.emittedStack[depth] = true;
     let handleKey = true;
 
     // Keywords inside @reverse is not allowed apart from @context
     if (ContextUtil.isValidKeyword(key) && parentKey === '@reverse' && key !== '@context') {
-      this.emit('error', new ErrorCoded(`Found the @id '${value}' inside an @reverse property`,
-          ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
+      this.emit('error', new ErrorCoded(`Found the @id '${value}' inside an @reverse property`, ERROR_CODES.INVALID_REVERSE_PROPERTY_MAP));
     }
 
     // Skip further processing if one of the parent nodes are invalid.
     // We use the validationStack to reuse validation results that were produced before with common key stacks.
-    let inProperty: boolean = false;
+    let inProperty = false;
     if (this.parsingContext.validationStack.length > 1) {
-      inProperty = this.parsingContext.validationStack[this.parsingContext.validationStack.length - 1].property;
+      inProperty = this.parsingContext.validationStack.at(-1)!.property;
     }
     for (let i = Math.max(1, this.parsingContext.validationStack.length - 1); i < keys.length - 1; i++) {
-      const validationResult = this.parsingContext.validationStack[i]
-        || (this.parsingContext.validationStack[i] = await this.validateKey(keys.slice(0, i + 1), i, inProperty));
+      const validationResult = this.parsingContext.validationStack[i] ||
+        (this.parsingContext.validationStack[i] = await this.validateKey(keys.slice(0, i + 1), i, inProperty));
       if (!validationResult.valid) {
         this.parsingContext.emittedStack[depth] = false;
         handleKey = false;
@@ -264,6 +277,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     // Get handler
     if (handleKey) {
       for (const entryHandler of JsonLdParser.ENTRY_HANDLERS) {
+        // eslint-disable-next-line ts/no-unsafe-assignment
         const testResult = await entryHandler.test(this.parsingContext, this.util, key, keys, depth);
         if (testResult) {
           // Pass processing over to the handler
@@ -300,7 +314,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * Flush the processing stacks at the given depth.
    * @param {number} depth A depth.
    */
-  public flushStacks(depth: number) {
+  public flushStacks(depth: number): void {
     this.parsingContext.processingStack.splice(depth, 1);
     this.parsingContext.processingType.splice(depth, 1);
     this.parsingContext.emittedStack.splice(depth, 1);
@@ -323,34 +337,43 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @param {any[]} keys A stack of keys.
    * @return {Promise<void>} A promise resolving if flushing is done.
    */
-  public async flushBuffer(depth: number, keys: any[]) {
+  public async flushBuffer(depth: number, keys: any[]): Promise<void> {
     let subjects: RDF.Term[] = this.parsingContext.idStack[depth];
-    const subjectsWasDefined = !!subjects;
+    const subjectsWasDefined = Boolean(subjects);
     if (!subjectsWasDefined) {
       subjects = this.parsingContext.idStack[depth] = [ this.util.dataFactory.blankNode() ];
     }
 
     // Flush values at this level
-    const valueBuffer: { predicate: RDF.Term, object: RDF.Term, reverse: boolean, isEmbedded: boolean }[] =
+    const valueBuffer: { predicate: RDF.Term; object: RDF.Term; reverse: boolean; isEmbedded: boolean }[] =
       this.parsingContext.unidentifiedValuesBuffer[depth];
     if (valueBuffer) {
       for (const subject of subjects) {
         const depthOffsetGraph = await this.util.getDepthOffsetGraph(depth, keys);
-        const graphs: RDF.Term[] = (this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0)
-          ? this.parsingContext.idStack[depth - depthOffsetGraph - 1]
-          : [ await this.util.getGraphContainerValue(keys, depth) ];
+        const graphs: RDF.Term[] = (this.parsingContext.graphStack[depth] || depthOffsetGraph >= 0) ?
+          this.parsingContext.idStack[depth - depthOffsetGraph - 1] :
+            [ await this.util.getGraphContainerValue(keys, depth) ];
         if (graphs) {
           for (const graph of graphs) {
             // Flush values to stream if the graph @id is known
             this.parsingContext.emittedStack[depth] = true;
             for (const bufferedValue of valueBuffer) {
-              this.util.emitQuadChecked(depth, subject, bufferedValue.predicate, bufferedValue.object, graph, bufferedValue.reverse, bufferedValue.isEmbedded);
+              this.util.emitQuadChecked(
+                depth,
+                subject,
+                bufferedValue.predicate,
+                bufferedValue.object,
+                graph,
+                bufferedValue.reverse,
+                bufferedValue.isEmbedded,
+              );
             }
           }
         } else {
           // Place the values in the graphs buffer if the graph @id is not yet known
           const subGraphBuffer = this.parsingContext.getUnidentifiedGraphBufferSafe(
-            depth - await this.util.getDepthOffsetGraph(depth, keys) - 1);
+            depth - await this.util.getDepthOffsetGraph(depth, keys) - 1,
+          );
           for (const bufferedValue of valueBuffer) {
             if (bufferedValue.reverse) {
               subGraphBuffer.push({
@@ -376,19 +399,25 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     }
 
     // Flush graphs at this level
-    const graphBuffer: { subject: RDF.Term, predicate: RDF.Term, object: RDF.Term }[] =
+    const graphBuffer: { subject: RDF.Term; predicate: RDF.Term; object: RDF.Term }[] =
       this.parsingContext.unidentifiedGraphsBuffer[depth];
     if (graphBuffer) {
       for (const subject of subjects) {
         // A @graph statement at the root without @id relates to the default graph,
         // unless there are top-level properties,
         // others relate to blank nodes.
-        const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode'
-        && !this.parsingContext.topLevelProperties ? this.util.getDefaultGraph() : subject;
+        const graph: RDF.Term = depth === 1 && subject.termType === 'BlankNode' &&
+        !this.parsingContext.topLevelProperties ?
+          this.util.getDefaultGraph() :
+          subject;
         this.parsingContext.emittedStack[depth] = true;
         for (const bufferedValue of graphBuffer) {
           this.parsingContext.emitQuad(depth, this.util.dataFactory.quad(
-            bufferedValue.subject, bufferedValue.predicate, bufferedValue.object, graph));
+            bufferedValue.subject,
+            bufferedValue.predicate,
+            bufferedValue.object,
+            graph,
+          ));
         }
       }
       this.parsingContext.unidentifiedGraphsBuffer.splice(depth, 1);
@@ -399,8 +428,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     if (annotationsBuffer) {
       // Throw an error if we reach the top, and still have annotations
       if (annotationsBuffer.length > 0 && depth === 1) {
-        this.parsingContext.emitError(new ErrorCoded(`Annotations can not be made on top-level nodes`,
-          ERROR_CODES.INVALID_ANNOTATION));
+        this.parsingContext.emitError(new ErrorCoded(`Annotations can not be made on top-level nodes`, ERROR_CODES.INVALID_ANNOTATION));
       }
 
       // Pass the annotations buffer up one level in the stack
@@ -419,8 +447,11 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @param {boolean} inProperty If the current depth is part of a valid property node.
    * @return {Promise<{ valid: boolean, property: boolean }>} A promise resolving to true or false.
    */
-  protected async validateKey(keys: any[], depth: number, inProperty: boolean)
-    : Promise<{ valid: boolean, property: boolean }> {
+  protected async validateKey(
+    keys: any[],
+    depth: number,
+    inProperty: boolean,
+  ): Promise<{ valid: boolean; property: boolean }> {
     for (const entryHandler of JsonLdParser.ENTRY_HANDLERS) {
       if (await entryHandler.validate(this.parsingContext, this.util, keys, depth, inProperty)) {
         return { valid: true, property: inProperty || entryHandler.isPropertyHandler() };
@@ -434,18 +465,24 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    *
    * This should only be called once.
    */
-  protected attachJsonParserListeners() {
+  protected attachJsonParserListeners(): void {
     // Listen to json parser events
     this.jsonParser.onValue = (value: any) => {
+      // eslint-disable-next-line ts/no-unsafe-assignment
       const depth = this.jsonParser.stack.length;
-      const keys = (new Array(depth + 1).fill(0)).map((v, i) => {
-        return i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key;
-      });
+      // Don't parse inner nodes inside @context
+      // eslint-disable-next-line ts/no-unsafe-assignment
+      const keys = Array.from({ length: depth + 1 }, (v, i) =>
+        // eslint-disable-next-line ts/no-unsafe-return
+        i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key);
 
-      if (!this.isParsingContextInner(depth)) { // Don't parse inner nodes inside @context
-        const valueJobCb = () => this.newOnValueJob(keys, value, depth, true);
-        if (!this.parsingContext.streamingProfile
-          && !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
+      // eslint-disable-next-line ts/no-unsafe-argument
+      if (!this.isParsingContextInner(depth)) {
+        // eslint-disable-next-line ts/no-unsafe-argument
+        const valueJobCb = (): Promise<void> => this.newOnValueJob(keys, value, depth, true);
+        if (!this.parsingContext.streamingProfile &&
+          // eslint-disable-next-line ts/no-unsafe-argument
+          !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
           // If an out-of-order context is allowed,
           // we have to buffer everything.
           // We store jobs for @context's and @type's separately,
@@ -458,6 +495,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
             }
             jobs.push(valueJobCb);
           } else {
+            // eslint-disable-next-line ts/no-unsafe-assignment
             this.contextAwaitingJobs.push({ job: valueJobCb, keys, depth });
           }
         } else {
@@ -482,7 +520,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * @param {number} depth A depth.
    * @return {boolean} A boolean.
    */
-  protected isParsingContextInner(depth: number) {
+  protected isParsingContextInner(depth: number): boolean {
     for (let i = depth; i > 0; i--) {
       if (this.jsonParser.stack[i - 1].key === '@context') {
         return true;
@@ -495,7 +533,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
    * Execute all buffered jobs.
    * @return {Promise<void>} A promise resolving if all jobs are finished.
    */
-  protected async executeBufferedJobs() {
+  protected async executeBufferedJobs(): Promise<void> {
     // Handle context jobs
     for (const jobs of this.contextJobs) {
       if (jobs) {
@@ -508,15 +546,22 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
     // Clear the keyword cache.
     this.parsingContext.unaliasedKeywordCacheStack.splice(0);
 
-    const contextAwaitingJobs: { job: () => Promise<void>, keys: string[]; depth: number }[] = [];
+    const contextAwaitingJobs: { job: () => Promise<void>; keys: string[]; depth: number }[] = [];
 
     for (const job of this.contextAwaitingJobs) {
-      if ((await this.util.unaliasKeyword(job.keys[job.depth], job.keys, job.depth, true)) === '@type'
-      || typeof job.keys[job.depth] === 'number' && (await this.util.unaliasKeyword(job.keys[job.depth - 1], job.keys, job.depth - 1, true)) === '@type') { // Also capture @type with array values
+      // Also capture @type with array values
+      if ((await this.util.unaliasKeyword(job.keys[job.depth], job.keys, job.depth, true)) === '@type' ||
+        (typeof job.keys[job.depth] === 'number' &&
+          (await this.util.unaliasKeyword(
+            job.keys[job.depth - 1],
+            job.keys,
+            job.depth - 1,
+            true,
+          )) === '@type')) {
         // Remove @type from keys, because we want it to apply to parent later on
-        this.typeJobs.push({ job: job.job, keys: job.keys.slice(0, job.keys.length - 1) })
+        this.typeJobs.push({ job: job.job, keys: job.keys.slice(0, -1) });
       } else {
-        contextAwaitingJobs.push(job)
+        contextAwaitingJobs.push(job);
       }
     }
 
@@ -526,7 +571,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       // We check all possible parent nodes for the current job, from root to leaves.
       if (this.typeJobs.length > 0) {
         // First collect all applicable type jobs
-        const applicableTypeJobs: { job: () => Promise<void>, keys: string[] }[] = [];
+        const applicableTypeJobs: { job: () => Promise<void>; keys: string[] }[] = [];
         const applicableTypeJobIds: number[] = [];
         for (let i = 0; i < this.typeJobs.length; i++) {
           const typeJob = this.typeJobs[i];
@@ -546,7 +591,7 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
 
         // Remove the executed type jobs
         // Sort first, so we can efficiently splice
-        const sortedApplicableTypeJobIds = applicableTypeJobIds.sort().reverse();
+        const sortedApplicableTypeJobIds = applicableTypeJobIds.sort((a, b) => a - b).reverse();
         for (const jobId of sortedApplicableTypeJobIds) {
           this.typeJobs.splice(jobId, 1);
         }

@@ -38,7 +38,6 @@ _or_
 const JsonLdParser = require("jsonld-streaming-parser").JsonLdParser;
 ```
 
-
 ## Usage
 
 `JsonLdParser` is a Node [Transform stream](https://nodejs.org/api/stream.html#stream_class_stream_transform)
@@ -147,7 +146,7 @@ which may or may not contain a custom header-defined context:
 const myParser = JsonLdParser.fromHttpResponse(
   'http://example.org/my-file.json', // For example: response.url
   'application/json', // For example: headers.get('content-type')
-  new Headers({ 'Link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }), // Optional: WHATWG Headers 
+  new Headers({ 'Link': '<my-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"' }), // Optional: WHATWG Headers
   {}, // Optional: Any options you want to pass to the parser
 );
 

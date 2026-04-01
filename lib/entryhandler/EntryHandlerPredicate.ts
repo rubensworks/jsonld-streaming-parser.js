@@ -1,15 +1,14 @@
-import {ERROR_CODES, ErrorCoded} from "jsonld-context-parser";
-import * as RDF from "@rdfjs/types";
-import { AnnotationsBufferEntry, ParsingContext } from "../ParsingContext";
-import {Util} from "../Util";
-import {IEntryHandler} from "./IEntryHandler";
+import type * as RDF from '@rdfjs/types';
+import { ERROR_CODES, ErrorCoded } from 'jsonld-context-parser';
+import type { AnnotationsBufferEntry, ParsingContext } from '../ParsingContext';
+import { Util } from '../Util';
+import type { IEntryHandler } from './IEntryHandler';
 
 /**
  * Interprets keys as predicates.
  * The most common case in JSON-LD processing.
  */
 export class EntryHandlerPredicate implements IEntryHandler<boolean> {
-
   /**
    * Handle the given predicate-object by either emitting it,
    * or by placing it in the appropriate stack for later emission when no @graph and/or @id has been defined.
@@ -24,9 +23,17 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
    * @param {boolean} isAnnotation If the property exists in an annotation object.
    * @return {Promise<void>} A promise resolving when handling is done.
    */
-  public static async handlePredicateObject(parsingContext: ParsingContext, util: Util, keys: any[], depth: number,
-                                            predicate: RDF.Term, object: RDF.Term,
-                                            reverse: boolean, isEmbedded: boolean, isAnnotation: boolean) {
+  public static async handlePredicateObject(
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: string[],
+    depth: number,
+    predicate: RDF.Term,
+    object: RDF.Term,
+    reverse: boolean,
+    isEmbedded: boolean,
+    isAnnotation: boolean,
+  ): Promise<void> {
     const depthProperties: number = await util.getPropertiesDepth(keys, depth);
     const depthOffsetGraph = await util.getDepthOffsetGraph(depth, keys);
     const depthPropertiesGraph: number = depth - depthOffsetGraph;
@@ -44,16 +51,15 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
               // Emit our quad if graph @id is known
               util.emitQuadChecked(depth, subject, predicate, object, graph, reverse, isEmbedded);
             }
-          } else {
+          } else if (reverse) {
             // Buffer our triple if graph @id is not known yet.
-            if (reverse) {
-              util.validateReverseSubject(object);
-              parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
-                {subject: object, predicate, object: subject, isEmbedded });
-            } else {
-              parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
-                .push({subject, predicate, object, isEmbedded});
-            }
+            util.validateReverseSubject(object);
+            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1).push(
+              { subject: object, predicate, object: subject, isEmbedded },
+            );
+          } else {
+            parsingContext.getUnidentifiedGraphBufferSafe(depthPropertiesGraph - 1)
+              .push({ subject, predicate, object, isEmbedded });
           }
         } else {
           // Emit if no @graph was applicable
@@ -73,21 +79,28 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
         if (parsingContext.rdfstar) {
           // Error if an @id was defined
           if (parsingContext.idStack[depth]) {
-            parsingContext.emitError(new ErrorCoded(`Found an illegal @id inside an annotation: ${parsingContext.idStack[depth][0].value}`,
-              ERROR_CODES.INVALID_ANNOTATION));
+            parsingContext.emitError(new ErrorCoded(
+              `Found an illegal @id inside an annotation: ${parsingContext.idStack[depth][0].value}`,
+              ERROR_CODES.INVALID_ANNOTATION,
+            ));
           }
 
           // Error if we're in an embedded node
           for (let i = 0; i < depth; i++) {
             if (await util.unaliasKeyword(keys[i], keys, i) === '@id') {
-              parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside an embedded node`,
-                ERROR_CODES.INVALID_ANNOTATION));
+              parsingContext.emitError(new ErrorCoded(`Found an illegal annotation inside an embedded node`, ERROR_CODES.INVALID_ANNOTATION));
             }
           }
 
           // Store new annotation in the buffer
           const annotationsBuffer = parsingContext.getAnnotationsBufferSafe(depthProperties);
-          const newAnnotation: AnnotationsBufferEntry = { predicate, object, reverse, nestedAnnotations: [], depth: depthProperties };
+          const newAnnotation: AnnotationsBufferEntry = {
+            predicate,
+            object,
+            reverse,
+            nestedAnnotations: [],
+            depth: depthProperties,
+          };
           annotationsBuffer.push(newAnnotation);
 
           // Check in the buffer if any annotations were defined at a deeper depth,
@@ -115,14 +128,23 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     return true;
   }
 
-  public async validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
-    : Promise<boolean> {
+  public async validate(
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: any[],
+    depth: number,
+    _inProperty: boolean,
+  ): Promise<boolean> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const key = keys[depth];
     if (key) {
       const context = await parsingContext.getContext(keys);
-      if (!parsingContext.jsonLiteralStack[depth] && await util.predicateToTerm(context, keys[depth])) {
+
+      // eslint-disable-next-line ts/await-thenable
+      if (!parsingContext.jsonLiteralStack[depth] && await util.predicateToTerm(context, <string>keys[depth])) {
         // If this valid predicate is of type @json, mark it so in the stack so that no deeper handling of nodes occurs.
-        if (Util.getContextValueType(context, key) === '@json') {
+
+        if (Util.getContextValueType(context, <string>key) === '@json') {
           parsingContext.jsonLiteralStack[depth + 1] = true;
         }
         return true;
@@ -131,24 +153,41 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
     return false;
   }
 
-  public async test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number)
-    : Promise<boolean> {
+  public async test(
+    _parsingContext: ParsingContext,
+    _util: Util,
+    _key: any,
+    keys: any[],
+    depth: number,
+  ): Promise<boolean> {
+    // eslint-disable-next-line ts/no-unsafe-return
     return keys[depth];
   }
 
-  public async handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number,
-                      testResult: boolean): Promise<any> {
+  public async handle(
+    parsingContext: ParsingContext,
+    util: Util,
+    key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+    _testResult: boolean,
+  ): Promise<any> {
+    // eslint-disable-next-line ts/no-unsafe-assignment
     const keyOriginal = keys[depth];
     const context = await parsingContext.getContext(keys);
 
-    const predicate = await util.predicateToTerm(context, key);
+    // eslint-disable-next-line ts/await-thenable
+    const predicate = await util.predicateToTerm(context, <string>key);
     if (predicate) {
-      const objects = await util.valueToTerm(context, key, value, depth, keys);
-      if (objects.length) {
+      const objects = await util.valueToTerm(context, <string>key, value, depth, <string[]>keys);
+      if (objects.length > 0) {
         for (let object of objects) {
           // Based on parent key, check if reverse, embedded, and annotation.
-          let parentKey = await util.unaliasKeywordParent(keys, depth);
-          const reverse = Util.isPropertyReverse(context, keyOriginal, parentKey);
+          // eslint-disable-next-line ts/no-unsafe-assignment
+          let parentKey = await util.unaliasKeywordParent(<string[]>keys, depth);
+
+          const reverse = Util.isPropertyReverse(context, <string>keyOriginal, <string>parentKey);
           let parentDepthOffset = 0;
           while (parentKey === '@reverse' || typeof parentKey === 'number') {
             // Check parent of parent when checking while we're in an array or in @reverse
@@ -157,41 +196,57 @@ export class EntryHandlerPredicate implements IEntryHandler<boolean> {
             } else {
               depth--;
             }
-            parentKey = await util.unaliasKeywordParent(keys, depth - parentDepthOffset);
+            // eslint-disable-next-line ts/no-unsafe-assignment
+            parentKey = await util.unaliasKeywordParent(<string[]>keys, depth - parentDepthOffset);
           }
-          const isEmbedded = Util.isPropertyInEmbeddedNode(parentKey);
-          util.validateReverseInEmbeddedNode(key, reverse, isEmbedded);
-          const isAnnotation = Util.isPropertyInAnnotationObject(parentKey);
+
+          const isEmbedded = Util.isPropertyInEmbeddedNode(<string>parentKey);
+
+          util.validateReverseInEmbeddedNode(<string>key, reverse, isEmbedded);
+
+          const isAnnotation = Util.isPropertyInAnnotationObject(<string>parentKey);
 
           if (value) {
             // Special case if our term was defined as an @list, but does not occur in an array,
             // In that case we just emit it as an RDF list with a single element.
-            const listValueContainer = '@list' in Util.getContextValueContainer(context, key);
+
+            const listValueContainer = '@list' in Util.getContextValueContainer(context, <string>key);
             if (listValueContainer || value['@list']) {
-              if (((listValueContainer && !Array.isArray(value) && !value['@list'])
-                || (value['@list'] && !Array.isArray(value['@list'])))
-                && object !== util.rdfNil) {
+              if (((listValueContainer && !Array.isArray(value) && !value['@list']) ||
+                (value['@list'] && !Array.isArray(value['@list']))) &&
+                object !== util.rdfNil) {
                 const listPointer: RDF.Term = util.dataFactory.blankNode();
-                parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil,
-                  util.getDefaultGraph()));
-                parsingContext.emitQuad(depth, util.dataFactory.quad(listPointer, util.rdfFirst, object,
-                  util.getDefaultGraph()));
+                parsingContext.emitQuad(
+                  depth,
+                  util.dataFactory.quad(listPointer, util.rdfRest, util.rdfNil, util.getDefaultGraph()),
+                );
+                parsingContext.emitQuad(
+                  depth,
+                  util.dataFactory.quad(listPointer, util.rdfFirst, object, util.getDefaultGraph()),
+                );
                 object = listPointer;
               }
 
               // Lists are not allowed in @reverse'd properties
               if (reverse && !parsingContext.allowSubjectList) {
-                throw new ErrorCoded(`Found illegal list value in subject position at ${key}`,
-                  ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE);
+                throw new ErrorCoded(`Found illegal list value in subject position at ${key}`, ERROR_CODES.INVALID_REVERSE_PROPERTY_VALUE);
               }
             }
           }
 
-          await EntryHandlerPredicate.handlePredicateObject(parsingContext, util, keys, depth,
-            predicate, object, reverse, isEmbedded, isAnnotation);
+          await EntryHandlerPredicate.handlePredicateObject(
+            parsingContext,
+            util,
+<string[]>keys,
+depth,
+predicate,
+object,
+reverse,
+isEmbedded,
+isAnnotation,
+          );
         }
       }
     }
   }
-
 }

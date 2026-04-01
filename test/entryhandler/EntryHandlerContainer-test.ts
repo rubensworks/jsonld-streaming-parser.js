@@ -1,13 +1,14 @@
-import {JsonLdContextNormalized} from "jsonld-context-parser";
-import {EntryHandlerContainer} from "../../lib/entryhandler/EntryHandlerContainer";
-import {Util} from "../../lib/Util";
-import {ParsingContextMocked} from "../../mocks/ParsingContextMocked";
-import { ParsingContext } from '../../lib/ParsingContext';
+import { JsonLdContextNormalized } from 'jsonld-context-parser';
+import { EntryHandlerContainer } from '../../lib/entryhandler/EntryHandlerContainer';
+import type { ParsingContext } from '../../lib/ParsingContext';
+import { Util } from '../../lib/Util';
+import { ParsingContextMocked } from '../../mocks/ParsingContextMocked';
 
 describe('EntryHandlerContainer', () => {
   const handler = new EntryHandlerContainer();
 
   let parsingContext: ParsingContext;
+  // eslint-disable-next-line unused-imports/no-unused-vars
   let util: Util;
 
   beforeEach(() => {
@@ -71,60 +72,60 @@ describe('EntryHandlerContainer', () => {
 
   describe('getContainerGraphIndex', () => {
     it('should return for @graph without arrays', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true}, 2, [null, 'cont', 'key']))
-        .toEqual('');
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true }, 2, [ null, 'cont', 'key' ]))
+        .toBe('');
     });
 
     it('should return for @graph with one array', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true}, 2, [null, 'cont', 0, 'key']))
-        .toEqual(':0');
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true }, 2, [ null, 'cont', 0, 'key' ]))
+        .toBe(':0');
     });
 
     it('should return for @graph with arrays', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true}, 2, [null, 'cont', 0, 1, 0, 'key']))
-        .toEqual(':0:1:0');
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true }, 2, [ null, 'cont', 0, 1, 0, 'key' ]))
+        .toBe(':0:1:0');
     });
 
     it('should return for @graph-@id without arrays', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 'id']))
-        .toEqual(':id');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 'id' ]))
+        .toBe(':id');
     });
 
     it('should return for @graph-@id with one array after id', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 'id', 0]))
-        .toEqual(':id:0');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 'id', 0 ]))
+        .toBe(':id:0');
     });
 
     it('should return for @graph-@id with arrays after id', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 'id', 0, 1, 0]))
-        .toEqual(':id:0:1:0');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 'id', 0, 1, 0 ]))
+        .toBe(':id:0:1:0');
     });
 
     it('should return for @graph-@id with one array before id', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 0, 'id']))
-        .toEqual(':0:id');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 0, 'id' ]))
+        .toBe(':0:id');
     });
 
     it('should return for @graph-@id with arrays before id', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 0, 1, 0, 'id']))
-        .toEqual(':0:1:0:id');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 0, 1, 0, 'id' ]))
+        .toBe(':0:1:0:id');
     });
 
     it('should return for @graph-@id with arrays before and after id', () => {
-      expect(EntryHandlerContainer.getContainerGraphIndex({'@graph': true, '@id': true}, 3,
-        [null, 'cont', 'graph', 0, 1, 0, 'id', 0, 1, 0]))
-        .toEqual(':0:1:0:id:0:1:0');
+      // eslint-disable-next-line max-len
+      expect(EntryHandlerContainer.getContainerGraphIndex({ '@graph': true, '@id': true }, 3, [ null, 'cont', 'graph', 0, 1, 0, 'id', 0, 1, 0 ]))
+        .toBe(':0:1:0:id:0:1:0');
     });
   });
 
   describe('getContainerHandler', () => {
-    it('should return fallback on an empty array', async () => {
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, [], 0))
+    it('should return fallback on an empty array', async() => {
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [], 0)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 0,
@@ -132,8 +133,8 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback on one number', async () => {
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, [0], 0))
+    it('should return fallback on one number', async() => {
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 0 ], 0)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 0,
@@ -141,8 +142,8 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback on all numbers', async () => {
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, [0, 1, 2], 2))
+    it('should return fallback on all numbers', async() => {
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 0, 1, 2 ], 2)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 2,
@@ -150,10 +151,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+    it('should return when targeting a depth in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@id': true },
           depth: 2,
@@ -161,10 +163,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @index container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@index": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+    it('should return when targeting a depth in an @index container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@index': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@index': true },
           depth: 2,
@@ -172,10 +175,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @language container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@language": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+    it('should return when targeting a depth in an @language container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@language': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@language': true },
           depth: 2,
@@ -183,10 +187,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @type container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@type": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+    it('should return when targeting a depth in an @type container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@type': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@type': true },
           depth: 2,
@@ -194,10 +199,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth in an unknown container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@bla": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "subKey"], 3))
+    it('should return fallback when targeting a depth in an unknown container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@bla': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 3,
@@ -205,11 +211,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth within one array in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", 0, "subSubKey"], 4))
+    it('should return when targeting a depth within one array in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 0, 'subSubKey' ], 4)).resolves
         .toMatchObject({
           containers: { '@id': true },
           depth: 2,
@@ -217,11 +223,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth within two arrays in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", 0, 1, "subSubKey"], 4))
+    it('should return when targeting a depth within two arrays in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 0, 1, 'subSubKey' ], 4)).resolves
         .toMatchObject({
           containers: { '@id': true },
           depth: 2,
@@ -229,11 +235,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth within an object in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return fallback when targeting a depth within an object in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 4,
@@ -241,10 +247,10 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
+    it('should return when targeting a depth in an @graph container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true }}})));
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key' ], 2)).resolves
         .toMatchObject({
           containers: { '@graph': true },
           depth: 2,
@@ -252,11 +258,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth in an @graph @set container', async () => {
-      parsingContext.contextTree.setContext(["a"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@set": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 2))
+    it('should return when targeting a depth in an @graph @set container', async() => {
+      parsingContext.contextTree.setContext([ 'a' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@set': true }}},
+      )));
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key' ], 2)).resolves
         .toMatchObject({
           containers: { '@graph': true, '@set': true },
           depth: 2,
@@ -264,10 +270,10 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth above an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key"], 1))
+    it('should return fallback when targeting a depth above an @graph container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true }}})));
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key' ], 1)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 1,
@@ -275,10 +281,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth below an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext, ["a", "container", "key", "keyDeeper"], 3))
+    it('should return fallback when targeting a depth below an @graph container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'keyDeeper' ], 3)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 3,
@@ -286,12 +293,12 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth within a graph index container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return when targeting a depth within a graph index container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toMatchObject({
           containers: { '@graph': true, '@index': true },
           depth: 2,
@@ -299,11 +306,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth within a graph id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return when targeting a depth within a graph id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toMatchObject({
           containers: { '@graph': true, '@id': true },
           depth: 2,
@@ -311,12 +318,12 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth of a graph index container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return when targeting a depth of a graph index container in an @id container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@graph': true, '@index': true },
           depth: 2,
@@ -324,11 +331,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return when targeting a depth of a graph id container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return when targeting a depth of a graph id container in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@graph': true, '@id': true },
           depth: 2,
@@ -336,12 +343,12 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth of a graph type container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@type": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return fallback when targeting a depth of a graph type container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@type': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 3,
@@ -349,12 +356,12 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth of a graph language container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@language": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return fallback when targeting a depth of a graph language container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@language': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 3,
@@ -362,12 +369,12 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth below a graph index container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
+    it('should return fallback when targeting a depth below a graph index container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey', 'subSubSubKey' ], 5)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 5,
@@ -375,11 +382,11 @@ describe('EntryHandlerContainer', () => {
         });
     });
 
-    it('should return fallback when targeting a depth below a graph id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.getContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
+    it('should return fallback when targeting a depth below a graph id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.getContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey', 'subSubSubKey' ], 5)).resolves
         .toMatchObject({
           containers: { '@set': true },
           depth: 5,
@@ -389,155 +396,155 @@ describe('EntryHandlerContainer', () => {
   });
 
   describe('isBufferableContainerHandler', () => {
-    it('should return false on an empty array', async () => {
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [], 0))
+    it('should return false on an empty array', async() => {
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [], 0)).resolves
         .toBe(false);
     });
 
-    it('should return false on one number', async () => {
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [0], 0))
+    it('should return false on one number', async() => {
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 0 ], 0)).resolves
         .toBe(false);
     });
 
-    it('should return false on all numbers', async () => {
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [0, 1, 2], 2))
+    it('should return false on all numbers', async() => {
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 0, 1, 2 ], 2)).resolves
         .toBe(false);
     });
 
-    it('should return true when targeting a depth in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(true);
     });
 
-    it('should return true when targeting a depth in an @index container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@index": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth in an @index container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@index': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(true);
     });
 
-    it('should return true when targeting a depth in an @language container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@language": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth in an @language container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@language': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(true);
     });
 
-    it('should return true when targeting a depth in an @type container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@type": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth in an @type container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@type': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(true);
     });
 
-    it('should return true when targeting a depth in an unknown container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@bla": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth in an unknown container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@bla': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(false);
     });
 
-    it('should return true when targeting a depth within one array in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", 0, "subSubKey"], 4))
+    it('should return true when targeting a depth within one array in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 0, 'subSubKey' ], 4)).resolves
         .toBe(true);
     });
 
-    it('should return true when targeting a depth within two arrays in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true  } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", 0, 1, "subSubKey"], 4))
+    it('should return true when targeting a depth within two arrays in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 0, 1, 'subSubKey' ], 4)).resolves
         .toBe(true);
     });
 
-    it('should return false when targeting a depth within an object in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@id": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return false when targeting a depth within an object in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth in an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 2))
+    it('should return false when targeting a depth in an @graph container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 2)).resolves
         .toBe(false);
     });
 
-    it('should return true when targeting a depth below an @graph container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true } } })));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey"], 3))
+    it('should return true when targeting a depth below an @graph container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey' ], 3)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth within a graph index container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return false when targeting a depth within a graph index container in an @id container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth within a graph id container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 4))
+    it('should return false when targeting a depth within a graph id container in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 4)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth of a graph index container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return false when targeting a depth of a graph index container in an @id container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth of a graph id container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey"], 3))
+    it('should return false when targeting a depth of a graph id container in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey' ], 3)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth below a graph index container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized(
-          { container: { "@container": { "@graph": true, "@index": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
+    it('should return false when targeting a depth below a graph index container in an @id container', async() => {
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized(
+        { container: { '@container': { '@graph': true, '@index': true }}},
+      )));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey', 'subSubSubKey' ], 5)).resolves
         .toBe(false);
     });
 
-    it('should return false when targeting a depth below a graph id container in an @id container', async () => {
-      parsingContext.contextTree.setContext(["a", "container"],
-        Promise.resolve(new JsonLdContextNormalized({ container: { "@container": { "@graph": true, "@id": true } }})));
-      expect(await EntryHandlerContainer.isBufferableContainerHandler(parsingContext,
-        ["a", "container", "key", "subKey", "subSubKey", "subSubSubKey"], 5))
+    it('should return false when targeting a depth below a graph id container in an @id container', async() => {
+      // eslint-disable-next-line max-len
+      parsingContext.contextTree.setContext([ 'a', 'container' ], Promise.resolve(new JsonLdContextNormalized({ container: { '@container': { '@graph': true, '@id': true }}})));
+      // eslint-disable-next-line max-len
+      await expect(EntryHandlerContainer.isBufferableContainerHandler(parsingContext, [ 'a', 'container', 'key', 'subKey', 'subSubKey', 'subSubSubKey' ], 5)).resolves
         .toBe(false);
     });
   });
 
   describe('isPropertyHandler', () => {
-    it('should return false', async () => {
+    it('should return false', async() => {
       expect(handler.isPropertyHandler()).toBe(false);
     });
   });

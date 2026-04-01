@@ -1,4 +1,4 @@
-import {JsonLdContextNormalized} from "jsonld-context-parser";
+import type { JsonLdContextNormalized } from 'jsonld-context-parser';
 
 /**
  * A tree structure that holds all contexts,
@@ -7,13 +7,12 @@ import {JsonLdContextNormalized} from "jsonld-context-parser";
  * Positions are identified by a path of keys.
  */
 export class ContextTree {
-
-  private readonly subTrees: {[key: string]: ContextTree} = {};
+  private readonly subTrees: Record<string, ContextTree> = {};
   private context: Promise<JsonLdContextNormalized> | null = null;
 
-  public getContext(keys: string[]): Promise<{ context: JsonLdContextNormalized, depth: number }> | null {
+  public getContext(keys: string[]): Promise<{ context: JsonLdContextNormalized; depth: number }> | null {
     if (keys.length > 0) {
-      const [head, ...tail] = keys;
+      const [ head, ...tail ] = keys;
       const subTree = this.subTrees[head];
       if (subTree) {
         const subContext = subTree.getContext(tail);
@@ -22,14 +21,15 @@ export class ContextTree {
         }
       }
     }
-    return this.context ? this.context.then((context) => ({ context, depth: 0 })) : null;
+    return this.context ? this.context.then(context => ({ context, depth: 0 })) : null;
   }
 
-  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null) {
+  public setContext(keys: any[], context: Promise<JsonLdContextNormalized> | null): void {
     if (keys.length === 0) {
       this.context = context;
     } else {
-      const [head, ...tail] = keys;
+      // eslint-disable-next-line ts/no-unsafe-assignment
+      const [ head, ...tail ] = keys;
       let subTree = this.subTrees[head];
       if (!subTree) {
         subTree = this.subTrees[head] = new ContextTree();
@@ -38,8 +38,7 @@ export class ContextTree {
     }
   }
 
-  public removeContext(path: string[]) {
+  public removeContext(path: string[]): void {
     this.setContext(path, null);
   }
-
 }

@@ -20,4 +20,5 @@ yarn-error.log
 coverage
 documentation
 .rdf-test-suite-cache
+.eslintcache
 

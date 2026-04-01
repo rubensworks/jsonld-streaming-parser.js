@@ -1,5 +1,5 @@
-import {ParsingContext} from "../ParsingContext";
-import {Util} from "../Util";
+import type { ParsingContext } from '../ParsingContext';
+import type { Util } from '../Util';
 
 /**
  * Handler for processing key-value pairs.
@@ -9,13 +9,13 @@ export interface IEntryHandler<T> {
   /**
    * @return {boolean} If this can handle properties and generate predicates for them.
    */
-  isPropertyHandler(): boolean;
+  isPropertyHandler: () => boolean;
 
   /**
    * @return {boolean} If this handler should flag {@link ParsingContext#processingStack} for the given depth.
    *                   Handlers for things like @id, @context and @type return false, while prop handlers return true.
    */
-  isStackProcessor(): boolean;
+  isStackProcessor: () => boolean;
 
   /**
    * Check if the given key is valid.
@@ -29,8 +29,13 @@ export interface IEntryHandler<T> {
    * @param {boolean} inProperty If the current depth is part of a valid property node.
    * @return {Promise<boolean>} A promise resolving to a boolean representing if the key is valid.
    */
-  validate(parsingContext: ParsingContext, util: Util, keys: any[], depth: number, inProperty: boolean)
-    : Promise<boolean>;
+  validate: (
+    parsingContext: ParsingContext,
+    util: Util,
+    keys: any[],
+    depth: number,
+    inProperty: boolean,
+  ) => Promise<boolean>;
 
   /**
    * Check if this handler can handle the given key.
@@ -43,7 +48,7 @@ export interface IEntryHandler<T> {
    * @return {Promise<T | null>} A promise resolving to a truthy value if it can handle.
    *                             (this value will be passed into {@link IEntryHandler#handle})
    */
-  test(parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number): Promise<T | null>;
+  test: (parsingContext: ParsingContext, util: Util, key: any, keys: any[], depth: number) => Promise<T | null>;
 
   /**
    * Handle the given entry.
@@ -57,7 +62,14 @@ export interface IEntryHandler<T> {
    * @param {T} testResult The test result from {@link IEntryHandler#test}.
    * @return {Promise<any>} A promise resolving when the handling is done.
    */
-  handle(parsingContext: ParsingContext, util: Util, key: any, keys: any[], value: any, depth: number, testResult: T)
-    : Promise<any>;
+  handle: (
+    parsingContext: ParsingContext,
+    util: Util,
+    key: any,
+    keys: any[],
+    value: any,
+    depth: number,
+    testResult: T,
+  ) => Promise<any>;
 
 }
