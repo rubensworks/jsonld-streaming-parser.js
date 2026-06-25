@@ -76,7 +76,7 @@
     "@rubensworks/eslint-config": "^3.1.0",
     "@types/jest": "^30.0.0",
     "@types/jest-each": "^24.3.0",
-    "arrayify-stream": "^2.0.0",
+    "arrayify-stream": "^3.0.0",
     "coveralls": "^3.0.0",
     "eslint": "^8.56.0",
     "jest": "^30.2.0",
