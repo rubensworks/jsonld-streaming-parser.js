@@ -1,6 +1,6 @@
 import type * as RDF from '@rdfjs/types';
 import { parse as parseLinkHeader } from 'http-link-header';
-import type { IDocumentLoader, JsonLdContext } from 'jsonld-context-parser';
+import type { ContextParser, IDocumentLoader, JsonLdContext } from 'jsonld-context-parser';
 import { ERROR_CODES, ErrorCoded, Util as ContextUtil } from 'jsonld-context-parser';
 import type { Readable } from 'readable-stream';
 import { PassThrough, Transform } from 'readable-stream';
@@ -727,4 +727,15 @@ export interface IJsonLdParserOptions {
    * Default to ['application/activity+json']
    */
   wellKnownMediaTypes?: string[];
+  /**
+   * An optional context parser to reuse for parsing contexts.
+   * When provided, this parser is used instead of constructing a new one per parser instance,
+   * which allows a single (optionally caching) parser to be shared across many documents.
+   *
+   * Note: the `documentLoader` and `skipContextValidation` options do NOT apply to an injected
+   * `contextParser`. They are only used to configure the {@link ContextParser} that is constructed
+   * internally when `contextParser` is omitted. A caller that injects its own parser is therefore
+   * responsible for configuring that parser's document loader and context validation itself.
+   */
+  contextParser?: ContextParser;
 }

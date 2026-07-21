@@ -5,7 +5,8 @@ import type * as RDF from '@rdfjs/types';
 import arrayifyStream from 'arrayify-stream';
 import each from 'jest-each';
 import 'jest-rdf';
-import { ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
+import type { IParseOptions, JsonLdContext } from 'jsonld-context-parser';
+import { ContextParser, ERROR_CODES, ErrorCoded, JsonLdContextNormalized } from 'jsonld-context-parser';
 import { DataFactory } from 'rdf-data-factory';
 import { JsonLdParser } from '../index';
 import { ParsingContext } from '../lib/ParsingContext';
@@ -18,7 +19,67 @@ const streamifyString = require('streamify-string');
 
 const DF = new DataFactory<RDF.BaseQuad>();
 
+/**
+ * Recursively freeze an object so that any attempt to mutate it throws in strict mode.
+ * Cycle-safe: visited objects are tracked in a {@link WeakSet}, and every own-enumerable
+ * object/array child is always traversed (rather than skipped when already frozen).
+ * @param node - The object to deep-freeze.
+ * @param visited - The set of already-visited nodes, used to guard against cycles.
+ */
+function deepFreeze(node: Record<string, unknown>, visited: WeakSet<object> = new WeakSet()): void {
+  if (visited.has(node)) {
+    return;
+  }
+  visited.add(node);
+  for (const value of Object.values(node)) {
+    if (value !== null && typeof value === 'object') {
+      deepFreeze(<Record<string, unknown>> value, visited);
+    }
+  }
+  Object.freeze(node);
+}
+
+/**
+ * A {@link ContextParser} that deep-freezes every parsed context.
+ * Used to prove that a shared (injected) context parser is never mutated during parsing.
+ */
+class FrozenContextParser extends ContextParser {
+  public async parse(context: JsonLdContext, options?: IParseOptions): Promise<JsonLdContextNormalized> {
+    const parsed = await super.parse(context, options);
+    deepFreeze(parsed.getContextRaw());
+    return parsed;
+  }
+}
+
 describe('JsonLdParser', () => {
+  describe('with an injected, shared context parser', () => {
+    let contextParser: FrozenContextParser;
+
+    beforeEach(() => {
+      contextParser = new FrozenContextParser();
+    });
+
+    it('should reuse the same shared parser across multiple parser instances.', async() => {
+      const doc = JSON.stringify({
+        '@context': { '@vocab': 'http://example.org/' },
+        '@id': 'http://example.org/s',
+        p: 'o',
+      });
+      const expected = [
+        DF.quad(
+          DF.namedNode('http://example.org/s'),
+          DF.namedNode('http://example.org/p'),
+          DF.literal('o'),
+        ),
+      ];
+      const parser1 = new JsonLdParser({ dataFactory: DF, contextParser });
+      await expect(arrayifyStream(streamifyString(doc).pipe(parser1))).resolves.toBeRdfIsomorphic(expected);
+      // Parsing again with a second parser that shares the same context parser must still succeed.
+      const parser2 = new JsonLdParser({ dataFactory: DF, contextParser });
+      await expect(arrayifyStream(streamifyString(doc).pipe(parser2))).resolves.toBeRdfIsomorphic(expected);
+    });
+  });
+
   describe('Parsing a Verifiable Credential', () => {
     let parser: JsonLdParser;
 

@@ -3,6 +3,32 @@ import type { ParsingContext } from '../lib/ParsingContext';
 import { ParsingContextMocked } from '../mocks/ParsingContextMocked';
 
 describe('ParsingContext', () => {
+  describe('the contextParser option', () => {
+    it('should construct a new ContextParser when none is provided.', () => {
+      const parsingContext = new ParsingContextMocked({ parser: <any> null });
+      expect(parsingContext.contextParser).toBeInstanceOf(ContextParser);
+    });
+
+    it('should reuse the provided ContextParser instance.', () => {
+      const contextParser = new ContextParser();
+      const parsingContext = new ParsingContextMocked({ parser: <any> null, contextParser });
+      expect(parsingContext.contextParser).toBe(contextParser);
+    });
+
+    it('should use the provided ContextParser to parse the root context.', async() => {
+      const contextParser = new ContextParser();
+      const parseSpy = jest.spyOn(contextParser, 'parse');
+      const parsingContext = new ParsingContextMocked({
+        parser: <any> null,
+        contextParser,
+        context: { '@vocab': 'http://vocab.org/' },
+      });
+      await parsingContext.rootContext;
+      expect(parseSpy).toHaveBeenCalledTimes(1);
+      expect(parsingContext.contextParser).toBe(contextParser);
+    });
+  });
+
   describe('an empty instance', () => {
     let parsingContext: ParsingContext;
 

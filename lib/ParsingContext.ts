@@ -104,7 +104,7 @@ export class ParsingContext {
 
   public constructor(options: IParsingContextOptions) {
     // Initialize settings
-    this.contextParser = new ContextParser({
+    this.contextParser = options.contextParser ?? new ContextParser({
       documentLoader: options.documentLoader,
       skipValidation: options.skipContextValidation,
     });
