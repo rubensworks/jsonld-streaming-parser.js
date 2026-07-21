@@ -227,6 +227,10 @@ export class ParsingContext {
 
     // Process property-scoped contexts (high-to-low)
     let contextRaw: IJsonLdContextNormalizedRaw = context.getContextRaw();
+    // Track whether the loop below actually reassigned `contextRaw` to a different raw object.
+    // In the common path it never does, so we can return the existing `context` (which already
+    // wraps this exact raw object) instead of allocating a redundant JsonLdContextNormalized wrapper.
+    let modified = false;
     for (let i = contextData.depth; i < keysOriginal.length - offset; i++) {
       // eslint-disable-next-line ts/no-unsafe-assignment
       const key = keysOriginal[i];
@@ -242,6 +246,7 @@ export class ParsingContext {
 
         if (propagate !== false || i === keysOriginal.length - 1 - offset) {
           contextRaw = { ...scopedContext };
+          modified = true;
 
           // Clean up final context
           delete contextRaw['@propagate'];
@@ -263,7 +268,7 @@ export class ParsingContext {
       }
     }
 
-    return new JsonLdContextNormalized(contextRaw);
+    return modified ? new JsonLdContextNormalized(contextRaw) : context;
   }
 
   /**

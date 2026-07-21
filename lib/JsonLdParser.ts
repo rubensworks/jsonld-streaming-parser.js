@@ -471,18 +471,26 @@ export class JsonLdParser extends Transform implements RDF.Sink<EventEmitter, RD
       // eslint-disable-next-line ts/no-unsafe-assignment
       const depth = this.jsonParser.stack.length;
       // Don't parse inner nodes inside @context
+      // Build the keys stack by filling a single preallocated array with a plain loop, avoiding
+      // the per-value closure that `Array.from(..., mapFn)` would allocate on every emitted value.
       // eslint-disable-next-line ts/no-unsafe-assignment
-      const keys = Array.from({ length: depth + 1 }, (v, i) =>
-        // eslint-disable-next-line ts/no-unsafe-return
-        i === depth ? this.jsonParser.key : this.jsonParser.stack[i].key);
+      const keys: any[] = Array.from({ length: depth + 1 });
+      for (let i = 0; i < depth; i++) {
+        // eslint-disable-next-line ts/no-unsafe-assignment
+        keys[i] = this.jsonParser.stack[i].key;
+      }
+      // eslint-disable-next-line ts/no-unsafe-assignment
+      keys[depth] = this.jsonParser.key;
 
       // eslint-disable-next-line ts/no-unsafe-argument
       if (!this.isParsingContextInner(depth)) {
         // eslint-disable-next-line ts/no-unsafe-argument
         const valueJobCb = (): Promise<void> => this.newOnValueJob(keys, value, depth, true);
         if (!this.parsingContext.streamingProfile &&
+          // Synchronous presence check over keys.slice(0, -1); avoids allocating a slice + Promise
+          // just to test for the existence of a context (see ContextTree#hasContext).
           // eslint-disable-next-line ts/no-unsafe-argument
-          !this.parsingContext.contextTree.getContext(keys.slice(0, -1))) {
+          !this.parsingContext.contextTree.hasContext(keys, 0, depth)) {
           // If an out-of-order context is allowed,
           // we have to buffer everything.
           // We store jobs for @context's and @type's separately,
