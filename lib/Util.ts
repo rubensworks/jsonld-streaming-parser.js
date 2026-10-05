@@ -510,11 +510,15 @@ export class Util {
           return this.nullableTermToArray(valueTerm);
         }
         // Only make a blank node if at least one triple was emitted at the value's level.
-        if (this.parsingContext.emittedStack[depth + 1] ||
-          // eslint-disable-next-line ts/no-unsafe-argument
-          (value && typeof value === 'object' && Object.keys(value).length === 0)) {
+        if (this.parsingContext.emittedStack[depth + 1]) {
           return (this.parsingContext.idStack[depth + 1] ||
             (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
+        }
+        // An empty node object has no entries, so nothing will ever flush the stacks at its depth.
+        // Do not store its blank node in the idStack, as it would collide with the @id of a following sibling.
+        // eslint-disable-next-line ts/no-unsafe-argument
+        if (value && typeof value === 'object' && Object.keys(value).length === 0) {
+          return [ this.dataFactory.blankNode() ];
         }
         return [];
 
