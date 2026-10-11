@@ -514,8 +514,6 @@ export class Util {
           return (this.parsingContext.idStack[depth + 1] ||
             (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
         }
-        // An empty node object has no entries, so nothing will ever flush the stacks at its depth.
-        // Do not store its blank node in the idStack, as it would collide with the @id of a following sibling.
         // eslint-disable-next-line ts/no-unsafe-argument
         if (value && typeof value === 'object' && Object.keys(value).length === 0) {
           return [ this.dataFactory.blankNode() ];
