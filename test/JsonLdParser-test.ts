@@ -444,6 +444,18 @@ describe('JsonLdParser', () => {
           ]);
         });
 
+        it('with an empty object value followed by a sibling node with @id', async() => {
+          const stream = streamifyString(`
+[
+  { "@id": "http://ex.org/a", "http://ex.org/pred1": {} },
+  { "@id": "http://ex.org/b", "http://ex.org/pred2": "v" }
+]`);
+          await expect(arrayifyStream(stream.pipe(parser))).resolves.toBeRdfIsomorphic([
+            DF.quad(DF.namedNode('http://ex.org/a'), DF.namedNode('http://ex.org/pred1'), DF.blankNode()),
+            DF.quad(DF.namedNode('http://ex.org/b'), DF.namedNode('http://ex.org/pred2'), DF.literal('v')),
+          ]);
+        });
+
         it('with @id', async() => {
           const stream = streamifyString(`
 {

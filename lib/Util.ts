@@ -510,11 +510,13 @@ export class Util {
           return this.nullableTermToArray(valueTerm);
         }
         // Only make a blank node if at least one triple was emitted at the value's level.
-        if (this.parsingContext.emittedStack[depth + 1] ||
-          // eslint-disable-next-line ts/no-unsafe-argument
-          (value && typeof value === 'object' && Object.keys(value).length === 0)) {
+        if (this.parsingContext.emittedStack[depth + 1]) {
           return (this.parsingContext.idStack[depth + 1] ||
             (this.parsingContext.idStack[depth + 1] = [ this.dataFactory.blankNode() ]));
+        }
+        // eslint-disable-next-line ts/no-unsafe-argument
+        if (value && typeof value === 'object' && Object.keys(value).length === 0) {
+          return [ this.dataFactory.blankNode() ];
         }
         return [];
 
