@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+<a name="v5.0.2"></a>
+## [v5.0.2](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v5.0.1...v5.0.2) - 2026-10-12
+
+### Fixed
+* [Fix blank node causing duplicate `@id` errors (#158)](https://github.com/rubensworks/streaming-jsonld-parser.js/commit/08b3639d3a755c629d00e82207cabc80e4d2cdd5)
+
 <a name="v5.0.1"></a>
 ## [v5.0.1](https://github.com/rubensworks/streaming-jsonld-parser.js/compare/v5.0.0...v5.0.1) - 2026-01-27
 
